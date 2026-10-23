@@ -64,9 +64,10 @@ dotnet run --project TipToy.Designer
 dotnet run --project TipToy.Designer -- examples/tic-tac-toi/tic-tac-toi.tiptoy.json
 ```
 
-Voraussetzung: .NET 8 SDK. Für das Bauen der GME-Datei zusätzlich
-[tttool](https://github.com/entropia/tip-toi-reveng/releases) und für die Sprachausgabe
-`espeak` (oder `pico2wave`) sowie `oggenc` (vorbis-tools).
+Voraussetzung: .NET 8 SDK. **tttool wird nicht benötigt** – der Designer erzeugt OID-Codes und
+GME-Dateien selbst. Für die Sprachausgabe nutzt er unter Windows die eingebaute Stimme, unter
+Linux/macOS `pico2wave`, `espeak` oder `say`. Ist `oggenc` (vorbis-tools) installiert, werden
+die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt beides).
 
 ### Funktionen
 
@@ -74,17 +75,20 @@ Voraussetzung: .NET 8 SDK. Für das Bauen der GME-Datei zusätzlich
   verschieben und in der Größe ändern. Jede Fläche wird einem Skript oder einem Sondercode
   (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.
 - **Skripte:** tttool-Skripte bearbeiten, mit Kurzreferenz der Befehle.
-- **Sprachausgabe:** Texte, die tttool per Text-to-Speech vertont.
+- **Sprachausgabe:** Texte, die beim Bauen per Text-to-Speech vertont werden; alternativ eigene
+  Audiodateien (`.ogg`, `.mp3`, `.wav`) im Medienverzeichnis.
 - **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
 - **Export:**
   - Seiten als druckfertige PDF (Hintergrund + OID-Muster in den Flächen)
   - OID-Tabelle aller Codes als PDF, einzelne Flächen als PNG
   - tttool-YAML inkl. `*.codes.yaml`, Import vorhandener YAML-Dateien
-  - GME-Datei bauen (ruft `tttool assemble` auf, Taste F5)
+  - GME-Datei bauen (Taste F5) – eingebaut, optional über das externe tttool
 
-Die OID-Muster erzeugt der Designer selbst. Die Erzeugung ist eine direkte Portierung des
-tttool-Algorithmus und liefert pixelgenau dieselben Muster. Auch die Codes für Skripte werden
-nach demselben Verfahren wie bei tttool vergeben, sodass YAML-Export und tttool zusammenpassen.
+OID-Muster und GME-Dateien sind direkte Portierungen von tttool: Die Muster sind pixelgenau
+gleich, die GME-Dateien bei gleichen Audiodateien byteweise identisch mit `tttool assemble`.
+Auch die Codes für Skripte werden nach demselben Verfahren vergeben, sodass YAML-Export und
+tttool zusammenpassen. Nur Spiele (`games`) und Timer kann der eingebaute Builder nicht – dafür
+unter *Projekt* „GME mit externem tttool bauen“ aktivieren.
 
 ### Typischer Ablauf
 
@@ -119,7 +123,7 @@ Testseite in `examples/druckertest/` findest du die passende Einstellung:
    Punktgröße* eintragen.
 
 Die Testseite lässt sich im Designer jederzeit neu erzeugen: *Erstellen → Drucker-Testseite …*
-(baut die GME automatisch, wenn tttool installiert ist).
+(baut die GME-Datei gleich mit).
 
 ## C#-Programm `TipToy`
 

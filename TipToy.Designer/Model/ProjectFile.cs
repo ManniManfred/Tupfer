@@ -16,6 +16,9 @@ public class ProjectFile
     public int? Stop { get; set; }
 
     public string TttoolPath { get; set; } = "tttool";
+
+    /// <summary>GME mit dem externen tttool statt mit dem eingebauten Builder erstellen.</summary>
+    public bool UseTttool { get; set; }
     public int Dpi { get; set; } = 1200;
     public int PixelSize { get; set; } = 2;
 

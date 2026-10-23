@@ -202,7 +202,7 @@
             <StackPanel>
               <TextBlock Classes="label" Text="Kurzreferenz (tttool)" Margin="0,0,0,2" />
               <SelectableTextBlock Classes="hint" FontFamily="Consolas,Menlo,DejaVu Sans Mono,monospace"
-                         Text="P(name)        Ton/Text abspielen&#10;P(a,b)         zufällig einen abspielen&#10;P(&quot;Hallo&quot;)     Text direkt sprechen&#10;P?(name)       vielleicht abspielen&#10;J(skript)      zu Skript springen&#10;$r := 1        Register setzen&#10;$r += 1        rechnen (-=, *=, /=, %=)&#10;$r == 1?       Bedingung (!=, &lt;, &gt;, &lt;=, &gt;=)&#10;&#10;Beispiel:&#10;$feld == 0? $feld := 1 P(ok)&#10;$feld == 1? P(schon_belegt)&#10;&#10;Jede Zeile wird von oben geprüft,&#10;die erste passende wird ausgeführt.&#10;&#10;Namen in P(...) beziehen sich auf&#10;die Sprachausgabe oder auf Audio-&#10;dateien im Medienverzeichnis." />
+                         Text="P(name)        Ton/Text abspielen&#10;P(a,b)         zufällig einen abspielen&#10;P(&quot;a b.ogg&quot;)   Dateiname mit Sonderzeichen&#10;PA(a,b)        alle nacheinander&#10;P?(name)       vielleicht abspielen&#10;J(skript)      zu Skript springen&#10;$r := 1        Register setzen&#10;$r += 1        rechnen (-=, *=, /=, %=)&#10;$r == 1?       Bedingung (!=, &lt;, &gt;, &lt;=, &gt;=)&#10;&#10;Beispiel:&#10;$feld == 0? $feld := 1 P(ok)&#10;$feld == 1? P(schon_belegt)&#10;&#10;Jede Zeile wird von oben geprüft,&#10;die erste passende wird ausgeführt.&#10;&#10;Namen in P(...) beziehen sich auf&#10;die Sprachausgabe oder auf Audio-&#10;dateien im Medienverzeichnis." />
             </StackPanel>
           </ScrollViewer>
         </Grid>
@@ -213,7 +213,7 @@
         <DockPanel>
           <StackPanel DockPanel.Dock="Top">
             <TextBlock Classes="hint" Margin="0,0,0,6"
-                       Text="Texte werden von tttool per Text-to-Speech in Audio umgewandelt (benötigt espeak oder pico2wave). Alternativ eine Audiodatei mit gleichem Namen im Medienverzeichnis ablegen." />
+                       Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet: unter Windows mit der eingebauten Stimme, unter Linux/macOS mit pico2wave, espeak oder say. Ist oggenc installiert, werden sie als OGG gespeichert, sonst als WAV. Alternativ eine Audiodatei (.ogg, .mp3, .wav) mit gleichem Namen im Medienverzeichnis ablegen." />
             <WrapPanel>
               <Button Content="Neuer Text" Command="{Binding AddSpeakCommand}" />
               <Button Content="Löschen" Command="{Binding RemoveSpeakCommand}" />
@@ -260,9 +260,11 @@
               <TextBlock Classes="hint" Text="z. B. audio/%s – %s wird durch den Namen ersetzt." />
             </StackPanel>
             <StackPanel Grid.Column="2">
-              <TextBlock Classes="label" Text="Pfad zu tttool" Margin="0,0,0,2" />
-              <TextBox Text="{Binding TttoolPath}" />
-              <TextBlock Classes="hint" Text="tttool von github.com/entropia/tip-toi-reveng wird nur zum Bauen der GME-Datei benötigt. Die OID-Codes erzeugt der Designer selbst." />
+              <TextBlock Classes="label" Text="GME-Erstellung" Margin="0,0,0,2" />
+              <CheckBox Content="GME mit externem tttool bauen" IsChecked="{Binding UseTttool}" />
+              <TextBlock Classes="hint" Text="Normalerweise nicht nötig: Der Designer baut GME-Dateien selbst. tttool (github.com/entropia/tip-toi-reveng) wird nur für Spiele und Timer unter „Weitere YAML-Einträge“ gebraucht." />
+              <TextBlock Classes="label" Text="Pfad zu tttool" IsVisible="{Binding UseTttool}" />
+              <TextBox Text="{Binding TttoolPath}" IsVisible="{Binding UseTttool}" />
               <TextBlock Classes="label" Text="Druckauflösung (dpi) / Punktgröße (Pixel)" />
               <Grid ColumnDefinitions="*,8,*">
                 <TextBox Text="{Binding Dpi}" />

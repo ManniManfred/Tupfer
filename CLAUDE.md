@@ -12,5 +12,7 @@
 - Sprache in Code-Kommentaren, UI und Dokumentation: Deutsch.
 - `TipToy.Designer/` – Avalonia-App (.NET 8): `dotnet build TipToy.Designer`
 - `TipToy/` – altes Konsolenprogramm (Windows Forms), lässt sich unter Linux nicht bauen.
-- OID-Erzeugung (`TipToy.Designer/Oid/`) ist eine Portierung von tttool und muss pixelgenau
-  mit `tttool oid-code` übereinstimmen; Änderungen dort gegen tttool prüfen.
+- OID-Erzeugung (`TipToy.Designer/Oid/`) und GME-Erstellung (`TipToy.Designer/Gme/`) sind
+  Portierungen von tttool (github.com/entropia/tip-toi-reveng, Referenz: Version 1.11).
+  Sie müssen pixel- bzw. byteweise mit `tttool oid-code` und `tttool assemble --no-date`
+  übereinstimmen; Änderungen dort gegen tttool prüfen.

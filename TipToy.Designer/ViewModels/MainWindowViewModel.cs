@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TipToy.Designer.Gme;
 using TipToy.Designer.Model;
 using TipToy.Designer.Oid;
 using TipToy.Designer.Services;
@@ -184,16 +185,44 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         var dir = Path.GetDirectoryName(FilePath)!;
-        var yaml = Path.Combine(dir, ProjectStore.BaseName(FilePath) + ".yaml");
-        WriteYaml(yaml);
-        Log($"Starte: {Project.TttoolPath} assemble {Path.GetFileName(yaml)}");
-        int exit = await TttoolRunner.RunAsync(Project.TttoolPath, dir,
-            line => Avalonia.Threading.Dispatcher.UIThread.Post(() => Log(line)),
-            "assemble", Path.GetFileName(yaml));
-        Log(exit == 0
-            ? $"GME erstellt: {Path.ChangeExtension(yaml, ".gme")} – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen."
-            : $"tttool wurde mit Code {exit} beendet.");
+        var gme = Path.Combine(dir, ProjectStore.BaseName(FilePath) + ".gme");
+        bool ok;
+        if (Project.UseTttool)
+        {
+            var yaml = Path.ChangeExtension(gme, ".yaml");
+            WriteYaml(yaml);
+            ok = await RunTttoolAssemble(yaml);
+        }
+        else
+        {
+            ok = await BuildGmeInternal(Project.ToFile(dir), dir, gme);
+        }
+        if (ok)
+            Log($"GME erstellt: {gme} – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
     });
+
+    void LogFromAnyThread(string message) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Log(message));
+
+    async Task<bool> RunTttoolAssemble(string yaml)
+    {
+        Log($"Starte: {Project.TttoolPath} assemble {Path.GetFileName(yaml)}");
+        int exit = await TttoolRunner.RunAsync(Project.TttoolPath, Path.GetDirectoryName(yaml)!, LogFromAnyThread,
+            "assemble", Path.GetFileName(yaml));
+        if (exit != 0)
+            Log($"tttool wurde mit Code {exit} beendet.");
+        return exit == 0;
+    }
+
+    /// <summary>Baut die GME-Datei mit dem eingebauten Builder (Sprachausgaben werden zwischengespeichert).</summary>
+    async Task<bool> BuildGmeInternal(ProjectFile file, string baseDir, string gmePath)
+    {
+        Log($"Baue {Path.GetFileName(gmePath)} …");
+        var tts = new TextToSpeech(Path.Combine(baseDir, "tts-cache"), LogFromAnyThread);
+        var bytes = await Task.Run(() => GmeBuilder.Build(file, baseDir, tts.Speak, warn: m => LogFromAnyThread("Warnung: " + m)));
+        await File.WriteAllBytesAsync(gmePath, bytes);
+        Log($"{bytes.Length / 1024.0:0.#} KB, {file.Scripts.Count} Skripte.");
+        return true;
+    }
 
     // ---------- Druck ----------
 
@@ -271,13 +300,12 @@ public partial class MainWindowViewModel : ObservableObject
         if (path == null) return;
         var yaml = PrinterTest.Write(path);
         Log($"Testseite geschrieben: {path}");
-        Log($"Starte: {Project.TttoolPath} assemble {Path.GetFileName(yaml)}");
-        int exit = await TttoolRunner.RunAsync(Project.TttoolPath, Path.GetDirectoryName(yaml)!,
-            line => Avalonia.Threading.Dispatcher.UIThread.Post(() => Log(line)),
-            "assemble", Path.GetFileName(yaml));
-        Log(exit == 0
-            ? $"GME erstellt: {Path.ChangeExtension(yaml, ".gme")} – auf den Stift kopieren, Seite drucken und die Varianten durchtippen."
-            : $"tttool wurde mit Code {exit} beendet – die YAML-Datei liegt bereit: {yaml}");
+        var gme = Path.ChangeExtension(yaml, ".gme");
+        bool ok = Project.UseTttool
+            ? await RunTttoolAssemble(yaml)
+            : await BuildGmeInternal(PrinterTest.CreateProject(), Path.GetDirectoryName(yaml)!, gme);
+        if (ok)
+            Log($"GME erstellt: {gme} – auf den Stift kopieren, Seite drucken und die Varianten durchtippen.");
     });
 
     [RelayCommand]
