@@ -26,6 +26,49 @@ public partial class MainWindow : Window, IFileDialogs
         };
         // Vor dem ScrollViewer abfangen, damit Strg+Mausrad nicht zusätzlich scrollt
         PageScroll.AddHandler(PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
+        PageScroll.AddHandler(PointerPressedEvent, OnPanStart, RoutingStrategies.Tunnel);
+        PageScroll.AddHandler(PointerMovedEvent, OnPanMove, RoutingStrategies.Tunnel);
+        PageScroll.AddHandler(PointerReleasedEvent, OnPanEnd, RoutingStrategies.Tunnel);
+        PageScroll.AddHandler(PointerCaptureLostEvent, (_, _) => EndPan());
+    }
+
+    static readonly Cursor PanCursor = new(StandardCursorType.SizeAll);
+
+    /// <summary>Mauszeiger und Bildlaufposition beim Beginn des Panens, null = es wird nicht gepant.</summary>
+    (Point Pointer, Vector Offset)? _panStart;
+
+    /// <summary>Mittlere Maustaste gedrückt halten verschiebt die Ansicht.</summary>
+    void OnPanStart(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(PageScroll).Properties.IsMiddleButtonPressed)
+            return;
+        _panStart = (e.GetPosition(PageScroll), PageScroll.Offset);
+        PageScroll.Cursor = PanCursor;
+        e.Pointer.Capture(PageScroll);
+        e.Handled = true;
+    }
+
+    void OnPanMove(object? sender, PointerEventArgs e)
+    {
+        if (_panStart is not { } start)
+            return;
+        PageScroll.Offset = start.Offset - (e.GetPosition(PageScroll) - start.Pointer);
+        e.Handled = true;
+    }
+
+    void OnPanEnd(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_panStart == null || e.InitialPressMouseButton != MouseButton.Middle)
+            return;
+        e.Pointer.Capture(null);
+        EndPan();
+        e.Handled = true;
+    }
+
+    void EndPan()
+    {
+        _panStart = null;
+        PageScroll.Cursor = null;
     }
 
     /// <summary>Strg+Mausrad zoomt; der Punkt unter dem Mauszeiger bleibt dabei stehen.</summary>
