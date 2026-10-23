@@ -10,7 +10,7 @@
 ## Projekt
 
 - Sprache in Code-Kommentaren, UI und Dokumentation: Deutsch.
-- `TipToy.Designer/` – Avalonia-App (.NET 8): `dotnet build TipToy.Designer`
+- `TipToy.Designer/` – Avalonia-App (.NET 10): `dotnet build TipToy.Designer`
 - Tests (u. a. C#-Übersetzer gegen natives C# und Original-YAML): `dotnet test TipToy.Designer.Tests`
 - `TipToy/` – altes Konsolenprogramm (Windows Forms), lässt sich unter Linux nicht bauen.
 - OID-Erzeugung (`TipToy.Designer/Oid/`) und GME-Erstellung (`TipToy.Designer/Gme/`) sind

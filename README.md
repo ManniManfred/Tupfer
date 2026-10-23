@@ -66,7 +66,7 @@ dotnet run --project TipToy.Designer
 dotnet run --project TipToy.Designer -- examples/tic-tac-toi/tic-tac-toi.tiptoy.json
 ```
 
-Voraussetzung: .NET 8 SDK. **tttool wird nicht benötigt** – der Designer erzeugt OID-Codes und
+Voraussetzung: .NET 10 SDK. **tttool wird nicht benötigt** – der Designer erzeugt OID-Codes und
 GME-Dateien selbst. Für die Sprachausgabe nutzt er unter Windows die eingebaute Stimme, unter
 Linux/macOS `pico2wave`, `espeak` oder `say`. Ist `oggenc` (vorbis-tools) installiert, werden
 die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt beides).
@@ -185,7 +185,7 @@ cd TipToy
 dotnet run
 ```
 
-Voraussetzungen: .NET 8 SDK und Windows (das Programm nutzt `System.Drawing` und Windows Forms).
+Voraussetzungen: .NET 10 SDK und Windows (das Programm nutzt `System.Drawing` und Windows Forms).
 Abhängigkeit: [PDFsharp](https://www.pdfsharp.net/) 6.2.2.
 
 > **Achtung:** Die Codierung im C#-Programm ist eine vereinfachte, experimentelle Nachbildung und
