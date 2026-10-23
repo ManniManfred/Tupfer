@@ -56,10 +56,11 @@ public partial class ProjectViewModel : ObservableObject
 
     internal void OnScriptRenamed(ScriptViewModel script, string? oldName, string newName)
     {
-        int idx = Scripts.IndexOf(script);
-        if (idx < 0)
+        if (!Scripts.Contains(script))
             return;
-        ScriptNames[idx] = newName;
+        int idx = ScriptNames.IndexOf(oldName ?? "");
+        if (idx >= 0)
+            ScriptNames[idx] = newName;
         foreach (var area in Pages.SelectMany(p => p.Areas).Where(a => a.Target == AreaTarget.Script && a.Script == oldName))
             area.Script = newName;
         if (int.TryParse(newName, out _))
@@ -67,21 +68,21 @@ public partial class ProjectViewModel : ObservableObject
         RefreshAreas();
     }
 
-    public ScriptViewModel AddScript(string name, string text = "")
+    /// <param name="helper">Hilfsskript des C#-Programms: erscheint nicht in der Auswahl für Flächen.</param>
+    public ScriptViewModel AddScript(string name, string text = "", bool helper = false)
     {
-        var script = new ScriptViewModel(this) { Name = name, Text = text };
+        var script = new ScriptViewModel(this) { Name = name, Text = text, Helper = helper };
         Scripts.Add(script);
-        ScriptNames.Add(name);
+        if (!helper)
+            ScriptNames.Add(name);
         return script;
     }
 
     public void RemoveScript(ScriptViewModel script)
     {
-        int idx = Scripts.IndexOf(script);
-        if (idx < 0)
+        if (!Scripts.Remove(script))
             return;
-        Scripts.RemoveAt(idx);
-        ScriptNames.RemoveAt(idx);
+        ScriptNames.Remove(script.Name);
         RefreshAreas();
     }
 
@@ -96,19 +97,31 @@ public partial class ProjectViewModel : ObservableObject
         if (clash != null)
             return $"Das C#-Programm erzeugt das Skript „{clash.Name}“, das es schon als normales Skript gibt. Bitte eines umbenennen.";
 
-        var oldCodes = Scripts.Where(s => s.Generated).ToDictionary(s => s.Name, s => s.Code);
+        // Vorhandene Skripte gleichen Namens werden aktualisiert statt ersetzt, damit Code und
+        // Auswahl in den Flächen erhalten bleiben
+        var existing = Scripts.Where(s => s.Generated).ToDictionary(s => s.Name);
         var selected = SelectedScript?.Name;
-        foreach (var old in Scripts.Where(s => s.Generated).ToList())
+        foreach (var old in existing.Values.Where(s => result.Scripts.All(cs => cs.Name != s.Name)).ToList())
             RemoveScript(old);
         foreach (var cs in result.Scripts)
         {
-            var script = AddScript(cs.Name, string.Join("\n", cs.Lines));
+            bool helper = !result.EntryPoints.Contains(cs.Name);
+            var text = string.Join("\n", cs.Lines);
+            if (existing.TryGetValue(cs.Name, out var script) && script.Helper == helper)
+            {
+                script.Text = text;
+                continue;
+            }
+            int? code = script?.Code;
+            if (script != null)
+                RemoveScript(script);
+            script = AddScript(cs.Name, text, helper);
             script.Generated = true;
-            script.Helper = !result.EntryPoints.Contains(cs.Name);
-            script.Code = oldCodes.GetValueOrDefault(cs.Name);
+            script.Code = code;
         }
         Init = result.Init;
         AssignCodes();
+        RefreshAreas();
         SelectedScript = Scripts.FirstOrDefault(s => s.Name == selected) ?? Scripts.FirstOrDefault();
         return null;
     }
@@ -187,10 +200,9 @@ public partial class ProjectViewModel : ObservableObject
         };
         foreach (var s in f.Scripts)
         {
-            var script = vm.AddScript(s.Name, string.Join("\n", s.Lines));
+            var script = vm.AddScript(s.Name, string.Join("\n", s.Lines), s.Helper);
             script.Code = s.Code;
             script.Generated = s.Generated;
-            script.Helper = s.Helper;
         }
         foreach (var s in f.Speak)
             vm.Speak.Add(new SpeakViewModel { Name = s.Name, Text = s.Text });
