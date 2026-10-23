@@ -22,6 +22,7 @@ public class CompilerTests
     [Theory]
     [InlineData("TicTacToe.cs")]
     [InlineData("Konstrukte.cs")]
+    [InlineData("Schleifen.cs")]
     public void Verhaelt_sich_wie_natives_CSharp(string datei)
     {
         var quelltext = Programm(datei);
@@ -61,6 +62,7 @@ public class CompilerTests
     [Theory]
     [InlineData("TicTacToe.cs")]
     [InlineData("Konstrukte.cs")]
+    [InlineData("Schleifen.cs")]
     public void Hoechstens_acht_Befehle_pro_Zeile(string datei)
     {
         var r = Uebersetze(Programm(datei));
@@ -100,7 +102,12 @@ public class CompilerTests
     }
 
     [Theory]
-    [InlineData("[Oid] void A() { while (a < 3) a++; }", 3, "Schleifen")]
+    [InlineData("[Oid] void A() { while (a < 3) a++; }", 3, "while")]
+    [InlineData("[Oid] void A() { for (int i = 0; i < a; i++) Play(\"x\"); }", 3, "Grenze muss konstant")]
+    [InlineData("[Oid] void A() { for (int i = 0; i < 1000; i++) a++; }", 3, "mehr als 100")]
+    [InlineData("[Oid] void A() { for (int i = 0; i < 3; i++) i = 5; }", 3, "Schleifenvariable")]
+    [InlineData("[Oid] void A() { for (int i = 0; i < 3; i++) { if (a == i) break; } }", 3, "break")]
+    [InlineData("[Oid] void A() { for (int i = 0; i < 3; i *= 2) a++; }", 3, "Schritt")]
     [InlineData("[Oid] void A() { B(); } void B() { A(); }", 3, "Rekursion")]
     [InlineData("[Oid] void A() { Sag(\"x\"); }", 3, "Unbekannte Methode")]
     [InlineData("[Oid] void A() { a = b; }", 3, "„b“ ist unbekannt")]
@@ -113,6 +120,21 @@ public class CompilerTests
         var r = ProgramCompiler.Compile($"class F : TipToi\n{{\n    {member}\n    int a;\n}}");
         Assert.False(r.Success);
         Assert.Contains(r.Errors, e => e.Line == zeile && e.Message.Contains(text));
+    }
+
+    [Fact]
+    public void Schleifenvariable_ist_im_Rumpf_konstant()
+    {
+        var r = Uebersetze("""
+            class S : TipToi
+            {
+                int summe;
+                [Oid] void A() { summe = 0; for (int i = 1; i <= 4; i++) { summe += i; if (i == 3) Play("drei"); } }
+            }
+            """);
+        // Bedingungen auf i sind schon beim Übersetzen entschieden: eine einzige Zeile ohne Sprung
+        var zeile = Assert.Single(Assert.Single(r.Scripts).Lines);
+        Assert.Equal("$summe := 0 $summe += 1 $summe += 2 $summe += 3 P(drei) $summe += 4", zeile);
     }
 
     [Fact]

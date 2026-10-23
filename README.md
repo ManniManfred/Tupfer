@@ -139,9 +139,16 @@ Apfel:
 | `+ - * / % & \| ^ << >>`, `++`, `+=` … | Rechenbefehle, Zwischenergebnisse in Hilfsregistern |
 | `Play("a")`, `PlayAll("a", "b")`, `PlayRandom("a", "b")` | `P(a)`, `PA(a,b)`, `P(a,b)` |
 | `x = Random(6);`, `Timer(n)`, `Cancel()` | Pseudo-Zufallszahl 0–5, `T(…)`, `C` |
+| `for (int i = 0; i < 5; i++)`, `foreach (var x in new[] { 2, 4 })` | wird ausgerollt (feste Anzahl, höchstens 100 Durchläufe) |
 
-Nicht möglich, weil der Stift es nicht kann: Schleifen, Rekursion, Rückgabewerte, Texte,
-Arrays und Objekte – der Übersetzer meldet das mit Zeilennummer. Code nach einem `if`,
+Schleifen mit fester Anzahl werden beim Übersetzen ausgerollt: Jeder Durchlauf wird eine Kopie
+des Rumpfs, in der die Schleifenvariable eine Konstante ist. Bedingungen, die nur von ihr abhängen
+(`if (i == 2)`), sind damit schon beim Übersetzen entschieden und kosten nichts. Ein `if` auf
+Registern in jedem Durchlauf erzeugt dagegen pro Durchlauf einen Sprung.
+
+Nicht möglich, weil der Stift es nicht kann: `while`/`do`-Schleifen, `break`/`continue` in
+Schleifen, Rekursion, Rückgabewerte, Texte, Arrays und Objekte – der Übersetzer meldet das mit
+Zeilennummer. Code nach einem `if`,
 Bedingungen auf berechneten Werten und Zeilen mit mehr als 8 Befehlen werden auf Hilfsskripte
 verteilt, die per Sprung (`J`) folgen; der Stift springt erst, wenn die laufende Ausgabe zu Ende ist.
 

@@ -83,13 +83,34 @@ public class ProgramCompiler
     {
         public required MethodDeclarationSyntax Method { get; init; }
         public required string Prefix { get; init; }
-        public Dictionary<string, string> Locals { get; } = new();
-        public Dictionary<string, ushort> LocalConsts { get; } = new();
+        public Dictionary<string, string> Locals { get; init; } = new();
+        public Dictionary<string, ushort> LocalConsts { get; init; } = new();
+
+        /// <summary>Schleifenvariablen ausgerollter Schleifen (Konstanten, die nicht geändert werden dürfen).</summary>
+        public HashSet<string> LoopVars { get; init; } = new();
 
         /// <summary>Sprungziel für return (null = Skriptende).</summary>
         public string? Ret { get; init; }
 
         public required IReadOnlyList<string> CallChain { get; init; }
+
+        /// <summary>Kontext für einen Durchlauf einer ausgerollten Schleife: <paramref name="name"/> ist dort konstant.</summary>
+        public MethodCtx WithLoopValue(string name, ushort value)
+        {
+            var child = new MethodCtx
+            {
+                Method = Method,
+                Prefix = Prefix,
+                Ret = Ret,
+                CallChain = CallChain,
+                Locals = new Dictionary<string, string>(Locals),
+                LocalConsts = new Dictionary<string, ushort>(LocalConsts),
+                LoopVars = new HashSet<string>(LoopVars) { name },
+            };
+            child.Locals.Remove(name);
+            child.LocalConsts[name] = value;
+            return child;
+        }
     }
 
     abstract record Item(MethodCtx Ctx);
@@ -670,13 +691,23 @@ public class ProgramCompiler
                 case SwitchStatementSyntax sw:
                     return Switch(sw, ctx, guard, cmds, rest, cont);
 
-                case WhileStatementSyntax or DoStatementSyntax or ForStatementSyntax or ForEachStatementSyntax:
-                    throw new CompileException(stmt,
-                        "Schleifen sind auf dem Stift nicht möglich (ein Skript läuft nur einmal pro Antippen). " +
-                        "Wiederholungen entstehen durch erneutes Antippen; Zustand in Feldern speichern.");
+                case ForStatementSyntax forStmt:
+                    queue.InsertRange(i + 1, UnrollFor(forStmt, ctx));
+                    break;
 
-                case BreakStatementSyntax:
-                    throw new CompileException(stmt, "break ist nur am Ende eines case-Abschnitts erlaubt.");
+                case ForEachStatementSyntax forEach:
+                    queue.InsertRange(i + 1, UnrollForEach(forEach, ctx));
+                    break;
+
+                case WhileStatementSyntax or DoStatementSyntax:
+                    throw new CompileException(stmt,
+                        "while- und do-Schleifen sind auf dem Stift nicht möglich (ein Skript läuft nur einmal pro Antippen). " +
+                        "Möglich sind for-Schleifen mit fester Anzahl; Wiederholungen sonst durch erneutes Antippen.");
+
+                case BreakStatementSyntax or ContinueStatementSyntax:
+                    throw new CompileException(stmt, stmt is BreakStatementSyntax
+                        ? "break ist nur am Ende eines case-Abschnitts erlaubt (nicht in Schleifen)."
+                        : "continue ist nicht möglich – stattdessen den Rest des Schleifenrumpfs in ein if setzen.");
 
                 default:
                     throw new CompileException(stmt, $"Diese Anweisung wird nicht unterstützt: {stmt.Kind()}");
@@ -684,6 +715,17 @@ public class ProgramCompiler
         }
         return new List<Line> { Finish(guard, cmds, cont) };
     }
+
+    /// <summary>Wird die Variable irgendwo in der Methode nach der Deklaration verändert?</summary>
+    static bool IsAssigned(MethodDeclarationSyntax method, string name) =>
+        method.DescendantNodes().Any(n => n switch
+        {
+            AssignmentExpressionSyntax a => NameOf(Unwrap(a.Left)) == name,
+            PostfixUnaryExpressionSyntax p => NameOf(Unwrap(p.Operand)) == name,
+            PrefixUnaryExpressionSyntax p when p.Kind() is SyntaxKind.PreIncrementExpression or SyntaxKind.PreDecrementExpression
+                => NameOf(Unwrap(p.Operand)) == name,
+            _ => false,
+        });
 
     static bool IsCondition(ExpressionSyntax e) => Unwrap(e).Kind() is SyntaxKind.LogicalAndExpression
         or SyntaxKind.LogicalOrExpression or SyntaxKind.LogicalNotExpression or SyntaxKind.EqualsExpression
@@ -704,6 +746,15 @@ public class ProgramCompiler
                     ?? throw new CompileException(v, "Konstanten brauchen einen konstanten Wert.") : (ushort)0;
                 continue;
             }
+            // Nie geänderte Variable mit konstantem Wert (z. B. int q = i * i in einer ausgerollten Schleife):
+            // als Konstante behandeln, spart Register und Befehle
+            if (v.Initializer != null && !IsAssigned(ctx.Method, name) && ConstEval(v.Initializer.Value, ctx) is { } constant)
+            {
+                ctx.Locals.Remove(name);
+                ctx.LocalConsts[name] = constant;
+                continue;
+            }
+            ctx.LocalConsts.Remove(name);
             var reg = $"{ctx.Prefix}_{name}";
             ctx.Locals[name] = reg;
             if (v.Initializer != null && IsCondition(v.Initializer.Value))
@@ -742,6 +793,8 @@ public class ProgramCompiler
         if (RegisterOf(e, ctx) is { } reg)
             return reg;
         var name = NameOf(Unwrap(e));
+        if (ctx.LoopVars.Contains(name))
+            throw new CompileException(e, $"Die Schleifenvariable „{name}“ darf im Schleifenrumpf nicht geändert werden.");
         if (_consts.ContainsKey(name) || ctx.LocalConsts.ContainsKey(name))
             throw new CompileException(e, $"„{name}“ ist eine Konstante und kann nicht geändert werden.");
         throw new CompileException(e, $"„{e}“ ist kein Feld und keine Variable.");
@@ -838,8 +891,15 @@ public class ProgramCompiler
         };
         for (int i = 0; i < parameters.Count; i++)
         {
-            var reg = $"{prefix}_{parameters[i].Identifier.Text}";
-            callee.Locals[parameters[i].Identifier.Text] = reg;
+            var pname = parameters[i].Identifier.Text;
+            // konstantes Argument und Parameter wird nicht verändert → Konstante statt Register
+            if (values[i].IsConst && !IsAssigned(method, pname))
+            {
+                callee.LocalConsts[pname] = values[i].Value;
+                continue;
+            }
+            var reg = $"{prefix}_{pname}";
+            callee.Locals[pname] = reg;
             cmds.Add(Set(reg, values[i]));
         }
 
@@ -911,6 +971,15 @@ public class ProgramCompiler
     List<Line> Conditional(List<(List<List<Cond>> Dnf, List<Item> Body)> branches, List<Item>? elseBody, List<Cmd> prep,
         MethodCtx ctx, List<Cond> guard, List<Cmd> cmds, List<Item> rest, string? cont)
     {
+        // Stehen alle Bedingungen schon beim Übersetzen fest (z. B. i == 2 in einer ausgerollten Schleife),
+        // wird der passende Zweig direkt eingesetzt – ohne Bedingung und ohne Sprung.
+        bool IsConstant(List<List<Cond>> dnf) => dnf.Count == 0 || dnf.Count == 1 && dnf[0].Count == 0;
+        if (prep.Count == 0 && branches.All(b => IsConstant(b.Dnf)))
+        {
+            var chosen = branches.FirstOrDefault(b => b.Dnf.Count == 1).Body ?? elseBody ?? new List<Item>();
+            return Seq(chosen.Concat(rest).ToList(), guard, cmds, cont);
+        }
+
         // Bedingungen werden vor den Befehlen einer Zeile geprüft. Ändern vorangehende Befehle Register,
         // die in den Bedingungen vorkommen (oder müssen Werte erst berechnet werden), geht es in einem
         // Hilfsskript weiter.
@@ -934,6 +1003,92 @@ public class ProgramCompiler
                 lines.AddRange(Seq(body, guard.Concat(term).Distinct().ToList(), cmds, after));
         lines.AddRange(Seq(elseBody ?? new List<Item>(), guard, cmds, after));
         return lines;
+    }
+
+    // ---------- Schleifen ----------
+
+    public const int MaxLoopIterations = 100;
+
+    /// <summary>
+    /// Rollt for (int i = A; i &lt; B; i++) mit konstanten Grenzen aus. Jeder Durchlauf wird eine Kopie
+    /// des Rumpfs, in der i eine Konstante ist.
+    /// </summary>
+    List<Item> UnrollFor(ForStatementSyntax f, MethodCtx ctx)
+    {
+        const string form = "Nur for-Schleifen mit fester Anzahl sind möglich, z. B. for (int i = 0; i < 5; i++).";
+        if (f.Declaration is not { Variables.Count: 1 } decl || f.Initializers.Count > 0
+            || decl.Variables[0].Initializer is not { } init)
+            throw new CompileException(f, form + " Die Schleifenvariable muss im for deklariert werden.");
+        var name = decl.Variables[0].Identifier.Text;
+        long start = ConstEval(init.Value, ctx) ?? throw new CompileException(init.Value, "Der Startwert muss konstant sein. " + form);
+
+        // Bedingung: i < N, i <= N, i > N, i >= N, i != N (oder gespiegelt)
+        if (f.Condition is not BinaryExpressionSyntax cond || CmpOp(cond.Kind()) is not { } op)
+            throw new CompileException((SyntaxNode?)f.Condition ?? f, "Die Bedingung muss ein Vergleich mit der Schleifenvariable sein. " + form);
+        ExpressionSyntax limitExpr;
+        if (NameOf(Unwrap(cond.Left)) == name && Unwrap(cond.Left) is IdentifierNameSyntax)
+            limitExpr = cond.Right;
+        else if (NameOf(Unwrap(cond.Right)) == name && Unwrap(cond.Right) is IdentifierNameSyntax)
+        {
+            limitExpr = cond.Left;
+            op = op switch { "<" => ">", ">" => "<", "<=" => ">=", ">=" => "<=", _ => op };
+        }
+        else
+            throw new CompileException(cond, "Die Bedingung muss die Schleifenvariable mit einer Konstanten vergleichen. " + form);
+        long limit = ConstEval(limitExpr, ctx) ?? throw new CompileException(limitExpr, "Die Grenze muss konstant sein. " + form);
+
+        if (f.Incrementors.Count != 1)
+            throw new CompileException(f, "Die Schleife braucht genau einen Schritt, z. B. i++ oder i += 2.");
+        long step = Step(f.Incrementors[0], name, ctx);
+
+        var values = new List<ushort>();
+        for (long v = start; Compare((ushort)v, op, (ushort)limit) && v is >= 0 and <= ushort.MaxValue; v += step)
+        {
+            if (values.Count >= MaxLoopIterations)
+                throw new CompileException(f, $"Die Schleife hat mehr als {MaxLoopIterations} Durchläufe – das wäre zu viel Code für den Stift.");
+            values.Add((ushort)v);
+        }
+        return values.Select(v => (Item)new StmtItem(f.Statement, ctx.WithLoopValue(name, v))).ToList();
+    }
+
+    long Step(ExpressionSyntax inc, string name, MethodCtx ctx)
+    {
+        long sign;
+        switch (inc)
+        {
+            case PostfixUnaryExpressionSyntax or PrefixUnaryExpressionSyntax
+                when inc.Kind() is SyntaxKind.PostIncrementExpression or SyntaxKind.PreIncrementExpression
+                    or SyntaxKind.PostDecrementExpression or SyntaxKind.PreDecrementExpression:
+                var operand = inc is PostfixUnaryExpressionSyntax p ? p.Operand : ((PrefixUnaryExpressionSyntax)inc).Operand;
+                if (NameOf(operand) != name)
+                    break;
+                return inc.Kind() is SyntaxKind.PostIncrementExpression or SyntaxKind.PreIncrementExpression ? 1 : -1;
+            case AssignmentExpressionSyntax a when NameOf(a.Left) == name
+                && a.Kind() is SyntaxKind.AddAssignmentExpression or SyntaxKind.SubtractAssignmentExpression:
+                sign = a.Kind() == SyntaxKind.AddAssignmentExpression ? 1 : -1;
+                var k = ConstEval(a.Right, ctx) ?? throw new CompileException(a.Right, "Die Schrittweite muss konstant sein.");
+                if (k == 0)
+                    throw new CompileException(a.Right, "Schrittweite 0 ergibt eine Endlosschleife.");
+                return sign * k;
+        }
+        throw new CompileException(inc, $"Als Schritt sind nur {name}++, {name}--, {name} += k und {name} -= k möglich.");
+    }
+
+    /// <summary>Rollt foreach (var x in new[] { 1, 2, 3 }) mit konstanten Werten aus.</summary>
+    List<Item> UnrollForEach(ForEachStatementSyntax f, MethodCtx ctx)
+    {
+        var elements = f.Expression switch
+        {
+            ImplicitArrayCreationExpressionSyntax a => a.Initializer.Expressions,
+            ArrayCreationExpressionSyntax { Initializer: { } init } => init.Expressions,
+            CollectionExpressionSyntax c => SyntaxFactory.SeparatedList(c.Elements.OfType<ExpressionElementSyntax>().Select(e => e.Expression)),
+            _ => throw new CompileException(f.Expression, "foreach ist nur über feste Werte möglich, z. B. foreach (var x in new[] { 1, 2, 3 })."),
+        };
+        if (elements.Count > MaxLoopIterations)
+            throw new CompileException(f, $"Mehr als {MaxLoopIterations} Werte – das wäre zu viel Code für den Stift.");
+        var name = f.Identifier.Text;
+        return elements.Select(e => (Item)new StmtItem(f.Statement, ctx.WithLoopValue(name,
+            ConstEval(e, ctx) ?? throw new CompileException(e, "Die Werte müssen konstant sein.")))).ToList();
     }
 
     // ---------- Nachbearbeitung ----------
