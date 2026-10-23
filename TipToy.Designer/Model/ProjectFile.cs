@@ -12,6 +12,9 @@ public class ProjectFile
     public string Welcome { get; set; } = "";
     public string MediaPath { get; set; } = "";
     public string ExtraYaml { get; set; } = "";
+
+    /// <summary>C#-Programm, aus dem Skripte erzeugt werden (leer = keins).</summary>
+    public string Program { get; set; } = "";
     public int? Replay { get; set; }
     public int? Stop { get; set; }
 
@@ -32,6 +35,12 @@ public class ScriptEntry
     public string Name { get; set; } = "";
     public int? Code { get; set; }
     public List<string> Lines { get; set; } = new();
+
+    /// <summary>Vom C#-Programm erzeugt (wird beim Übersetzen ersetzt).</summary>
+    public bool Generated { get; set; }
+
+    /// <summary>Hilfsskript des C#-Programms (wird nur per Sprung erreicht, nicht gedruckt).</summary>
+    public bool Helper { get; set; }
 }
 
 public class SpeakEntry

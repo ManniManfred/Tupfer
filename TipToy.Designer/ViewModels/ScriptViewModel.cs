@@ -18,6 +18,12 @@ public partial class ScriptViewModel : ObservableObject
     /// <summary>Skriptzeilen, eine pro Zeile.</summary>
     [ObservableProperty] string _text = "";
 
+    /// <summary>Vom C#-Programm erzeugt – nicht von Hand bearbeitbar.</summary>
+    [ObservableProperty] bool _generated;
+
+    /// <summary>Hilfsskript des C#-Programms (wird nur per Sprung erreicht).</summary>
+    [ObservableProperty] bool _helper;
+
     partial void OnNameChanged(string? oldValue, string newValue) => _project.OnScriptRenamed(this, oldValue, newValue);
 
     partial void OnCodeChanged(int? value) => _project.RefreshAreas();
@@ -26,6 +32,8 @@ public partial class ScriptViewModel : ObservableObject
     {
         Name = Name,
         Code = Code,
+        Generated = Generated,
+        Helper = Helper,
         Lines = Text.Split('\n').Select(l => l.TrimEnd('\r')).Where(l => !string.IsNullOrWhiteSpace(l)).ToList(),
     };
 }

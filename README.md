@@ -14,6 +14,8 @@ Avalonia-Anwendung, mit der man eigene tiptoi-Seiten gestalten und drucken kann.
 | `tic-tac-toi.pdf` | Druckvorlage mit Spielfeld und OID-Codes |
 | `TipToy.Designer/` | Avalonia-Anwendung zum Gestalten von tiptoi-Seiten (siehe unten) |
 | `examples/tic-tac-toi/` | Das Tic-Tac-Toe-Spiel als Designer-Projekt mit Spielfeld-Grafik |
+| `examples/tic-tac-toi-csharp/` | Das Tic-Tac-Toe-Spiel als C#-Programm (siehe „Programmieren in C#“) |
+| `TipToy.Designer.Tests/` | Tests für den C#-Übersetzer |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
 | `TipToy/` | Experimentelles C#-Konsolenprogramm (erzeugt keine gültigen Codes, siehe unten) |
 | `TipToy.sln` | Visual-Studio-Solution |
@@ -75,6 +77,7 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   verschieben und in der Größe ändern. Jede Fläche wird einem Skript oder einem Sondercode
   (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.
 - **Skripte:** tttool-Skripte bearbeiten, mit Kurzreferenz der Befehle.
+- **Programm (C#):** Spiellogik in C# schreiben statt in der Skriptsprache (siehe unten).
 - **Sprachausgabe:** Texte, die beim Bauen per Text-to-Speech vertont werden; alternativ eigene
   Audiodateien (`.ogg`, `.mp3`, `.wav`) im Medienverzeichnis.
 - **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
@@ -99,6 +102,52 @@ unter *Projekt* „GME mit externem tttool bauen“ aktivieren.
 5. *Erstellen → Seiten als PDF* und mit 1200 dpi in Originalgröße drucken.
 
 Projekte werden als `*.tiptoy.json` gespeichert; Pfade zu Hintergrundbildern relativ zur Projektdatei.
+
+## Programmieren in C#
+
+Statt die Skriptsprache von tttool zu verwenden, kann die Spiellogik im Tab *Programm (C#)* als
+C#-Klasse geschrieben werden. Der Designer übersetzt sie in Skripte für den Stift (F6, oder
+automatisch beim Bauen und Exportieren):
+
+```csharp
+class Zaehlspiel : TipToi
+{
+    int punkte;
+
+    [Oid] void Apfel()
+    {
+        if (punkte < 5) { punkte++; Play("richtig"); }
+        else            { punkte = 0; Play("fertig"); }
+    }
+}
+```
+
+wird zu
+
+```yaml
+Apfel:
+- $punkte < 5? $punkte += 1 P(richtig)
+- $punkte := 0 P(fertig)
+```
+
+| C# | Stift |
+| --- | --- |
+| Felder (`int`, `bool` …), Initialwerte | Register (0 bis 65535), `init` |
+| `[Oid] void Name()` | Skript zum Antippen; in *Seiten* einer Fläche zuordnen |
+| andere Methoden (auch mit Parametern und `return`) | werden beim Aufruf eingesetzt |
+| `if`/`else`/`switch`, `&&`, `\|\|`, `!` | Zeilen mit Bedingungen (die erste passende wird ausgeführt) |
+| `+ - * / % & \| ^ << >>`, `++`, `+=` … | Rechenbefehle, Zwischenergebnisse in Hilfsregistern |
+| `Play("a")`, `PlayAll("a", "b")`, `PlayRandom("a", "b")` | `P(a)`, `PA(a,b)`, `P(a,b)` |
+| `x = Random(6);`, `Timer(n)`, `Cancel()` | Pseudo-Zufallszahl 0–5, `T(…)`, `C` |
+
+Nicht möglich, weil der Stift es nicht kann: Schleifen, Rekursion, Rückgabewerte, Texte,
+Arrays und Objekte – der Übersetzer meldet das mit Zeilennummer. Code nach einem `if`,
+Bedingungen auf berechneten Werten und Zeilen mit mehr als 8 Befehlen werden auf Hilfsskripte
+verteilt, die per Sprung (`J`) folgen; der Stift springt erst, wenn die laufende Ausgabe zu Ende ist.
+
+`examples/tic-tac-toi-csharp/` enthält Tic-Tac-Toe als C#-Programm. Die Datei `TipToi.cs` dort
+liefert IntelliSense in der IDE. Die Tests in `TipToy.Designer.Tests` vergleichen das übersetzte
+Programm mit dem echten C#-Programm und mit dem Original-Spiel (`dotnet test TipToy.Designer.Tests`).
 
 ## Drucker testen
 

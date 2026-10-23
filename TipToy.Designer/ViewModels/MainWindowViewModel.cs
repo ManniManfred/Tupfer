@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TipToy.Designer.Compiler;
 using TipToy.Designer.Gme;
 using TipToy.Designer.Model;
 using TipToy.Designer.Oid;
@@ -33,6 +34,10 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] double _zoom = 1.0;
     [ObservableProperty] bool _printBackground = true;
     [ObservableProperty] int _selectedTab;
+    [ObservableProperty] string _programErrors = "";
+    [ObservableProperty] string _programOutput = "";
+
+    const int ProgramTab = 2;
 
     public string Title => $"TipToy Designer – {(FilePath == null ? "Neues Projekt" : Path.GetFileName(FilePath))}";
 
@@ -72,7 +77,102 @@ public partial class MainWindowViewModel : ObservableObject
     {
         Project = CreateDefaultProject();
         FilePath = null;
+        ProgramErrors = ProgramOutput = "";
         Log("Neues Projekt angelegt.");
+    }
+
+    // ---------- C#-Programm ----------
+
+    /// <summary>Übersetzt das C#-Programm, falls vorhanden. false bei Fehlern.</summary>
+    bool EnsureProgram() => string.IsNullOrWhiteSpace(Project.Program) || TryCompileProgram(quiet: true);
+
+    [RelayCommand]
+    void CompileProgram()
+    {
+        if (string.IsNullOrWhiteSpace(Project.Program))
+        {
+            ProgramErrors = "Noch kein Programm – „Beispiel einfügen“ zeigt, wie es geht.";
+            return;
+        }
+        TryCompileProgram(quiet: false);
+    }
+
+    bool TryCompileProgram(bool quiet)
+    {
+        var result = ProgramCompiler.Compile(Project.Program);
+        if (!result.Success)
+        {
+            ProgramErrors = string.Join(Environment.NewLine, result.Errors);
+            Log($"C#-Programm: {result.Errors.Count} Fehler – siehe Tab „Programm (C#)“.");
+            SelectedTab = ProgramTab;
+            return false;
+        }
+        if (Project.ApplyProgram(result) is { } error)
+        {
+            ProgramErrors = error;
+            Log(error);
+            SelectedTab = ProgramTab;
+            return false;
+        }
+        int helpers = result.Scripts.Count - result.EntryPoints.Count;
+        ProgramErrors = $"Keine Fehler. {result.EntryPoints.Count} Skripte zum Antippen, {helpers} Hilfsskripte.";
+        var sb = new System.Text.StringBuilder();
+        if (result.Init != "")
+            sb.AppendLine($"init: {result.Init}").AppendLine();
+        foreach (var s in result.Scripts)
+        {
+            var code = Project.Scripts.FirstOrDefault(x => x.Name == s.Name)?.Code;
+            sb.AppendLine($"{s.Name}:   # OID {code}{(result.EntryPoints.Contains(s.Name) ? "" : ", Hilfsskript")}");
+            foreach (var l in s.Lines)
+                sb.AppendLine($"- {l}");
+        }
+        ProgramOutput = sb.ToString();
+        if (!quiet)
+            Log($"C#-Programm übersetzt: {result.EntryPoints.Count} Skripte zum Antippen, {helpers} Hilfsskripte.");
+        return true;
+    }
+
+    [RelayCommand]
+    void InsertProgramExample()
+    {
+        if (!string.IsNullOrWhiteSpace(Project.Program))
+        {
+            Log("Das Programm ist nicht leer – das Beispiel wird nur in ein leeres Programm eingefügt.");
+            return;
+        }
+        Project.Program = ProgramExample;
+    }
+
+    const string ProgramExample = """
+        // Jede Methode mit [Oid] wird ein Skript zum Antippen (in „Seiten“ einer Fläche zuordnen).
+        // Felder der Klasse sind die Register des Stifts: ganze Zahlen von 0 bis 65535 oder bool.
+        // Play("name") spielt einen Text aus „Sprachausgabe“ oder eine Audiodatei.
+
+        class MeinSpiel : TipToi
+        {
+            int punkte;
+
+            [Oid] void Apfel()
+            {
+                if (punkte < 5)
+                {
+                    punkte++;
+                    Play("richtig");
+                }
+                else
+                {
+                    punkte = 0;
+                    Play("fertig");
+                }
+            }
+        }
+        """;
+
+    void AfterLoad()
+    {
+        ProgramErrors = ProgramOutput = "";
+        if (!string.IsNullOrWhiteSpace(Project.Program))
+            TryCompileProgram(quiet: true);
     }
 
     [RelayCommand]
@@ -106,6 +206,7 @@ public partial class MainWindowViewModel : ObservableObject
         Project = ProjectViewModel.FromFile(file, Path.GetDirectoryName(path)!, Log);
         FilePath = path;
         Log($"Projekt geladen: {path}");
+        AfterLoad();
     }
 
     void LoadYaml(string path)
@@ -113,6 +214,7 @@ public partial class MainWindowViewModel : ObservableObject
         var file = TttoolYaml.Import(path);
         Project = ProjectViewModel.FromFile(file, Path.GetDirectoryName(path)!, Log);
         FilePath = null;
+        AfterLoad();
         Log($"Importiert: {path} ({file.Scripts.Count} Skripte, {file.Speak.Count} Texte).");
         if (!string.IsNullOrWhiteSpace(file.ExtraYaml))
             Log("Hinweis: Nicht unterstützte Einträge wurden unter Projekt → Weitere YAML-Einträge übernommen.");
@@ -155,6 +257,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task ExportYaml() => Guard("YAML-Export", async () =>
     {
+        if (!EnsureProgram()) return;
         var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt";
         var path = await Dialogs!.SaveAsync("tttool-YAML exportieren", name + ".yaml", "tttool YAML", ".yaml");
         if (path == null) return;
@@ -173,6 +276,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task BuildGme() => Guard("GME-Erstellung", async () =>
     {
+        if (!EnsureProgram()) return;
         if (FilePath == null)
         {
             Log("Bitte das Projekt zuerst speichern – die GME-Datei wird neben der Projektdatei erzeugt.");
@@ -248,6 +352,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task ExportPdf() => Guard("PDF-Export", async () =>
     {
+        if (!EnsureProgram()) return;
         Project.AssignCodes();
         var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "seiten";
         var path = await Dialogs!.SaveAsync("Seiten als PDF exportieren", name + ".pdf", "PDF", ".pdf");
@@ -279,6 +384,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task ExportOidTable() => Guard("OID-Tabelle", async () =>
     {
+        if (!EnsureProgram()) return;
         Project.AssignCodes();
         var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt";
         var path = await Dialogs!.SaveAsync("OID-Tabelle exportieren", name + "-oids.pdf", "PDF", ".pdf");
@@ -287,7 +393,7 @@ public partial class MainWindowViewModel : ObservableObject
         var entries = new List<(string, int)> { ("Produkt", (int)Project.ProductId) };
         if (Project.Replay is { } r) entries.Add(("Wiederholen", r));
         if (Project.Stop is { } s) entries.Add(("Stopp", s));
-        entries.AddRange(Project.Scripts.Where(x => x.Code.HasValue).Select(x => (x.Name, x.Code!.Value)));
+        entries.AddRange(Project.Scripts.Where(x => x.Code.HasValue && !x.Helper).Select(x => (x.Name, x.Code!.Value)));
 
         PdfWriter.WriteOidTable(path, Project.Comment, entries, Project.Dpi, Project.PixelSize);
         Log($"OID-Tabelle geschrieben: {path}");
@@ -423,6 +529,11 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     void RemoveScript()
     {
+        if (Project.SelectedScript is { Generated: true })
+        {
+            Log("Dieses Skript stammt aus dem C#-Programm – bitte dort ändern.");
+            return;
+        }
         if (Project.SelectedScript is { } s)
             Project.RemoveScript(s);
         Project.SelectedScript = Project.Scripts.FirstOrDefault();

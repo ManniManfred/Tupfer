@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TipToy", "TipToy\TipToy.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TipToy.Designer", "TipToy.Designer\TipToy.Designer.csproj", "{6D941097-9BDC-428C-8B08-442A0ABAE4C9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TipToy.Designer.Tests", "TipToy.Designer.Tests\TipToy.Designer.Tests.csproj", "{89E64A3C-5C8E-4A4D-A4E7-E1A58481865C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{6D941097-9BDC-428C-8B08-442A0ABAE4C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D941097-9BDC-428C-8B08-442A0ABAE4C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D941097-9BDC-428C-8B08-442A0ABAE4C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89E64A3C-5C8E-4A4D-A4E7-E1A58481865C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89E64A3C-5C8E-4A4D-A4E7-E1A58481865C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89E64A3C-5C8E-4A4D-A4E7-E1A58481865C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89E64A3C-5C8E-4A4D-A4E7-E1A58481865C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

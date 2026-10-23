@@ -22,6 +22,7 @@ public partial class ProjectViewModel : ObservableObject
     [ObservableProperty] string _welcome = "";
     [ObservableProperty] string _mediaPath = "";
     [ObservableProperty] string _extraYaml = "";
+    [ObservableProperty] string _program = "";
     [ObservableProperty] int? _replay;
     [ObservableProperty] int? _stop;
 
@@ -84,6 +85,34 @@ public partial class ProjectViewModel : ObservableObject
         RefreshAreas();
     }
 
+    /// <summary>
+    /// Ersetzt die vom C#-Programm erzeugten Skripte. Codes bleiben pro Name erhalten,
+    /// damit gedruckte Seiten gültig bleiben. Liefert eine Fehlermeldung oder null.
+    /// </summary>
+    public string? ApplyProgram(Compiler.CompileResult result)
+    {
+        var manual = Scripts.Where(s => !s.Generated).Select(s => s.Name).ToHashSet();
+        var clash = result.Scripts.FirstOrDefault(s => manual.Contains(s.Name));
+        if (clash != null)
+            return $"Das C#-Programm erzeugt das Skript „{clash.Name}“, das es schon als normales Skript gibt. Bitte eines umbenennen.";
+
+        var oldCodes = Scripts.Where(s => s.Generated).ToDictionary(s => s.Name, s => s.Code);
+        var selected = SelectedScript?.Name;
+        foreach (var old in Scripts.Where(s => s.Generated).ToList())
+            RemoveScript(old);
+        foreach (var cs in result.Scripts)
+        {
+            var script = AddScript(cs.Name, string.Join("\n", cs.Lines));
+            script.Generated = true;
+            script.Helper = !result.EntryPoints.Contains(cs.Name);
+            script.Code = oldCodes.GetValueOrDefault(cs.Name);
+        }
+        Init = result.Init;
+        AssignCodes();
+        SelectedScript = Scripts.FirstOrDefault(s => s.Name == selected) ?? Scripts.FirstOrDefault();
+        return null;
+    }
+
     public string UniqueScriptName(string prefix)
     {
         for (int i = 1; ; i++)
@@ -124,6 +153,7 @@ public partial class ProjectViewModel : ObservableObject
         Welcome = Welcome,
         MediaPath = MediaPath,
         ExtraYaml = ExtraYaml,
+        Program = Program,
         Replay = Replay,
         Stop = Stop,
         TttoolPath = TttoolPath,
@@ -147,6 +177,7 @@ public partial class ProjectViewModel : ObservableObject
             Welcome = f.Welcome,
             MediaPath = f.MediaPath,
             ExtraYaml = f.ExtraYaml,
+            Program = f.Program ?? "",
             Replay = f.Replay,
             Stop = f.Stop,
             TttoolPath = string.IsNullOrWhiteSpace(f.TttoolPath) ? "tttool" : f.TttoolPath,
@@ -158,6 +189,8 @@ public partial class ProjectViewModel : ObservableObject
         {
             var script = vm.AddScript(s.Name, string.Join("\n", s.Lines));
             script.Code = s.Code;
+            script.Generated = s.Generated;
+            script.Helper = s.Helper;
         }
         foreach (var s in f.Speak)
             vm.Speak.Add(new SpeakViewModel { Name = s.Name, Text = s.Text });
