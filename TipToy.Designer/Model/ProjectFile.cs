@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace TipToy.Designer.Model;
 
 /// <summary>Speicherformat eines Designer-Projekts (*.tiptoy.json).</summary>
@@ -54,8 +56,61 @@ public class PageEntry
     public string Name { get; set; } = "";
     public double WidthMm { get; set; } = 210;
     public double HeightMm { get; set; } = 297;
-    public string BackgroundImage { get; set; } = "";
+
+    /// <summary>Nur noch zum Laden alter Projekte: wird beim Öffnen in ein Bildelement umgewandelt.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? BackgroundImage { get; set; }
+
+    /// <summary>Bilder und Texte in Zeichenreihenfolge (das letzte liegt oben).</summary>
+    public List<ElementEntry> Elements { get; set; } = new();
     public List<AreaEntry> Areas { get; set; } = new();
+}
+
+public enum ElementKind
+{
+    Image,
+    Text,
+}
+
+public enum TextAlign
+{
+    Left,
+    Center,
+    Right,
+}
+
+/// <summary>
+/// Ein Bild oder Text auf der Seite. X/Y/Width/Height (mm) beschreiben den ungedrehten Rahmen,
+/// gedreht wird um dessen Mitte.
+/// </summary>
+public class ElementEntry
+{
+    public ElementKind Kind { get; set; }
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
+
+    /// <summary>Drehung im Uhrzeigersinn in Grad.</summary>
+    public double Rotation { get; set; }
+
+    // Bild
+    public string ImagePath { get; set; } = "";
+
+    /// <summary>Sichtbarer Ausschnitt des Bilds als Anteil (0–1) von Breite und Höhe.</summary>
+    public double CropX { get; set; }
+    public double CropY { get; set; }
+    public double CropWidth { get; set; } = 1;
+    public double CropHeight { get; set; } = 1;
+
+    // Text
+    public string Text { get; set; } = "";
+    public double FontSize { get; set; } = 24;
+    public string FontFamily { get; set; } = "";
+    public string Color { get; set; } = "#000000";
+    public bool Bold { get; set; }
+    public bool Italic { get; set; }
+    public TextAlign Align { get; set; }
 }
 
 public enum AreaTarget

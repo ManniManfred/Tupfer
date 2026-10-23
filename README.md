@@ -73,7 +73,8 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
 
 ### Funktionen
 
-- **Seiten:** Hintergrundbild laden (z. B. eigene Zeichnung) und mit der Maus Flächen aufziehen,
+- **Seiten:** Fotos und Bilder einfügen (drehen, zuschneiden, skalieren) und Texte setzen
+  (Schriftart, Größe, Farbe, Ausrichtung). Mit der Maus OID-Flächen aufziehen,
   verschieben und in der Größe ändern. Jede Fläche wird einem Skript oder einem Sondercode
   (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.
 - **Skripte:** tttool-Skripte bearbeiten, mit Kurzreferenz der Befehle.
@@ -82,7 +83,7 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   Audiodateien (`.ogg`, `.mp3`, `.wav`) im Medienverzeichnis.
 - **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
 - **Export:**
-  - Seiten als druckfertige PDF (Hintergrund + OID-Muster in den Flächen)
+  - Seiten als druckfertige PDF (Bilder und Texte + OID-Muster in den Flächen)
   - OID-Tabelle aller Codes als PDF, einzelne Flächen als PNG
   - tttool-YAML inkl. `*.codes.yaml`, Import vorhandener YAML-Dateien
   - GME-Datei bauen (Taste F5) – eingebaut, optional über das externe tttool
@@ -96,12 +97,13 @@ unter *Projekt* „GME mit externem tttool bauen“ aktivieren.
 ### Typischer Ablauf
 
 1. Projekt anlegen, Produkt-ID wählen (z. B. 900–999).
-2. Unter *Seiten* ein Hintergrundbild laden und Flächen aufziehen; eine Fläche als *Produkt (Anmelden)* markieren.
+2. Unter *Seiten* Bilder und Texte einfügen und Flächen aufziehen; eine Fläche als *Produkt (Anmelden)* markieren.
 3. Unter *Skripte* und *Sprachausgabe* festlegen, was beim Antippen passiert.
 4. *Erstellen → GME-Datei bauen* und die `.gme` auf den Stift kopieren.
 5. *Erstellen → Seiten als PDF* und mit 1200 dpi in Originalgröße drucken.
 
-Projekte werden als `*.tiptoy.json` gespeichert; Pfade zu Hintergrundbildern relativ zur Projektdatei.
+Projekte werden als `*.tiptoy.json` gespeichert; Pfade zu Bildern relativ zur Projektdatei.
+Hintergrundbilder älterer Projekte werden beim Öffnen zu einem seitenfüllenden Bild.
 
 ## Programmieren in C#
 

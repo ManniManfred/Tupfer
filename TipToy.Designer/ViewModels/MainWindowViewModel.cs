@@ -32,7 +32,13 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty] string _logText = "";
     [ObservableProperty] double _zoom = 1.0;
-    [ObservableProperty] bool _printBackground = true;
+    [ObservableProperty] bool _printElements = true;
+
+    /// <summary>Auf der Seite nur OID-Flächen bearbeiten, Bilder und Texte sind gesperrt.</summary>
+    [ObservableProperty] bool _areasOnly;
+
+    /// <summary>Die Anfasser eines Bilds schneiden zu statt zu skalieren.</summary>
+    [ObservableProperty] bool _cropMode;
     [ObservableProperty] int _selectedTab;
     [ObservableProperty] string _programErrors = "";
     [ObservableProperty] string _programOutput = "";
@@ -368,9 +374,7 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 WidthMm = page.WidthMm,
                 HeightMm = page.HeightMm,
-                Background = PrintBackground && page.Background != null
-                    ? ImageConverter.ToRgb(page.Background, page.WidthMm, page.HeightMm)
-                    : null,
+                Background = PrintElements ? ImageConverter.RenderPage(page) : null,
             };
             foreach (var a in page.Areas.Where(a => a.Oid != null && a.Width > 0 && a.Height > 0))
                 spec.Areas.Add(new OidArea(a.X, a.Y, a.Width, a.Height, a.Oid!.Value));
@@ -448,24 +452,74 @@ public partial class MainWindowViewModel : ObservableObject
         Project.SelectedPage = Project.Pages.Count > 0 ? Project.Pages[Math.Min(idx, Project.Pages.Count - 1)] : null;
     }
 
+    [RelayCommand] void Undo() => Project.History.Undo();
+    [RelayCommand] void Redo() => Project.History.Redo();
+
     [RelayCommand]
-    Task ChooseBackground() => Guard("Hintergrundbild", async () =>
+    Task InsertImage() => Guard("Bild einfügen", async () =>
     {
         if (Project.SelectedPage is not { } page) return;
-        var path = await Dialogs!.OpenAsync("Hintergrundbild wählen", "Bilder", "*.png", "*.jpg", "*.jpeg", "*.bmp");
+        var path = await Dialogs!.OpenAsync("Bild einfügen", "Bilder", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif", "*.webp");
         if (path == null) return;
-        page.BackgroundPath = path;
+        if (page.AddImage(path) != null)
+            AreasOnly = false;
     });
 
     [RelayCommand]
-    void ClearBackground()
+    void InsertText()
     {
-        if (Project.SelectedPage is { } page)
-            page.BackgroundPath = "";
+        if (Project.SelectedPage is not { } page) return;
+        page.AddText();
+        AreasOnly = false;
     }
 
     [RelayCommand]
-    void FitPageToBackground() => Project.SelectedPage?.FitHeightToBackground();
+    void DeleteElement()
+    {
+        if (Project.SelectedPage is { SelectedElement: { } element } page)
+        {
+            page.Elements.Remove(element);
+            page.SelectedElement = null;
+        }
+    }
+
+    [RelayCommand]
+    void DuplicateElement()
+    {
+        if (Project.SelectedPage is not { SelectedElement: { } element } page) return;
+        var copy = ElementViewModel.FromEntry(Project, element.ToEntry(null), null);
+        copy.X += 5;
+        copy.Y += 5;
+        page.Elements.Add(copy);
+        page.SelectedElement = copy;
+    }
+
+    [RelayCommand] void BringToFront() => MoveElement(toFront: true);
+    [RelayCommand] void SendToBack() => MoveElement(toFront: false);
+
+    void MoveElement(bool toFront)
+    {
+        if (Project.SelectedPage is not { SelectedElement: { } element } page) return;
+        int from = page.Elements.IndexOf(element), to = toFront ? page.Elements.Count - 1 : 0;
+        if (from != to)
+            page.Elements.Move(from, to);
+    }
+
+    /// <summary>Passt das Element ungedreht und mit gleichem Seitenverhältnis in die Seite ein.</summary>
+    [RelayCommand]
+    void FitElementToPage()
+    {
+        if (Project.SelectedPage is not { SelectedElement: { } e } page || e.Width <= 0 || e.Height <= 0) return;
+        double f = Math.Min(page.WidthMm / e.Width, page.HeightMm / e.Height);
+        Project.History.Change(() =>
+        {
+            e.Rotation = 0;
+            e.Width = Math.Round(e.Width * f, 1);
+            e.Height = Math.Round(e.Height * f, 1);
+            e.X = Math.Round((page.WidthMm - e.Width) / 2, 1);
+            e.Y = Math.Round((page.HeightMm - e.Height) / 2, 1);
+        });
+    }
 
     [RelayCommand]
     void DeleteArea()

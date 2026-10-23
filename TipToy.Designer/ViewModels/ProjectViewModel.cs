@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TipToy.Designer.Model;
 using TipToy.Designer.Services;
@@ -12,6 +13,7 @@ public partial class ProjectViewModel : ObservableObject
     public ProjectViewModel(Action<string> log)
     {
         _log = log;
+        History = new PageHistory(this);
     }
 
     [ObservableProperty] uint _productId = 900;
@@ -43,6 +45,32 @@ public partial class ProjectViewModel : ObservableObject
     public ObservableCollection<string> ScriptNames { get; } = new();
 
     public void Log(string message) => _log(message);
+
+    /// <summary>Rückgängig/Wiederholen für das Bearbeiten der Seiten.</summary>
+    public PageHistory History { get; }
+
+    partial void OnSelectedPageChanged(PageViewModel? value) => History.Attach(value);
+
+    readonly Dictionary<string, Bitmap?> _images = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Lädt ein Bild (zwischengespeichert, damit z. B. Rückgängig nicht neu lädt). null, wenn es fehlt.</summary>
+    public Bitmap? LoadImage(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return null;
+        if (_images.TryGetValue(path, out var bmp))
+            return bmp;
+        try
+        {
+            bmp = new Bitmap(path);
+        }
+        catch (Exception ex)
+        {
+            Log($"Bild '{path}' konnte nicht geladen werden: {ex.Message}");
+        }
+        _images[path] = bmp;
+        return bmp;
+    }
 
     partial void OnProductIdChanged(uint value) => RefreshAreas();
     partial void OnReplayChanged(int? value) => RefreshAreas();
