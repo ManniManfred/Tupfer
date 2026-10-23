@@ -2,7 +2,120 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="TipToy.Designer.App"
              RequestedThemeVariant="Light">
+  <Application.Resources>
+    <!-- Farben -->
+    <SolidColorBrush x:Key="AppBackground" Color="#F3F4F7" />
+    <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardBorder" Color="#E2E5EB" />
+    <SolidColorBrush x:Key="CanvasBackground" Color="#E6E9EF" />
+    <SolidColorBrush x:Key="TextPrimary" Color="#1F2A44" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#6B7280" />
+    <SolidColorBrush x:Key="Brand" Color="#E8590C" />
+
+    <!-- Symbole (Material Design Icons, 24×24) -->
+    <StreamGeometry x:Key="IconNew">M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M11,11H13V14H16V16H13V19H11V16H8V14H11V11Z</StreamGeometry>
+    <StreamGeometry x:Key="IconOpen">M19,20H4C2.89,20 2,19.1 2,18V6C2,4.89 2.89,4 4,4H10L12,6H19A2,2 0 0,1 21,8H21L4,8V18L6.14,10H23.21L20.93,18.5C20.7,19.37 19.92,20 19,20Z</StreamGeometry>
+    <StreamGeometry x:Key="IconSave">M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z</StreamGeometry>
+    <StreamGeometry x:Key="IconPlay">M8,5.14V19.14L19,12.14L8,5.14Z</StreamGeometry>
+    <StreamGeometry x:Key="IconCode">M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z</StreamGeometry>
+    <StreamGeometry x:Key="IconPrint">M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z</StreamGeometry>
+    <StreamGeometry x:Key="IconAdd">M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z</StreamGeometry>
+    <StreamGeometry x:Key="IconRemove">M19,13H5V11H19V13Z</StreamGeometry>
+    <StreamGeometry x:Key="IconDelete">M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z</StreamGeometry>
+    <StreamGeometry x:Key="IconImage">M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z</StreamGeometry>
+    <StreamGeometry x:Key="IconCopy">M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z</StreamGeometry>
+    <StreamGeometry x:Key="IconEdit">M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z</StreamGeometry>
+  </Application.Resources>
+
   <Application.Styles>
-    <FluentTheme />
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Light" Accent="#E8590C" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+
+    <!-- Karten -->
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{StaticResource CardBackground}" />
+      <Setter Property="BorderBrush" Value="{StaticResource CardBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="BoxShadow" Value="0 1 3 0 #14000000" />
+    </Style>
+
+    <!-- Texte -->
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+    <Style Selector="TextBlock.label">
+      <Setter Property="Margin" Value="0,10,0,4" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+    </Style>
+    <Style Selector=":is(TextBlock).hint">
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="LineHeight" Value="18" />
+    </Style>
+    <Style Selector="TextBlock.value">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+    <Style Selector="TextBox.code">
+      <Setter Property="FontFamily" Value="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <!-- Schaltflächen -->
+    <Style Selector="Button">
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,5" />
+    </Style>
+    <Style Selector="Button PathIcon">
+      <Setter Property="Width" Value="14" />
+      <Setter Property="Height" Value="14" />
+    </Style>
+    <Style Selector="Button > StackPanel">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="Spacing" Value="6" />
+    </Style>
+    <Style Selector="Button.tool">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="10,6" />
+    </Style>
+    <Style Selector="Button.tool PathIcon">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+    </Style>
+    <Style Selector="Button.danger PathIcon">
+      <Setter Property="Foreground" Value="#C62828" />
+    </Style>
+    <Style Selector="WrapPanel.buttons">
+      <Setter Property="Margin" Value="0,8,0,0" />
+    </Style>
+    <Style Selector="WrapPanel.buttons > Button">
+      <Setter Property="Margin" Value="0,0,6,6" />
+    </Style>
+
+    <!-- Reiter -->
+    <Style Selector="TabControl.main > TabItem">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="14,0" />
+    </Style>
+
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,7" />
+    </Style>
   </Application.Styles>
 </Application>

@@ -8,9 +8,11 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <RootNamespace>TipToy.Designer</RootNamespace>
+    <ApplicationIcon>Assets\TipToy.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets\TipToy.ico;Assets\TipToy.png" />
     <EmbeddedResource Include="Oid\KnownCodes.txt" LogicalName="KnownCodes.txt" />
   </ItemGroup>
 
