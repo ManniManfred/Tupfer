@@ -1,4 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using TipToy.Designer.ViewModels;
 
@@ -21,6 +24,30 @@ public partial class MainWindow : Window, IFileDialogs
                 };
             }
         };
+        // Vor dem ScrollViewer abfangen, damit Strg+Mausrad nicht zusätzlich scrollt
+        PageScroll.AddHandler(PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
+    }
+
+    /// <summary>Strg+Mausrad zoomt; der Punkt unter dem Mauszeiger bleibt dabei stehen.</summary>
+    void OnPageWheel(object? sender, PointerWheelEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) || DataContext is not MainWindowViewModel vm || e.Delta.Y == 0)
+            return;
+        e.Handled = true;
+
+        double oldZoom = vm.Zoom;
+        double zoom = Math.Clamp(oldZoom * Math.Pow(1.25, e.Delta.Y), 0.2, 4);
+        if (zoom == oldZoom)
+            return;
+        var onPage = e.GetPosition(PageView);
+        var inView = e.GetPosition(PageScroll);
+        vm.Zoom = zoom;
+
+        PageScroll.UpdateLayout();
+        if (PageScroll.Content is Visual content && PageView.TranslatePoint(default, content) is { } origin)
+            PageScroll.Offset = new Vector(
+                origin.X + onPage.X * zoom / oldZoom - inView.X,
+                origin.Y + onPage.Y * zoom / oldZoom - inView.Y);
     }
 
     public async Task<string?> OpenAsync(string title, string filterName, params string[] patterns)
