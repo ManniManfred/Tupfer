@@ -1,0 +1,27 @@
+product-id: 950
+comment: 'Druckertest fuer den tiptoi-Stift'
+welcome: 'willkommen'
+language: 'de'
+
+scripts:
+  'variante_a':
+  - 'P(variante_a)'
+  'variante_b':
+  - 'P(variante_b)'
+  'variante_c':
+  - 'P(variante_c)'
+  'variante_d':
+  - 'P(variante_d)'
+  'variante_e':
+  - 'P(variante_e)'
+  'variante_f':
+  - 'P(variante_f)'
+
+speak:
+  'willkommen': 'Druckertest bereit. Tippe auf ein Testfeld.'
+  'variante_a': 'Variante A. 1200 d p i, Punktgröße 1.'
+  'variante_b': 'Variante B. 1200 d p i, Punktgröße 2.'
+  'variante_c': 'Variante C. 1200 d p i, Punktgröße 3.'
+  'variante_d': 'Variante D. 1200 d p i, Punktgröße 4.'
+  'variante_e': 'Variante E. 600 d p i, Punktgröße 1.'
+  'variante_f': 'Variante F. 600 d p i, Punktgröße 2.'

@@ -1,0 +1,11 @@
+# Zuordnung von Skriptnamen zu OID-Codes (erzeugt von TipToy.Designer).
+# Nicht löschen, sonst vergibt tttool beim nächsten Lauf eventuell andere Codes.
+replay: 2663
+stop: 2664
+scriptcodes:
+  'variante_a': 2665
+  'variante_b': 2666
+  'variante_c': 2667
+  'variante_d': 2668
+  'variante_e': 2669
+  'variante_f': 2670
