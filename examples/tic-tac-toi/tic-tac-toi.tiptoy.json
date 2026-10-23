@@ -1,0 +1,314 @@
+{
+  "Version": 1,
+  "ProductId": 900,
+  "Comment": "Tic Tac Toe for the Tiptoi",
+  "Language": "de",
+  "GmeLang": "",
+  "Init": "$turn := 1",
+  "Welcome": "welcome, player1",
+  "MediaPath": "",
+  "ExtraYaml": "",
+  "Replay": 3944,
+  "Stop": 3945,
+  "TttoolPath": "tttool",
+  "Dpi": 1200,
+  "PixelSize": 2,
+  "Scripts": [
+    {
+      "Name": "feldOL",
+      "Code": 3946,
+      "Lines": [
+        "$OL == 0? $OL := $turn J(here_now)",
+        "$OL == 1? P(here_cross) J(next)",
+        "$OL == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "feldOM",
+      "Code": 3952,
+      "Lines": [
+        "$OM == 0? $OM := $turn J(here_now)",
+        "$OM == 1? P(here_cross) J(next)",
+        "$OM == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "feldOR",
+      "Code": 3953,
+      "Lines": [
+        "$OR == 0? $OR := $turn J(here_now)",
+        "$OR == 1? P(here_cross) J(next)",
+        "$OR == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "feldML",
+      "Code": 3949,
+      "Lines": [
+        "$ML == 0? $ML := $turn J(here_now)",
+        "$ML == 1? P(here_cross) J(next)",
+        "$ML == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "feldMM",
+      "Code": 3950,
+      "Lines": [
+        "$MM == 0? $MM := $turn J(here_now)",
+        "$MM == 1? P(here_cross) J(next)",
+        "$MM == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "feldMR",
+      "Code": 3951,
+      "Lines": [
+        "$MR == 0? $MR := $turn J(here_now)",
+        "$MR == 1? P(here_cross) J(next)",
+        "$MR == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "feldUL",
+      "Code": 3954,
+      "Lines": [
+        "$UL == 0? $UL := $turn J(here_now)",
+        "$UL == 1? P(here_cross) J(next)",
+        "$UL == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "feldUM",
+      "Code": 3955,
+      "Lines": [
+        "$UM == 0? $UM := $turn J(here_now)",
+        "$UM == 1? P(here_cross) J(next)",
+        "$UM == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "feldUR",
+      "Code": 3956,
+      "Lines": [
+        "$UR == 0? $UR := $turn J(here_now)",
+        "$UR == 1? P(here_cross) J(next)",
+        "$UR == 2? P(here_circle) J(next)"
+      ]
+    },
+    {
+      "Name": "here_now",
+      "Code": 3957,
+      "Lines": [
+        "$turn == 1? $set += 1 P(here_now_cross) J(win_check)",
+        "$turn == 2? $set += 1 P(here_now_circle) J(win_check)"
+      ]
+    },
+    {
+      "Name": "win_check",
+      "Code": 3962,
+      "Lines": [
+        "$OL == $turn? $ML == $turn? $UL == $turn? J(win)",
+        "$OM == $turn? $MM == $turn? $UM == $turn? J(win)",
+        "$OR == $turn? $MR == $turn? $UR == $turn? J(win)",
+        "$OL == $turn? $OM == $turn? $OR == $turn? J(win)",
+        "$ML == $turn? $MM == $turn? $MR == $turn? J(win)",
+        "$UL == $turn? $UM == $turn? $UR == $turn? J(win)",
+        "$OL == $turn? $MM == $turn? $UR == $turn? J(win)",
+        "$OR == $turn? $MM == $turn? $UL == $turn? J(win)",
+        "$set == 9? P(draw) J(reset)",
+        "$turn == 1? $turn := 2 J(next)",
+        "$turn == 2? $turn := 1 J(next)"
+      ]
+    },
+    {
+      "Name": "win",
+      "Code": 3961,
+      "Lines": [
+        "$turn == 1? P(player1wins) $turn := 2 J(reset)",
+        "$turn == 2? P(player2wins) $turn := 1 J(reset)"
+      ]
+    },
+    {
+      "Name": "reset",
+      "Code": 3959,
+      "Lines": [
+        "$set:=0 $OL:=0 $OM:=0 $OR:=0 $ML:=0 $MM:=0 $MR:=0 J(reset2)"
+      ]
+    },
+    {
+      "Name": "reset2",
+      "Code": 3960,
+      "Lines": [
+        "$UL:=0 $UM:=0 $UR:=0 J(next)"
+      ]
+    },
+    {
+      "Name": "next",
+      "Code": 3958,
+      "Lines": [
+        "$turn == 1? P(player1)",
+        "$turn == 2? P(player2)"
+      ]
+    }
+  ],
+  "Speak": [
+    {
+      "Name": "welcome",
+      "Text": "Willkommen bei Tic-Tac-Tiptoi."
+    },
+    {
+      "Name": "player1",
+      "Text": "Kreuz ist dran."
+    },
+    {
+      "Name": "player2",
+      "Text": "Kreis ist dran."
+    },
+    {
+      "Name": "here_cross",
+      "Text": "Hier ist schon ein Kreuz"
+    },
+    {
+      "Name": "here_circle",
+      "Text": "Hier ist schon ein Kreis"
+    },
+    {
+      "Name": "here_now_cross",
+      "Text": "Hier ist jetzt ein Kreuz"
+    },
+    {
+      "Name": "here_now_circle",
+      "Text": "Hier ist jetzt ein Kreis"
+    },
+    {
+      "Name": "player1wins",
+      "Text": "Kreuz gewinnt."
+    },
+    {
+      "Name": "player2wins",
+      "Text": "Kreis gewinnt."
+    },
+    {
+      "Name": "draw",
+      "Text": "Unentschieden"
+    }
+  ],
+  "Pages": [
+    {
+      "Name": "Spielfeld",
+      "WidthMm": 210,
+      "HeightMm": 297,
+      "BackgroundImage": "tic-tac-toi.png",
+      "Areas": [
+        {
+          "Label": "",
+          "X": 33,
+          "Y": 63,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldOL"
+        },
+        {
+          "Label": "",
+          "X": 83,
+          "Y": 63,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldOM"
+        },
+        {
+          "Label": "",
+          "X": 133,
+          "Y": 63,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldOR"
+        },
+        {
+          "Label": "",
+          "X": 33,
+          "Y": 113,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldML"
+        },
+        {
+          "Label": "",
+          "X": 83,
+          "Y": 113,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldMM"
+        },
+        {
+          "Label": "",
+          "X": 133,
+          "Y": 113,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldMR"
+        },
+        {
+          "Label": "",
+          "X": 33,
+          "Y": 163,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldUL"
+        },
+        {
+          "Label": "",
+          "X": 83,
+          "Y": 163,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldUM"
+        },
+        {
+          "Label": "",
+          "X": 133,
+          "Y": 163,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldUR"
+        },
+        {
+          "Label": "Start",
+          "X": 42,
+          "Y": 232,
+          "Width": 26,
+          "Height": 26,
+          "Target": "Product",
+          "Script": ""
+        },
+        {
+          "Label": "",
+          "X": 97,
+          "Y": 232,
+          "Width": 26,
+          "Height": 26,
+          "Target": "Replay",
+          "Script": ""
+        },
+        {
+          "Label": "",
+          "X": 152,
+          "Y": 232,
+          "Width": 26,
+          "Height": 26,
+          "Target": "Stop",
+          "Script": ""
+        }
+      ]
+    }
+  ]
+}

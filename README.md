@@ -1,8 +1,8 @@
 # TipToy – Tic-Tac-Toe für den tiptoi-Stift
 
 Ein selbstgebautes Tic-Tac-Toe-Spiel für den Ravensburger **tiptoi**-Stift, erstellt mit
-[tttool](https://github.com/entropia/tip-toi-reveng). Zusätzlich enthält das Repository ein
-experimentelles C#-Programm, das OID-Codes als PNG-Bilder und PDF erzeugt.
+[tttool](https://github.com/entropia/tip-toi-reveng), sowie der **TipToy Designer** – eine
+Avalonia-Anwendung, mit der man eigene tiptoi-Seiten gestalten und drucken kann.
 
 ## Inhalt
 
@@ -12,7 +12,9 @@ experimentelles C#-Programm, das OID-Codes als PNG-Bilder und PDF erzeugt.
 | `tic-tac-toi.codes.yaml` | Feste Zuordnung von Skriptnamen zu OID-Codes (von tttool erzeugt) |
 | `tic-tac-toi.gme` | Fertig gebaute Spieldatei für den tiptoi-Stift |
 | `tic-tac-toi.pdf` | Druckvorlage mit Spielfeld und OID-Codes |
-| `TipToy/` | C#-Konsolenprogramm (.NET 8) zum Erzeugen von OID-Bildern und PDF |
+| `TipToy.Designer/` | Avalonia-Anwendung zum Gestalten von tiptoi-Seiten (siehe unten) |
+| `examples/tic-tac-toi/` | Das Tic-Tac-Toe-Spiel als Designer-Projekt mit Spielfeld-Grafik |
+| `TipToy/` | Experimentelles C#-Konsolenprogramm (erzeugt keine gültigen Codes, siehe unten) |
 | `TipToy.sln` | Visual-Studio-Solution |
 
 ## Das Spiel
@@ -50,6 +52,48 @@ tiptoi-Stifts kopieren. Zum Starten zuerst den Produkt-Code (`900`) antippen, da
 **Druckhinweis:** OID-Codes sollten mit 1200 dpi und ohne Skalierung („Tatsächliche Größe“)
 gedruckt werden, sonst erkennt der Stift sie nicht zuverlässig. Die tttool-Dokumentation enthält
 Tipps zu geeigneten Druckern und Einstellungen.
+
+## TipToy Designer
+
+Plattformübergreifende Desktop-Anwendung (Windows, Linux, macOS) zum Erstellen eigener tiptoi-Seiten.
+
+```bash
+dotnet run --project TipToy.Designer
+# oder direkt mit einem Projekt bzw. einer tttool-YAML-Datei:
+dotnet run --project TipToy.Designer -- examples/tic-tac-toi/tic-tac-toi.tiptoy.json
+```
+
+Voraussetzung: .NET 8 SDK. Für das Bauen der GME-Datei zusätzlich
+[tttool](https://github.com/entropia/tip-toi-reveng/releases) und für die Sprachausgabe
+`espeak` (oder `pico2wave`) sowie `oggenc` (vorbis-tools).
+
+### Funktionen
+
+- **Seiten:** Hintergrundbild laden (z. B. eigene Zeichnung) und mit der Maus Flächen aufziehen,
+  verschieben und in der Größe ändern. Jede Fläche wird einem Skript oder einem Sondercode
+  (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.
+- **Skripte:** tttool-Skripte bearbeiten, mit Kurzreferenz der Befehle.
+- **Sprachausgabe:** Texte, die tttool per Text-to-Speech vertont.
+- **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
+- **Export:**
+  - Seiten als druckfertige PDF (Hintergrund + OID-Muster in den Flächen)
+  - OID-Tabelle aller Codes als PDF, einzelne Flächen als PNG
+  - tttool-YAML inkl. `*.codes.yaml`, Import vorhandener YAML-Dateien
+  - GME-Datei bauen (ruft `tttool assemble` auf, Taste F5)
+
+Die OID-Muster erzeugt der Designer selbst. Die Erzeugung ist eine direkte Portierung des
+tttool-Algorithmus und liefert pixelgenau dieselben Muster. Auch die Codes für Skripte werden
+nach demselben Verfahren wie bei tttool vergeben, sodass YAML-Export und tttool zusammenpassen.
+
+### Typischer Ablauf
+
+1. Projekt anlegen, Produkt-ID wählen (z. B. 900–999).
+2. Unter *Seiten* ein Hintergrundbild laden und Flächen aufziehen; eine Fläche als *Produkt (Anmelden)* markieren.
+3. Unter *Skripte* und *Sprachausgabe* festlegen, was beim Antippen passiert.
+4. *Erstellen → GME-Datei bauen* und die `.gme` auf den Stift kopieren.
+5. *Erstellen → Seiten als PDF* und mit 1200 dpi in Originalgröße drucken.
+
+Projekte werden als `*.tiptoy.json` gespeichert; Pfade zu Hintergrundbildern relativ zur Projektdatei.
 
 ## C#-Programm `TipToy`
 
