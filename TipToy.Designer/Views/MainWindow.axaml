@@ -152,7 +152,7 @@
 
                 <TextBlock Classes="label" Text="Bedienung" />
                 <TextBlock Classes="hint"
-                           Text="• Auf freier Stelle ziehen: neue OID-Fläche&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen" />
+                           Text="• Auf freier Stelle ziehen: neue OID-Fläche&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen" />
               </StackPanel>
             </ScrollViewer>
           </Border>

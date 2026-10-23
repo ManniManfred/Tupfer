@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TipToy.Designer.Model;
 
@@ -60,8 +61,11 @@ public partial class PageViewModel : ObservableObject
 
     void OnItemChanged(object? sender, PropertyChangedEventArgs e) => Changed?.Invoke(sender!, e.PropertyName);
 
-    /// <summary>Fügt ein Bild in der Mitte der Seite ein (bei 150 dpi, höchstens 80 % der Seite).</summary>
-    public ElementViewModel? AddImage(string path)
+    /// <summary>
+    /// Fügt ein Bild ein (bei 150 dpi, höchstens 80 % der Seite), zentriert um <paramref name="centerMm"/>
+    /// oder in der Mitte der Seite.
+    /// </summary>
+    public ElementViewModel? AddImage(string path, Point? centerMm = null)
     {
         if (Project.LoadImage(path) is not { } bmp)
             return null;
@@ -69,13 +73,14 @@ public partial class PageViewModel : ObservableObject
         double f = Math.Min(1, Math.Min(WidthMm * 0.8 / w, HeightMm * 0.8 / h));
         w = Math.Round(w * f, 1);
         h = Math.Round(h * f, 1);
+        var center = centerMm ?? new Point(WidthMm / 2, HeightMm / 2);
         var element = new ElementViewModel(Project, ElementKind.Image)
         {
             ImagePath = path,
             Width = w,
             Height = h,
-            X = Math.Round((WidthMm - w) / 2, 1),
-            Y = Math.Round((HeightMm - h) / 2, 1),
+            X = Math.Round(center.X - w / 2, 1),
+            Y = Math.Round(center.Y - h / 2, 1),
         };
         Elements.Add(element);
         SelectedElement = element;

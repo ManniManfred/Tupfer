@@ -73,7 +73,7 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
 
 ### Funktionen
 
-- **Seiten:** Fotos und Bilder einfügen (drehen, zuschneiden, skalieren) und Texte setzen
+- **Seiten:** Fotos und Bilder einfügen – auch per Drag&Drop aus dem Explorer – (drehen, zuschneiden, skalieren) und Texte setzen
   (Schriftart, Größe, Farbe, Ausrichtung). Mit der Maus OID-Flächen aufziehen,
   verschieben und in der Größe ändern. Jede Fläche wird einem Skript oder einem Sondercode
   (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.

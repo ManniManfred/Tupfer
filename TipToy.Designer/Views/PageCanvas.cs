@@ -1,8 +1,10 @@
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using TipToy.Designer.Model;
 using TipToy.Designer.Services;
 using TipToy.Designer.ViewModels;
@@ -25,7 +27,7 @@ public class PageCanvas : Control
 
     /// <summary>Nur OID-Flächen bearbeiten, Bilder und Texte sind gesperrt.</summary>
     public static readonly StyledProperty<bool> AreasOnlyProperty =
-        AvaloniaProperty.Register<PageCanvas, bool>(nameof(AreasOnly));
+        AvaloniaProperty.Register<PageCanvas, bool>(nameof(AreasOnly), defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>Die Anfasser eines Bilds schneiden zu statt zu skalieren.</summary>
     public static readonly StyledProperty<bool> CropModeProperty =
@@ -74,11 +76,21 @@ public class PageCanvas : Control
     static readonly Cursor MoveCursor = new(StandardCursorType.SizeAll);
     static readonly Cursor CornerCursor = new(StandardCursorType.BottomRightCorner);
 
+    static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
+
     static PageCanvas()
     {
         AffectsMeasure<PageCanvas>(PageProperty, ZoomProperty);
         AffectsRender<PageCanvas>(PageProperty, ZoomProperty, AreasOnlyProperty, CropModeProperty);
         FocusableProperty.OverrideDefaultValue<PageCanvas>(true);
+        DragDrop.AllowDropProperty.OverrideDefaultValue<PageCanvas>(true);
+    }
+
+    public PageCanvas()
+    {
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DropEvent, OnDrop);
     }
 
     public PageViewModel? Page
@@ -252,6 +264,40 @@ public class PageCanvas : Control
     static double Snap(double v) => Math.Round(v / Grid) * Grid;
 
     Point ToMm(Point px) => new(px.X / Scale, px.Y / Scale);
+
+    static bool IsImageFile(IStorageItem item) =>
+        item.TryGetLocalPath() is { } path && ImageExtensions.Contains(Path.GetExtension(path));
+
+    void OnDragOver(object? sender, DragEventArgs e)
+    {
+        bool images = Page != null && e.DataTransfer.TryGetFiles() is { } files && files.Any(IsImageFile);
+        e.DragEffects = images ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    /// <summary>Aus dem Explorer gezogene Bilder an der Mausposition einfügen (mehrere leicht versetzt).</summary>
+    void OnDrop(object? sender, DragEventArgs e)
+    {
+        e.Handled = true;
+        if (Page is not { } page || e.DataTransfer.TryGetFiles() is not { } files)
+            return;
+        var paths = files.Where(IsImageFile).Select(f => f.TryGetLocalPath()!).ToList();
+        if (paths.Count == 0)
+            return;
+        var pos = ToMm(e.GetPosition(this));
+        double offset = 0;
+        History?.Change(() =>
+        {
+            foreach (var path in paths)
+                if (page.AddImage(path, pos + new Point(offset, offset)) != null)
+                    offset += 5;
+        });
+        if (offset > 0)
+        {
+            AreasOnly = false;
+            Focus();
+        }
+    }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
