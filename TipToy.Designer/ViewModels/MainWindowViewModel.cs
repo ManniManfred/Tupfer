@@ -25,6 +25,13 @@ public interface IFileDialogs
     /// sobald sie nicht mehr gebraucht wird. Liefert einen Hinweis, wie es weitergeht.
     /// </summary>
     Task<string> PrintAsync(string pdfPath);
+
+    /// <summary>
+    /// Speichert eine Datei auf den Stift: erst wird das Ziel gewählt (Laufwerk „tiptoi“ oder Dialog),
+    /// dann erzeugt <paramref name="create"/> die Datei (null = Fehler) und sie wird dorthin kopiert.
+    /// Liefert den Zielnamen, oder null bei Abbruch oder Fehler.
+    /// </summary>
+    Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create);
 }
 
 public partial class MainWindowViewModel : ObservableObject
@@ -43,6 +50,9 @@ public partial class MainWindowViewModel : ObservableObject
     public static IReadOnlyList<ExampleProject> Examples { get; set; } = [];
 
     public static bool HasExamples => Examples.Count > 0;
+
+    /// <summary>false in Browsern ohne Speichern-Dialog (z. B. auf dem Handy): Dort gibt es „Auf den Stift speichern“ nicht.</summary>
+    public static bool CanSaveToPen { get; set; } = true;
 
     [ObservableProperty] ProjectViewModel _project;
 
@@ -352,24 +362,44 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task BuildGme() => Guard("GME-Erstellung", async () =>
     {
+        var gme = await CreateGme();
+        if (gme == null) return;
+        if (!IsDesktop)
+            await Dialogs!.SavedAsync(gme);
+        Notice($"GME erstellt: {(IsDesktop ? gme : Path.GetFileName(gme))} – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
+    });
+
+    [RelayCommand]
+    Task SaveToPen() => Guard("Auf den Stift speichern", async () =>
+    {
         if (!EnsureProgram()) return;
+        var name = (FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt") + ".gme";
+        string? built = null;
+        var target = await Dialogs!.SaveToPenAsync(name, async () => built = await CreateGme());
+        // Im Browser liegt die Datei nur im Speicher-Dateisystem und wird nicht mehr gebraucht
+        if (!IsDesktop && built != null)
+            File.Delete(built);
+        if (target != null)
+            Notice($"Auf den Stift gespeichert: {target}. Stift abmelden („Auswerfen“), dann Produkt-Code {Project.ProductId} antippen.");
+    });
+
+    /// <summary>
+    /// Baut die GME-Datei und liefert ihren Pfad (null bei Fehler). Auf dem Desktop wird das Projekt
+    /// gespeichert und die GME daneben erzeugt, im Browser im Arbeitsverzeichnis.
+    /// </summary>
+    async Task<string?> CreateGme()
+    {
+        if (!EnsureProgram()) return null;
         if (!IsDesktop)
         {
-            // Im Browser wird die GME-Datei direkt heruntergeladen, ohne das Projekt zu speichern
-            var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt";
-            var path = Path.Combine(BaseDir, name + ".gme");
-            if (await BuildGmeInternal(Project.ToFile(BaseDir), BaseDir, path))
-            {
-                await Dialogs!.SavedAsync(path);
-                Notice($"GME erstellt: {name}.gme – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
-            }
-            return;
+            var path = Path.Combine(BaseDir, (FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt") + ".gme");
+            return await BuildGmeInternal(Project.ToFile(BaseDir), BaseDir, path) ? path : null;
         }
         if (FilePath == null)
         {
             Notice("Bitte das Projekt zuerst speichern – die GME-Datei wird neben der Projektdatei erzeugt.");
             await SaveProjectAs();
-            if (FilePath == null) return;
+            if (FilePath == null) return null;
         }
         else
         {
@@ -389,9 +419,8 @@ public partial class MainWindowViewModel : ObservableObject
         {
             ok = await BuildGmeInternal(Project.ToFile(dir), dir, gme);
         }
-        if (ok)
-            Notice($"GME erstellt: {gme} – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
-    });
+        return ok ? gme : null;
+    }
 
     void LogFromAnyThread(string message) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Log(message));
 

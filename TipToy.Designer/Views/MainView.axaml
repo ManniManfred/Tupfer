@@ -13,6 +13,7 @@
     <KeyBinding Gesture="Ctrl+N" Command="{Binding NewProjectCommand}" />
     <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintPagesCommand}" />
     <KeyBinding Gesture="F5" Command="{Binding BuildGmeCommand}" />
+    <KeyBinding Gesture="Shift+F5" Command="{Binding SaveToPenCommand}" />
     <KeyBinding Gesture="F6" Command="{Binding CompileProgramCommand}" />
     <KeyBinding Gesture="F8" Command="{Binding ToggleTestModeCommand}" />
   </UserControl.KeyBindings>
@@ -118,6 +119,10 @@
             <MenuItem Header="_GME-Datei bauen" InputGesture="F5" Command="{Binding BuildGmeCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconPlay}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Auf den _Stift speichern …" InputGesture="Shift+F5" Command="{Binding SaveToPenCommand}"
+                      IsVisible="{x:Static vm:MainWindowViewModel.CanSaveToPen}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconPen}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="_Testen (Stift simulieren)" InputGesture="F8" ToggleType="CheckBox"
                       IsChecked="{Binding TestMode, Mode=TwoWay}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconTap}" Width="14" Height="14" /></MenuItem.Icon>
@@ -167,6 +172,13 @@
             </StackPanel>
           </Button>
           </StackPanel>
+          <Button Classes="tool" Command="{Binding SaveToPenCommand}" ToolTip.Tip="GME bauen und auf den Stift speichern (Umschalt+F5)"
+                  IsVisible="{x:Static vm:MainWindowViewModel.CanSaveToPen}" Margin="6,0,0,0">
+            <StackPanel>
+              <PathIcon Data="{StaticResource IconPen}" />
+              <TextBlock x:Name="PenLabel" Text="Auf den Stift" />
+            </StackPanel>
+          </Button>
           <Button Classes="accent" Command="{Binding BuildGmeCommand}" ToolTip.Tip="GME-Datei bauen (F5)" Margin="6,0,0,0">
             <StackPanel>
               <PathIcon Data="{StaticResource IconPlay}" />

@@ -16,6 +16,22 @@ static partial class BrowserInterop
     [JSImport("printPdf", "tiptoy")]
     public static partial bool PrintPdf([JSMarshalAs<JSType.MemoryView>] Span<byte> data);
 
+    /// <summary>true, wenn der Browser einen Speichern-Dialog hat (Chrome, Edge am PC; nicht Firefox, Safari, Handy).</summary>
+    [JSImport("canPickSaveFile", "tiptoy")]
+    public static partial bool CanPickSaveFile();
+
+    /// <summary>Öffnet den Speichern-Dialog des Browsers; false bei Abbruch.</summary>
+    [JSImport("pickSaveFile", "tiptoy")]
+    public static partial Task<bool> PickSaveFileAsync(string suggestedName);
+
+    /// <summary>Übergibt die Daten für <see cref="WritePickedFileAsync"/> (JSImport erlaubt keine Span-Parameter mit Task).</summary>
+    [JSImport("setPendingFile", "tiptoy")]
+    public static partial void SetPendingFile([JSMarshalAs<JSType.MemoryView>] Span<byte> data);
+
+    /// <summary>Schreibt die übergebenen Daten in die gewählte Datei, liefert ihren Namen.</summary>
+    [JSImport("writePickedFile", "tiptoy")]
+    public static partial Task<string> WritePickedFileAsync();
+
     /// <summary>Setzt den Titel des Browser-Tabs.</summary>
     [JSImport("setTitle", "tiptoy")]
     public static partial void SetTitle(string title);

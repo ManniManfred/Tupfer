@@ -45,6 +45,48 @@ export function printPdf(data) {
     return true;
 }
 
+// ---------- Speichern an einem gewählten Ort (z. B. auf dem Stift) ----------
+
+let picked = null;
+let pending = null;
+
+/** true, wenn der Browser einen Speichern-Dialog hat (File System Access API). */
+export function canPickSaveFile() {
+    return typeof window.showSaveFilePicker === 'function';
+}
+
+/** Öffnet den Speichern-Dialog; false bei Abbruch. */
+export async function pickSaveFile(suggestedName) {
+    try {
+        picked = await window.showSaveFilePicker({
+            suggestedName,
+            types: [{ description: 'GME-Datei', accept: { 'application/octet-stream': ['.gme'] } }],
+        });
+        return true;
+    } catch (e) {
+        if (e.name === 'AbortError')
+            return false;
+        throw e;
+    }
+}
+
+/** Merkt sich die Daten für writePickedFile. */
+export function setPendingFile(data) {
+    pending = data.slice();
+}
+
+/** Schreibt die gemerkten Daten in die gewählte Datei und liefert ihren Namen. */
+export async function writePickedFile() {
+    const file = picked, data = pending;
+    picked = pending = null;
+    if (!file || !data)
+        throw new Error('Keine Datei gewählt.');
+    const writable = await file.createWritable();
+    await writable.write(data);
+    await writable.close();
+    return file.name;
+}
+
 /** Setzt den Titel des Browser-Tabs. */
 export function setTitle(title) {
     document.title = title;

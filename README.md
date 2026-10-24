@@ -105,6 +105,11 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   - OID-Tabelle aller Codes als PDF, einzelne Flächen als PNG
   - tttool-YAML inkl. `*.codes.yaml`, Import vorhandener YAML-Dateien
   - GME-Datei bauen (Taste F5) – eingebaut, optional über das externe tttool
+  - **Auf den Stift speichern (Umschalt+F5):** baut die GME und speichert sie direkt auf den Stift.
+    Auf dem Desktop wird das Laufwerk „tiptoi“ automatisch gefunden (sonst Speichern-Dialog). Im
+    Browser öffnet sich ein Speichern-Dialog, in dem man das Laufwerk des Stifts wählt – nur in
+    Chrome und Edge am PC. Auf dem Handy: GME herunterladen und mit der App *Dateien* auf den Stift
+    kopieren (Stift per OTG-Adapter anschließen).
 
 OID-Muster und GME-Dateien sind direkte Portierungen von tttool: Die Muster sind pixelgenau
 gleich, die GME-Dateien bei gleichen Audiodateien byteweise identisch mit `tttool assemble`.
@@ -166,7 +171,7 @@ Unterschiede zur Desktop-Version:
 2. Unter *Seiten* Bilder und Texte einfügen und Flächen aufziehen; eine Fläche als *Produkt (Anmelden)* markieren.
 3. Unter *Skripte* und *Sprachausgabe* festlegen, was beim Antippen passiert.
 4. Mit *Testen* (F8) die Flächen antippen und das Verhalten prüfen.
-5. *Erstellen → GME-Datei bauen* und die `.gme` auf den Stift kopieren.
+5. *Erstellen → Auf den Stift speichern* (oder *GME-Datei bauen* und die `.gme` selbst auf den Stift kopieren).
 6. *Erstellen → Seiten drucken* (oder *Seiten als PDF*) – mit 1200 dpi in Originalgröße drucken.
 
 Projekte werden als `*.tiptoy.json` gespeichert; Pfade zu Bildern relativ zur Projektdatei.

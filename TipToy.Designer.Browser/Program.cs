@@ -19,6 +19,7 @@ static class Program
         TextToSpeech.Synthesizer = BrowserInterop.Speak;
         Audio.Device = new BrowserAudio();
         BrowserInterop.SetTitle(MainWindowViewModel.AppName);
+        MainWindowViewModel.CanSaveToPen = BrowserInterop.CanPickSaveFile();
 
         // main.js übergibt die Adresse der Seite
         var pageUri = new Uri(args[0]);

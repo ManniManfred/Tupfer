@@ -103,6 +103,18 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
 
     public void ProjectCreated() => NewWorkDir();
 
+    public async Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create)
+    {
+        // Den Dialog sofort öffnen: Der Browser erlaubt ihn nur kurz nach dem Klick, das Bauen kann dauern
+        if (!await BrowserInterop.PickSaveFileAsync(fileName))
+            return null;
+        var path = await create();
+        if (path == null)
+            return null;
+        BrowserInterop.SetPendingFile(File.ReadAllBytes(path));
+        return await BrowserInterop.WritePickedFileAsync();
+    }
+
     public Task<string> PrintAsync(string pdfPath)
     {
         var data = File.ReadAllBytes(pdfPath);

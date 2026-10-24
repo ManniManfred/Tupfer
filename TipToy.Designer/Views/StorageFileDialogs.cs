@@ -81,4 +81,34 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         Process.Start(open)?.Dispose();
         return "Direktes Drucken ist hier nicht möglich, das PDF wurde im PDF-Programm geöffnet – bitte dort drucken.";
     }
+
+    public async Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create)
+    {
+        // Der Stift meldet sich als Laufwerk „tiptoi“ (Windows: Bezeichnung, Linux/macOS: Einhängepunkt)
+        var pens = DriveInfo.GetDrives()
+            .Where(d =>
+            {
+                try
+                {
+                    return d.IsReady && (string.Equals(d.VolumeLabel, "tiptoi", StringComparison.OrdinalIgnoreCase)
+                                         || string.Equals(Path.GetFileName(d.RootDirectory.FullName.TrimEnd('/', '\\')), "tiptoi", StringComparison.OrdinalIgnoreCase));
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    return false;
+                }
+            })
+            .ToList();
+        var target = pens.Count == 1
+            ? Path.Combine(pens[0].RootDirectory.FullName, fileName)
+            : await SaveAsync("Auf den Stift speichern (Laufwerk „tiptoi“ wählen)", fileName, "GME-Datei", ".gme");
+        if (target == null)
+            return null;
+
+        var source = await create();
+        if (source == null)
+            return null;
+        File.Copy(source, target, overwrite: true);
+        return target;
+    }
 }
