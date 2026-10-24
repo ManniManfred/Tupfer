@@ -29,7 +29,7 @@ if (new URLSearchParams(location.search).has('diagnose')) {
     setInterval(() => {
         const c = document.querySelector('canvas.avalonia-canvas');
         const v = window.visualViewport;
-        box.textContent = `${navigator.userAgent}\n`
+        box.textContent = `${document.title}\n${navigator.userAgent}\n`
             + `Fenster ${innerWidth}×${innerHeight}, Seite ${document.documentElement.clientWidth}×${document.documentElement.clientHeight}, `
             + `scrollWidth ${document.documentElement.scrollWidth}, dpr ${devicePixelRatio}\n`
             + `visualViewport ${v ? `${Math.round(v.width)}×${Math.round(v.height)} scale ${v.scale}` : '–'}\n`
