@@ -52,6 +52,12 @@ public class PageCanvas : Control
 
     DragMode _mode;
 
+    /// <summary>
+    /// Maus bzw. Finger, mit dem gerade gezogen wird. Weitere Finger werden solange ignoriert –
+    /// sonst begänne jeder einen eigenen Rückgängig-Schritt, und der Verlauf bliebe offen hängen.
+    /// </summary>
+    IPointer? _pointer;
+
     /// <summary>Gezogene Ecke bzw. Kante (von dieser Ecke zur nächsten) eines Polygons.</summary>
     int _vertex;
 
@@ -405,6 +411,19 @@ public class PageCanvas : Control
         if (Page is not { } page || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             return;
 
+        if (_pointer != null)
+        {
+            // Zweiter Finger beim Aufziehen einer neuen Fläche: war nicht als Zeichnen gemeint
+            if (_mode == DragMode.Create && page.SelectedArea is { } created)
+            {
+                page.Areas.Remove(created);
+                page.SelectedArea = null;
+                _mode = DragMode.None;
+            }
+            e.Handled = true;
+            return;
+        }
+
         Focus();
         _slop = e.Pointer.Type == PointerType.Touch ? 12 : 2;
         var pos = e.GetPosition(this);
@@ -418,6 +437,7 @@ public class PageCanvas : Control
         }
 
         History?.BeginChange();
+        _pointer = e.Pointer;
 
         if (page.SelectedArea is { IsPolygon: true } poly && HitPolygonHandle(poly, pos) is { } ph)
         {
@@ -429,7 +449,7 @@ public class PageCanvas : Control
                     RemoveVertex(poly, ph.Index);
                 else
                     SplitEdge(poly, ph.Index);
-                History?.EndChange();
+                EndDrag();
                 e.Handled = true;
                 return;
             }
@@ -461,7 +481,7 @@ public class PageCanvas : Control
         else if (AreaTool == AreaShape.Polygon)
         {
             // Erste Ecke eines neuen Polygons; die Fläche entsteht erst beim Abschließen
-            History?.EndChange();
+            EndDrag();
             page.SelectedArea = null;
             page.SelectedElement = null;
             _drawing = [SnapPoint(_startMm)];
@@ -559,7 +579,7 @@ public class PageCanvas : Control
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
-        if (Page is not { } page)
+        if (Page is not { } page || (_pointer != null && e.Pointer != _pointer))
             return;
 
         var px = e.GetPosition(this);
@@ -710,7 +730,7 @@ public class PageCanvas : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        if (_mode == DragMode.None)
+        if (e.Pointer != _pointer)
             return;
         if (_mode == DragMode.Create && Page is { SelectedArea: { } area } page
             && (area.Width < MinSizeMm || area.Height < MinSizeMm))
@@ -722,18 +742,25 @@ public class PageCanvas : Control
         // Nach dem Skalieren den Rahmen eines Polygons wieder eng an den Umriss legen (Bögen)
         if (_mode == DragMode.Resize && Page?.SelectedArea is { IsPolygon: true } scaled)
             UpdatePoints(scaled, points => points);
-        _mode = DragMode.None;
         _startRect = null;
         _startElement = null;
+        EndDrag();
         e.Pointer.Capture(null);
-        History?.EndChange();
     }
 
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
     {
         base.OnPointerCaptureLost(e);
-        if (_mode == DragMode.None)
+        if (e.Pointer == _pointer)
+            EndDrag();
+    }
+
+    /// <summary>Beendet das Ziehen und schließt den Rückgängig-Schritt (genau einmal je Drücken).</summary>
+    void EndDrag()
+    {
+        if (_pointer == null)
             return;
+        _pointer = null;
         _mode = DragMode.None;
         History?.EndChange();
     }
