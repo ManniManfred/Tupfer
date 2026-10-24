@@ -106,6 +106,11 @@ dotnet run --project TipToy.Designer.Browser
 dotnet publish TipToy.Designer.Browser -c Release -o publish   # Ergebnis: publish/wwwroot
 ```
 
+Unter *Datei → Beispiele* lassen sich die Beispielprojekte aus `examples/` (Tic-Tac-Toe, auch als
+C#-Programm) direkt öffnen. Per Adresse geht es auch gleich beim Start:
+`…/index.html?beispiel=tic-tac-toi` bzw. `?beispiel=tic-tac-toi-csharp`. Weitere Beispiele werden in
+`TipToy.Designer.Browser/Examples.cs` und der `.csproj` eingetragen.
+
 Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem Push auf `master` und
 veröffentlicht sie auf GitHub Pages (einmalig unter *Settings → Pages → Source* „GitHub Actions“
 wählen).

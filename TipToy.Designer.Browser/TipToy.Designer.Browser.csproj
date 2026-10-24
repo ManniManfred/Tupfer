@@ -26,6 +26,13 @@
     <EmbeddedResource Include="../TipToy.Designer/Oid/KnownCodes.txt" LogicalName="KnownCodes.txt" />
   </ItemGroup>
 
+  <!-- Beispielprojekte zum direkten Öffnen (Datei → Beispiele), Liste in Examples.cs -->
+  <ItemGroup>
+    <Content Include="../examples/tic-tac-toi/tic-tac-toi.tiptoy.json" Link="wwwroot/examples/tic-tac-toi/tic-tac-toi.tiptoy.json" />
+    <Content Include="../examples/tic-tac-toi/tic-tac-toi.png" Link="wwwroot/examples/tic-tac-toi/tic-tac-toi.png" />
+    <Content Include="../examples/tic-tac-toi-csharp/tic-tac-toi-csharp.tiptoy.json" Link="wwwroot/examples/tic-tac-toi-csharp/tic-tac-toi-csharp.tiptoy.json" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Browser" Version="12.1.4" />

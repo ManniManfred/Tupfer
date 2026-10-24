@@ -12,6 +12,9 @@ public partial class App : Application
     /// <summary>Erzeugt die Dateidialoge für die Oberfläche; Standard sind die des Betriebssystems.</summary>
     public static Func<TopLevel, IFileDialogs> CreateDialogs { get; set; } = topLevel => new StorageFileDialogs(topLevel);
 
+    /// <summary>Beispielprojekt, das im Browser gleich beim Start geöffnet wird.</summary>
+    public static ExampleProject? StartExample { get; set; }
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
@@ -31,6 +34,9 @@ public partial class App : Application
             var view = new MainView { DataContext = vm };
             view.AttachedToVisualTree += (_, _) => vm.Dialogs ??= CreateDialogs(TopLevel.GetTopLevel(view)!);
             singleView.MainView = view;
+            // z. B. index.html?beispiel=tic-tac-toi
+            if (StartExample is { } example)
+                vm.OpenExampleCommand.Execute(example);
         }
         base.OnFrameworkInitializationCompleted();
     }

@@ -38,6 +38,17 @@
               <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="Speichern _unter …" Command="{Binding SaveProjectAsCommand}" />
+            <Separator IsVisible="{x:Static vm:MainWindowViewModel.HasExamples}" />
+            <MenuItem Header="_Beispiele" IsVisible="{x:Static vm:MainWindowViewModel.HasExamples}"
+                      ItemsSource="{x:Static vm:MainWindowViewModel.Examples}">
+              <MenuItem.ItemContainerTheme>
+                <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:ExampleProject">
+                  <Setter Property="Header" Value="{Binding Title}" />
+                  <Setter Property="Command" Value="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).OpenExampleCommand}" />
+                  <Setter Property="CommandParameter" Value="{Binding}" />
+                </ControlTheme>
+              </MenuItem.ItemContainerTheme>
+            </MenuItem>
             <Separator />
             <MenuItem Header="tttool-YAML _importieren …" Command="{Binding ImportYamlCommand}" />
             <MenuItem Header="tttool-YAML _exportieren …" Command="{Binding ExportYamlCommand}" />

@@ -33,6 +33,11 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>false im Browser: dort gibt es keine externen Programme wie tttool.</summary>
     public static bool IsDesktop => !OperatingSystem.IsBrowser();
 
+    /// <summary>Beispielprojekte unter „Datei → Beispiele“; leer, wenn keine mitgeliefert werden.</summary>
+    public static IReadOnlyList<ExampleProject> Examples { get; set; } = [];
+
+    public static bool HasExamples => Examples.Count > 0;
+
     [ObservableProperty] ProjectViewModel _project;
 
     [ObservableProperty]
@@ -197,6 +202,13 @@ public partial class MainWindowViewModel : ObservableObject
         var path = await Dialogs!.OpenAsync("Projekt öffnen", "TipToy-Projekt", "*" + ProjectStore.Extension);
         if (path != null)
             LoadProject(path);
+    });
+
+    [RelayCommand]
+    Task OpenExample(ExampleProject example) => Guard("Öffnen", async () =>
+    {
+        Log($"Lade Beispiel „{example.Title}“ …");
+        Load(await example.FetchAsync());
     });
 
     /// <summary>Öffnet ein Projekt oder importiert eine tttool-YAML-Datei (z. B. von der Kommandozeile).</summary>

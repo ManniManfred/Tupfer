@@ -103,13 +103,16 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
 
     public void ProjectCreated() => NewWorkDir();
 
-    /// <summary>Lädt die Projektdatei herunter, zusammen mit Bildern und Audiodateien als ZIP.</summary>
+    /// <summary>
+    /// Lädt die Projektdatei herunter, zusammen mit Bildern und Audiodateien als ZIP. Das ZIP enthält das
+    /// ganze Arbeitsverzeichnis, damit auch Pfade wie ../bilder/… beim erneuten Öffnen stimmen.
+    /// </summary>
     static void DownloadProject(string path)
     {
-        var dir = Path.GetDirectoryName(path)!;
-        var cache = Path.Combine(dir, "tts-cache") + Path.DirectorySeparatorChar;
+        var relative = Path.GetRelativePath(Root, path);
+        var dir = relative.StartsWith("..") ? Path.GetDirectoryName(path)! : Path.Combine(Root, relative.Split('/')[0]);
         var media = Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories)
-            .Where(f => !f.StartsWith(cache, StringComparison.Ordinal))
+            .Where(f => !f.Contains("/tts-cache/", StringComparison.Ordinal))
             .Where(f => PageCanvas.ImageExtensions.Contains(Path.GetExtension(f))
                         || GmeBuilder.MediaExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
             .Order()
