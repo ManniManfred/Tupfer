@@ -81,6 +81,16 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void Log(string message) => LogText += message + Environment.NewLine;
 
+    /// <summary>Protokoll unten anzeigen (Menü Erstellen); Fehler und Hinweise blenden es ein.</summary>
+    [ObservableProperty] bool _showLog;
+
+    /// <summary>Meldung, die gelesen werden soll (Fehler, Hinweis, Ergebnis): blendet das Protokoll ein.</summary>
+    void Notice(string message)
+    {
+        Log(message);
+        ShowLog = true;
+    }
+
     ProjectViewModel CreateDefaultProject()
     {
         var p = new ProjectViewModel(Log) { Comment = "Mein tiptoi-Buch", Welcome = "willkommen" };
@@ -102,7 +112,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Log($"Fehler bei {action}: {ex.Message}");
+            Notice($"Fehler bei {action}: {ex.Message}");
         }
     }
 
@@ -143,14 +153,14 @@ public partial class MainWindowViewModel : ObservableObject
         if (!result.Success)
         {
             ProgramErrors = string.Join(Environment.NewLine, result.Errors);
-            Log($"C#-Programm: {result.Errors.Count} Fehler – siehe Tab „Programm (C#)“.");
+            Notice($"C#-Programm: {result.Errors.Count} Fehler – siehe Tab „Programm (C#)“.");
             SelectedTab = ProgramTab;
             return false;
         }
         if (Project.ApplyProgram(result) is { } error)
         {
             ProgramErrors = error;
-            Log(error);
+            Notice(error);
             SelectedTab = ProgramTab;
             return false;
         }
@@ -177,7 +187,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (!string.IsNullOrWhiteSpace(Project.Program))
         {
-            Log("Das Programm ist nicht leer – das Beispiel wird nur in ein leeres Programm eingefügt.");
+            Notice("Das Programm ist nicht leer – das Beispiel wird nur in ein leeres Programm eingefügt.");
             return;
         }
         Project.Program = ProgramExample;
@@ -247,7 +257,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Log($"Fehler beim Öffnen von {path}: {ex.Message}");
+            Notice($"Fehler beim Öffnen von {path}: {ex.Message}");
         }
     }
 
@@ -340,13 +350,13 @@ public partial class MainWindowViewModel : ObservableObject
             if (await BuildGmeInternal(Project.ToFile(BaseDir), BaseDir, path))
             {
                 await Dialogs!.SavedAsync(path);
-                Log($"GME erstellt: {name}.gme – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
+                Notice($"GME erstellt: {name}.gme – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
             }
             return;
         }
         if (FilePath == null)
         {
-            Log("Bitte das Projekt zuerst speichern – die GME-Datei wird neben der Projektdatei erzeugt.");
+            Notice("Bitte das Projekt zuerst speichern – die GME-Datei wird neben der Projektdatei erzeugt.");
             await SaveProjectAs();
             if (FilePath == null) return;
         }
@@ -369,7 +379,7 @@ public partial class MainWindowViewModel : ObservableObject
             ok = await BuildGmeInternal(Project.ToFile(dir), dir, gme);
         }
         if (ok)
-            Log($"GME erstellt: {gme} – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
+            Notice($"GME erstellt: {gme} – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
     });
 
     void LogFromAnyThread(string message) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Log(message));
@@ -380,7 +390,7 @@ public partial class MainWindowViewModel : ObservableObject
         int exit = await TttoolRunner.RunAsync(Project.TttoolPath, Path.GetDirectoryName(yaml)!, LogFromAnyThread,
             "assemble", Path.GetFileName(yaml));
         if (exit != 0)
-            Log($"tttool wurde mit Code {exit} beendet.");
+            Notice($"tttool wurde mit Code {exit} beendet.");
         return exit == 0;
     }
 
@@ -426,7 +436,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (path == null) return;
 
         foreach (var p in Validate())
-            Log("Warnung: " + p);
+            Notice("Warnung: " + p);
 
         var specs = new List<PdfPageSpec>();
         foreach (var page in Project.Pages)
@@ -479,7 +489,7 @@ public partial class MainWindowViewModel : ObservableObject
             : await BuildGmeInternal(PrinterTest.CreateProject(), Path.GetDirectoryName(yaml)!, gme);
         await Dialogs.SavedAsync(ok ? [path, gme] : [path]);
         if (ok)
-            Log($"GME erstellt: {gme} – auf den Stift kopieren, Seite drucken und die Varianten durchtippen.");
+            Notice($"GME erstellt: {gme} – auf den Stift kopieren, Seite drucken und die Varianten durchtippen.");
     });
 
     [RelayCommand]
@@ -488,7 +498,7 @@ public partial class MainWindowViewModel : ObservableObject
         var area = Project.SelectedPage?.SelectedArea;
         if (area?.Oid is not { } oid)
         {
-            Log("Bitte zuerst eine Fläche mit gültigem Code auswählen.");
+            Notice("Bitte zuerst eine Fläche mit gültigem Code auswählen.");
             return;
         }
         var path = await Dialogs!.SaveAsync("OID als PNG exportieren", $"oid-{oid}.png", "PNG", ".png");
@@ -651,7 +661,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (Project.SelectedScript is { Generated: true })
         {
-            Log("Dieses Skript stammt aus dem C#-Programm – bitte dort ändern.");
+            Notice("Dieses Skript stammt aus dem C#-Programm – bitte dort ändern.");
             return;
         }
         if (Project.SelectedScript is { } s)
@@ -704,7 +714,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             if (string.IsNullOrWhiteSpace(speak.Text))
             {
-                Log($"„{speak.Name}“ hat noch keinen Text.");
+                Notice($"„{speak.Name}“ hat noch keinen Text.");
                 return;
             }
             var language = string.IsNullOrWhiteSpace(Project.Language) ? "en" : Project.Language;
@@ -791,7 +801,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (FilePath != null || !IsDesktop)
             return true;
-        Log("Bitte das Projekt zuerst speichern – Aufnahmen werden neben der Projektdatei abgelegt.");
+        Notice("Bitte das Projekt zuerst speichern – Aufnahmen werden neben der Projektdatei abgelegt.");
         await SaveProjectAs();
         return FilePath != null;
     }

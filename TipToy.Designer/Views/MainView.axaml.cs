@@ -24,7 +24,10 @@ public partial class MainView : UserControl
                 {
                     if (e.PropertyName == nameof(MainWindowViewModel.LogText))
                         LogBox.CaretIndex = LogBox.Text?.Length ?? 0;
+                    else if (e.PropertyName == nameof(MainWindowViewModel.ShowLog))
+                        UpdateLogRow();
                 };
+                UpdateLogRow();
             }
         };
         // Vor dem ScrollViewer abfangen, damit Strg+Mausrad nicht zusätzlich scrollt
@@ -71,7 +74,7 @@ public partial class MainView : UserControl
         GmeLabel.IsVisible = !compact;
         ZoomSlider.IsVisible = !compact;
         CompactBar.IsVisible = compact;
-        RootGrid.RowDefinitions[3].Height = new GridLength(compact ? 80 : 140);
+        UpdateLogRow(compact ? 80 : 140);
 
         StackColumns(ScriptsGrid, compact, "250,12,*,12,340", "180,8,*,0,0", hideLast: true);
         StackColumns(ProjectGrid, compact, "*,12,*", "Auto,12,Auto");
@@ -80,6 +83,21 @@ public partial class MainView : UserControl
         // Auf dem Handy passt eine ganze Seite bei 100 % nicht auf den Bildschirm
         if (compact && first)
             Dispatcher.UIThread.Post(FitPage, DispatcherPriority.Background);
+    }
+
+    /// <summary>Höhe des Protokolls, wenn es angezeigt wird (merkt sich das Verschieben mit dem Trenner).</summary>
+    double _logHeight = 140;
+
+    void UpdateLogRow(double? height = null)
+    {
+        var rows = RootGrid.RowDefinitions;
+        if (height != null)
+            _logHeight = height.Value;
+        else if (rows[3].Height.Value > 0)
+            _logHeight = rows[3].Height.Value;
+        bool show = DataContext is MainWindowViewModel { ShowLog: true };
+        rows[2].Height = new GridLength(show ? 6 : 0);
+        rows[3].Height = new GridLength(show ? _logHeight : 0);
     }
 
     /// <summary>Spalten 0, 2, 4 … eines Grids im kompakten Layout als Zeilen untereinander.</summary>

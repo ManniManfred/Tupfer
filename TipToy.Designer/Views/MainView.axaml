@@ -47,7 +47,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid x:Name="RootGrid" RowDefinitions="Auto,*,6,140">
+  <Grid x:Name="RootGrid" RowDefinitions="Auto,*,0,0">
 
     <!-- ================= Kopfzeile ================= -->
     <Border Grid.Row="0" Background="{StaticResource CardBackground}"
@@ -120,11 +120,13 @@
             <MenuItem Header="Seiten als _PDF …" Command="{Binding ExportPdfCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconPrint}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Bilder und Texte mitdrucken" ToggleType="CheckBox" IsChecked="{Binding PrintElements}" />
+            <MenuItem Header="Bilder und Texte mitdrucken" ToggleType="CheckBox" IsChecked="{Binding PrintElements, Mode=TwoWay}" />
             <MenuItem Header="OID-_Tabelle als PDF …" Command="{Binding ExportOidTableCommand}" />
             <MenuItem Header="Gewählte Fläche als P_NG …" Command="{Binding ExportAreaPngCommand}" />
             <Separator />
             <MenuItem Header="_Drucker-Testseite …" Command="{Binding ExportPrinterTestCommand}" />
+            <Separator />
+            <MenuItem Header="P_rotokoll anzeigen" ToggleType="CheckBox" IsChecked="{Binding ShowLog, Mode=TwoWay}" />
           </MenuItem>
         </Menu>
 
@@ -686,8 +688,9 @@
     </TabControl>
 
     <!-- ================= Protokoll ================= -->
-    <GridSplitter x:Name="LogSplitter" Grid.Row="2" Background="Transparent" ResizeDirection="Rows" />
-    <Border Grid.Row="3" Classes="card" Margin="12,0,12,12" Padding="0" MinHeight="60">
+    <GridSplitter x:Name="LogSplitter" Grid.Row="2" Background="Transparent" ResizeDirection="Rows"
+                  IsVisible="{Binding ShowLog}" />
+    <Border x:Name="LogPanel" Grid.Row="3" Classes="card" IsVisible="{Binding ShowLog}" Margin="12,0,12,12" Padding="0" MinHeight="60">
       <DockPanel>
         <TextBlock DockPanel.Dock="Top" Classes="label" Text="PROTOKOLL" Margin="14,8,14,0" FontSize="11" />
         <TextBox IsReadOnly="True" TextWrapping="Wrap" Classes="code" FontSize="12" Text="{Binding LogText}" x:Name="LogBox"
