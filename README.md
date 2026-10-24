@@ -95,6 +95,12 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   Audiodateien werden nacheinander abgespielt. Rechts stehen die Registerwerte und der Ablauf
   (welche Zeile, welche Befehle). *Neu starten* entspricht dem Antippen des Produkt-Codes.
   Spiele (`G`), Timer und Soundprofile werden nicht simuliert.
+- **Automatisch gesichert:** Der Bearbeitungsstand wird laufend (jede Sekunde, wenn sich etwas
+  geändert hat) gesichert und beim nächsten Start wiederhergestellt – auch ein noch nicht gespeichertes
+  Projekt. Im Browser übersteht er so ein Neuladen der Seite (gespeichert im Browser mit Bildern und
+  Aufnahmen), auf dem Desktop einen Absturz (`%AppData%\TipToyDesigner` bzw. `~/.config/TipToyDesigner`).
+  Das ersetzt nicht das Speichern: Die Projektdatei selbst wird nur mit *Speichern* geändert.
+  Rückgängig/Wiederholen gilt nach dem Neustart erst für neue Änderungen.
 - **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
 - **Drucken (Strg+P):** Seiten direkt drucken. Auf dem Desktop geht es an den Standarddrucker
   (Windows: über das PDF-Programm, falls es Drucken anbietet; Linux/macOS: über `lp`), sonst öffnet

@@ -130,14 +130,8 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
     /// </summary>
     static void DownloadProject(string path)
     {
-        var relative = Path.GetRelativePath(Root, path);
-        var dir = relative.StartsWith("..") ? Path.GetDirectoryName(path)! : Path.Combine(Root, relative.Split('/')[0]);
-        var media = Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories)
-            .Where(f => !f.Contains("/tts-cache/", StringComparison.Ordinal))
-            .Where(f => PageCanvas.ImageExtensions.Contains(Path.GetExtension(f))
-                        || GmeBuilder.MediaExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
-            .Order()
-            .ToList();
+        var dir = WorkDirOf(path);
+        var media = MediaFiles(dir);
         if (media.Count == 0)
         {
             BrowserInterop.Download(Path.GetFileName(path), File.ReadAllBytes(path), "application/json");
@@ -149,6 +143,30 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
             foreach (var file in media.Prepend(path))
                 zip.CreateEntryFromFile(file, Path.GetRelativePath(dir, file).Replace('\\', '/'));
         BrowserInterop.Download(ProjectStore.BaseName(path) + ".zip", ms.ToArray(), "application/zip");
+    }
+
+    /// <summary>Das Arbeitsverzeichnis (/tiptoy/projektN), in dem die Datei liegt.</summary>
+    public static string WorkDirOf(string path)
+    {
+        var relative = Path.GetRelativePath(Root, path);
+        return relative.StartsWith("..") ? Path.GetDirectoryName(path)! : Path.Combine(Root, relative.Split('/')[0]);
+    }
+
+    /// <summary>Bilder und Audiodateien im Verzeichnis (ohne den Zwischenspeicher der Sprachausgabe).</summary>
+    public static List<string> MediaFiles(string dir) =>
+        !Directory.Exists(dir) ? [] : Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories)
+            .Where(f => !f.Contains("/tts-cache/", StringComparison.Ordinal))
+            .Where(f => PageCanvas.ImageExtensions.Contains(Path.GetExtension(f))
+                        || GmeBuilder.MediaExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+            .Order()
+            .ToList();
+
+    /// <summary>Ein wiederhergestelltes Arbeitsverzeichnis: Neue bekommen eine höhere Nummer.</summary>
+    public static void ReserveWorkDir(string path)
+    {
+        var name = Path.GetRelativePath(Root, path).Split('/')[0];
+        if (name.StartsWith("projekt") && int.TryParse(name["projekt".Length..], out var n))
+            _workDirs = Math.Max(_workDirs, n);
     }
 
     static string MimeType(string path) => Path.GetExtension(path).ToLowerInvariant() switch

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using TipToy.Designer.Services;
 using TipToy.Designer.ViewModels;
 using TipToy.Designer.Views;
 
@@ -22,8 +23,11 @@ public partial class App : Application
         var vm = new MainWindowViewModel();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            if (desktop.Args is { Length: > 0 } args)
-                vm.Load(args[0]);
+            bool hasArgs = desktop.Args is { Length: > 0 };
+            if (hasArgs)
+                vm.Load(desktop.Args![0]);
+            MainWindowViewModel.AutoSaveStore ??= new FileAutoSaveStore();
+            _ = vm.StartAsync(null, restore: !hasArgs);
             var window = new MainWindow { DataContext = vm };
             vm.Dialogs = CreateDialogs(window);
             desktop.MainWindow = window;
@@ -34,9 +38,8 @@ public partial class App : Application
             var view = new MainView { DataContext = vm };
             view.AttachedToVisualTree += (_, _) => vm.Dialogs ??= CreateDialogs(TopLevel.GetTopLevel(view)!);
             singleView.MainView = view;
-            // z. B. index.html?beispiel=tic-tac-toi
-            if (StartExample is { } example)
-                vm.OpenExampleCommand.Execute(example);
+            // z. B. index.html?beispiel=tic-tac-toi, sonst der zuletzt gesicherte Stand
+            _ = vm.StartAsync(StartExample, restore: true);
         }
         base.OnFrameworkInitializationCompleted();
     }

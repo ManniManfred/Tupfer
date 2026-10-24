@@ -25,7 +25,16 @@ const runtime = await dotnet
 runtime.setModuleImports('tiptoy', tiptoy);
 
 const config = runtime.getConfig();
-await runtime.runMain(config.mainAssemblyName, [globalThis.location.href]);
+const pageUrl = globalThis.location.href;
+// ?beispiel=… nur einmal öffnen: Beim Neuladen soll der automatisch gesicherte Stand zurückkommen
+{
+    const url = new URL(pageUrl);
+    if (url.searchParams.has('beispiel')) {
+        url.searchParams.delete('beispiel');
+        history.replaceState(null, '', url);
+    }
+}
+await runtime.runMain(config.mainAssemblyName, [pageUrl]);
 
 // Mit ?diagnose in der Adresse: Größenangaben des Browsers anzeigen (zur Fehlersuche bei der Darstellung)
 if (new URLSearchParams(location.search).has('diagnose')) {

@@ -14,12 +14,14 @@ public static class ProjectStore
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public static ProjectFile Load(string path) =>
-        JsonSerializer.Deserialize<ProjectFile>(File.ReadAllText(path), Options)
-        ?? throw new InvalidDataException("Leere Projektdatei.");
+    public static ProjectFile Load(string path) => FromJson(File.ReadAllText(path));
 
-    public static void Save(ProjectFile project, string path) =>
-        File.WriteAllText(path, JsonSerializer.Serialize(project, Options));
+    public static void Save(ProjectFile project, string path) => File.WriteAllText(path, ToJson(project));
+
+    public static ProjectFile FromJson(string json) =>
+        JsonSerializer.Deserialize<ProjectFile>(json, Options) ?? throw new InvalidDataException("Leere Projektdatei.");
+
+    public static string ToJson(ProjectFile project) => JsonSerializer.Serialize(project, Options);
 
     /// <summary>Basisname ohne ".tiptoy.json", z. B. "tic-tac-toi".</summary>
     public static string BaseName(string projectPath)

@@ -18,6 +18,7 @@ static class Program
         TextToSpeech.PrepareAsync = BrowserInterop.LoadSpeechAsync;
         TextToSpeech.Synthesizer = BrowserInterop.Speak;
         Audio.Device = new BrowserAudio();
+        MainWindowViewModel.AutoSaveStore = new BrowserAutoSaveStore();
         BrowserInterop.SetTitle(MainWindowViewModel.AppName);
         MainWindowViewModel.CanSaveToPen = BrowserInterop.CanPickSaveFile();
 

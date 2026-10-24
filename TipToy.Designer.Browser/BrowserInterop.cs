@@ -32,6 +32,26 @@ static partial class BrowserInterop
     [JSImport("writePickedFile", "tiptoy")]
     public static partial Task<string> WritePickedFileAsync();
 
+    /// <summary>Sichert den Bearbeitungsstand (JSON) in IndexedDB.</summary>
+    [JSImport("autosaveSave", "tiptoy")]
+    public static partial Task AutoSaveSaveAsync(string json);
+
+    /// <summary>Übergibt die Bilder und Audiodateien (ZIP) für <see cref="AutoSaveSaveMediaAsync"/>.</summary>
+    [JSImport("autosaveSetMedia", "tiptoy")]
+    public static partial void AutoSaveSetMedia([JSMarshalAs<JSType.MemoryView>] Span<byte> zip);
+
+    /// <summary>Sichert die übergebenen Bilder und Audiodateien in IndexedDB.</summary>
+    [JSImport("autosaveSaveMedia", "tiptoy")]
+    public static partial Task AutoSaveSaveMediaAsync();
+
+    /// <summary>Gesicherter Bearbeitungsstand (JSON) oder null.</summary>
+    [JSImport("autosaveLoad", "tiptoy")]
+    public static partial Task<string?> AutoSaveLoadAsync();
+
+    /// <summary>Gesicherte Bilder und Audiodateien (ZIP) als Base64, leer wenn keine.</summary>
+    [JSImport("autosaveLoadMedia", "tiptoy")]
+    public static partial Task<string> AutoSaveLoadMediaAsync();
+
     /// <summary>Setzt den Titel des Browser-Tabs.</summary>
     [JSImport("setTitle", "tiptoy")]
     public static partial void SetTitle(string title);

@@ -87,6 +87,69 @@ export async function writePickedFile() {
     return file.name;
 }
 
+// ---------- Automatisch gesicherter Bearbeitungsstand (IndexedDB) ----------
+
+let database = null;
+let pendingMedia = null;
+
+function autosaveStore(mode) {
+    database ??= new Promise((resolve, reject) => {
+        const request = indexedDB.open('tiptoy', 1);
+        request.onupgradeneeded = () => request.result.createObjectStore('autosave');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+    return database.then(db => db.transaction('autosave', mode));
+}
+
+async function autosavePut(key, value) {
+    const transaction = await autosaveStore('readwrite');
+    transaction.objectStore('autosave').put(value, key);
+    return new Promise((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+
+async function autosaveGet(key) {
+    const request = (await autosaveStore('readonly')).objectStore('autosave').get(key);
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+/** Sichert den Bearbeitungsstand (JSON). */
+export function autosaveSave(json) {
+    return autosavePut('project', json);
+}
+
+/** Merkt sich die Bilder und Audiodateien (ZIP) für autosaveSaveMedia. */
+export function autosaveSetMedia(zip) {
+    pendingMedia = zip.slice();
+}
+
+/** Sichert die gemerkten Bilder und Audiodateien. */
+export async function autosaveSaveMedia() {
+    const data = pendingMedia;
+    pendingMedia = null;
+    await autosavePut('media', data ?? new Uint8Array(0));
+}
+
+/** Liefert den gesicherten Bearbeitungsstand oder null. */
+export async function autosaveLoad() {
+    return (await autosaveGet('project')) ?? null;
+}
+
+/** Liefert die gesicherten Bilder und Audiodateien (ZIP) Base64-kodiert, leer wenn keine. */
+export async function autosaveLoadMedia() {
+    const bytes = (await autosaveGet('media')) ?? new Uint8Array(0);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000)
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(binary);
+}
+
 /** Setzt den Titel des Browser-Tabs. */
 export function setTitle(title) {
     document.title = title;
