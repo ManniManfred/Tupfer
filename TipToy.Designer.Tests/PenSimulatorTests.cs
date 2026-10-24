@@ -1,5 +1,6 @@
 using TipToy.Designer.Gme;
 using TipToy.Designer.Model;
+using TipToy.Designer.Services;
 using Xunit;
 
 namespace TipToy.Designer.Tests;
@@ -90,5 +91,46 @@ public class PenSimulatorTests
     {
         var ex = Assert.Throws<ScriptParseException>(() => Pen("", "", ("kaputt", ["P(a)", "X(1)"])));
         Assert.Contains("„kaputt“, Zeile 2", ex.Message);
+    }
+
+    [Fact]
+    public void TicTacToeWartetNachSiegAufStart()
+    {
+        var pen = new PenSimulator();
+        pen.Load(ProjectStore.Load(Path.Combine(AppContext.BaseDirectory, "Programme", "tic-tac-toi.tiptoy.json")));
+        pen.Start();
+        // Kreuz: OL, OM, OR – Kreis: ML, MM
+        foreach (var feld in new[] { "feldOL", "feldML", "feldOM", "feldMM" })
+            pen.Tap(feld);
+        Assert.Equal(["here_now_cross", "player1wins", "new_game"], pen.Tap("feldOR").Media);
+
+        // Weitere Felder starten kein neues Spiel
+        Assert.Equal(["game_over"], pen.Tap("feldUL").Media);
+        Assert.Equal(["game_over"], pen.Tap("feldOL").Media);
+
+        // Start setzt zurück, Kreuz beginnt
+        Assert.Equal(["welcome", "player1"], pen.Start().Media);
+        Assert.Equal(["here_now_cross", "player2"], pen.Tap("feldUL").Media);
+    }
+
+    [Fact]
+    public void TicTacToeUnentschieden()
+    {
+        var pen = new PenSimulator();
+        pen.Load(ProjectStore.Load(Path.Combine(AppContext.BaseDirectory, "Programme", "tic-tac-toi.tiptoy.json")));
+        pen.Start();
+        // X O X / X O O / O X X – kein Dreier
+        foreach (var feld in new[] { "feldOL", "feldOM", "feldOR", "feldMM", "feldML", "feldMR", "feldUM", "feldUL" })
+            pen.Tap(feld);
+        Assert.Equal(["here_now_cross", "draw", "new_game"], pen.Tap("feldUR").Media);
+        Assert.Equal(["game_over"], pen.Tap("feldMM").Media);
+    }
+
+    [Fact]
+    public void TicTacToeLaesstSichBauen()
+    {
+        var file = ProjectStore.Load(Path.Combine(AppContext.BaseDirectory, "Programme", "tic-tac-toi.tiptoy.json"));
+        var gme = GmeBuilder.Build(file, AppContext.BaseDirectory, (_, _) => Audio.Wav(new short[100]));
+        Assert.NotEmpty(gme);
     }
 }

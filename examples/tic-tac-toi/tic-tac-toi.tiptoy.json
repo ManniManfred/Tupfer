@@ -18,6 +18,7 @@
       "Name": "feldOL",
       "Code": 3946,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$OL == 0? $OL := $turn J(here_now)",
         "$OL == 1? P(here_cross) J(next)",
         "$OL == 2? P(here_circle) J(next)"
@@ -27,6 +28,7 @@
       "Name": "feldOM",
       "Code": 3952,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$OM == 0? $OM := $turn J(here_now)",
         "$OM == 1? P(here_cross) J(next)",
         "$OM == 2? P(here_circle) J(next)"
@@ -36,6 +38,7 @@
       "Name": "feldOR",
       "Code": 3953,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$OR == 0? $OR := $turn J(here_now)",
         "$OR == 1? P(here_cross) J(next)",
         "$OR == 2? P(here_circle) J(next)"
@@ -45,6 +48,7 @@
       "Name": "feldML",
       "Code": 3949,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$ML == 0? $ML := $turn J(here_now)",
         "$ML == 1? P(here_cross) J(next)",
         "$ML == 2? P(here_circle) J(next)"
@@ -54,6 +58,7 @@
       "Name": "feldMM",
       "Code": 3950,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$MM == 0? $MM := $turn J(here_now)",
         "$MM == 1? P(here_cross) J(next)",
         "$MM == 2? P(here_circle) J(next)"
@@ -63,6 +68,7 @@
       "Name": "feldMR",
       "Code": 3951,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$MR == 0? $MR := $turn J(here_now)",
         "$MR == 1? P(here_cross) J(next)",
         "$MR == 2? P(here_circle) J(next)"
@@ -72,6 +78,7 @@
       "Name": "feldUL",
       "Code": 3954,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$UL == 0? $UL := $turn J(here_now)",
         "$UL == 1? P(here_cross) J(next)",
         "$UL == 2? P(here_circle) J(next)"
@@ -81,6 +88,7 @@
       "Name": "feldUM",
       "Code": 3955,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$UM == 0? $UM := $turn J(here_now)",
         "$UM == 1? P(here_cross) J(next)",
         "$UM == 2? P(here_circle) J(next)"
@@ -90,6 +98,7 @@
       "Name": "feldUR",
       "Code": 3956,
       "Lines": [
+        "$over == 1? P(game_over)",
         "$UR == 0? $UR := $turn J(here_now)",
         "$UR == 1? P(here_cross) J(next)",
         "$UR == 2? P(here_circle) J(next)"
@@ -115,7 +124,7 @@
         "$UL == $turn? $UM == $turn? $UR == $turn? J(win)",
         "$OL == $turn? $MM == $turn? $UR == $turn? J(win)",
         "$OR == $turn? $MM == $turn? $UL == $turn? J(win)",
-        "$set == 9? P(draw) J(reset)",
+        "$set == 9? PA(draw, new_game) $over := 1",
         "$turn == 1? $turn := 2 J(next)",
         "$turn == 2? $turn := 1 J(next)"
       ]
@@ -124,22 +133,8 @@
       "Name": "win",
       "Code": 3961,
       "Lines": [
-        "$turn == 1? P(player1wins) $turn := 2 J(reset)",
-        "$turn == 2? P(player2wins) $turn := 1 J(reset)"
-      ]
-    },
-    {
-      "Name": "reset",
-      "Code": 3959,
-      "Lines": [
-        "$set:=0 $OL:=0 $OM:=0 $OR:=0 $ML:=0 $MM:=0 $MR:=0 J(reset2)"
-      ]
-    },
-    {
-      "Name": "reset2",
-      "Code": 3960,
-      "Lines": [
-        "$UL:=0 $UM:=0 $UR:=0 J(next)"
+        "$turn == 1? PA(player1wins, new_game) $over := 1",
+        "$turn == 2? PA(player2wins, new_game) $over := 1"
       ]
     },
     {
@@ -191,6 +186,14 @@
     {
       "Name": "draw",
       "Text": "Unentschieden"
+    },
+    {
+      "Name": "new_game",
+      "Text": "Tippe auf Start für ein neues Spiel."
+    },
+    {
+      "Name": "game_over",
+      "Text": "Das Spiel ist vorbei. Tippe auf Start für ein neues Spiel."
     }
   ],
   "Pages": [

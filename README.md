@@ -27,6 +27,9 @@ Zwei Spieler – **Kreuz** und **Kreis** – tippen abwechselnd auf die neun Fel
 Der Stift sagt an, wer an der Reihe ist, ob ein Feld bereits belegt ist, und erkennt Sieg
 (Reihe, Spalte, Diagonale) sowie Unentschieden. Danach wird das Spielfeld automatisch
 zurückgesetzt und der Verlierer beginnt die nächste Runde.
+Im Beispielprojekt für den TipToy Designer (`examples/tic-tac-toi`, auch in der Web-App) wartet
+das Spiel nach Sieg oder Unentschieden dagegen, bis *Start* angetippt wird; bis dahin sagen die
+Felder nur, dass das Spiel vorbei ist.
 
 Feldbezeichnungen und zugehörige OID-Codes:
 
