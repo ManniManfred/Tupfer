@@ -1,6 +1,16 @@
 import { dotnet } from './_framework/dotnet.js';
 import * as tiptoy from './tiptoy.js';
 
+// Avalonia übernimmt die Sicherheitsabstände des Geräts (env(safe-area-inset-*)) als Rand, vertauscht dabei
+// aber unten und rechts. Firefox auf Android meldet unten einen Abstand – die App blieb rechts schmaler.
+// Die Seite reicht ohne viewport-fit=cover ohnehin nicht unter Notch oder Navigationsleiste: Abstände auf 0.
+{
+    const setProperty = CSSStyleDeclaration.prototype.setProperty;
+    CSSStyleDeclaration.prototype.setProperty = function (name, value, priority) {
+        return setProperty.call(this, name, name.startsWith('--av-sa') ? '0px' : value, priority);
+    };
+}
+
 const runtime = await dotnet
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()
