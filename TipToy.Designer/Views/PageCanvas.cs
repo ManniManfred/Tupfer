@@ -115,6 +115,8 @@ public class PageCanvas : Control
     {
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
+        // Beim Fokussieren (Antippen) nicht zur Ecke der Seite springen
+        AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true);
     }
 
     public PageViewModel? Page

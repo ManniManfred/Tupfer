@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Input.GestureRecognizers;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using TipToy.Designer.ViewModels;
@@ -36,6 +37,7 @@ public partial class MainView : UserControl
         PageScroll.AddHandler(PointerMovedEvent, OnPanMove, RoutingStrategies.Tunnel);
         PageScroll.AddHandler(PointerReleasedEvent, OnPanEnd, RoutingStrategies.Tunnel);
         PageScroll.AddHandler(PointerCaptureLostEvent, (_, e) => RemoveTouch(e.Pointer));
+        PageScroll.TemplateApplied += (_, _) => Dispatcher.UIThread.Post(DisableTouchScrolling);
 
         FitButton.Click += (_, _) => FitPage();
         ShowCanvas.Click += (_, _) => ShowPagesPanel(CanvasPanel);
@@ -140,6 +142,18 @@ public partial class MainView : UserControl
     }
 
     // ---------- Ansicht verschieben und zoomen ----------
+
+    /// <summary>
+    /// Wischen mit dem Finger würde die Seite sonst verschieben und zugleich auf der Seite zeichnen bzw. ziehen.
+    /// Verschoben wird nur bei eingeschaltetem „Ansicht verschieben“ (siehe <see cref="OnPanStart"/>).
+    /// </summary>
+    void DisableTouchScrolling()
+    {
+        if (PageScroll.Presenter is not InputElement presenter)
+            return;
+        foreach (var scroll in presenter.GestureRecognizers.OfType<ScrollGestureRecognizer>())
+            scroll.ScrollStartDistance = int.MaxValue;
+    }
 
     static readonly Cursor PanCursor = new(StandardCursorType.SizeAll);
 
