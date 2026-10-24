@@ -597,6 +597,16 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
+    /// <summary>Löscht die gewählte Fläche bzw. das gewählte Bild oder den Text.</summary>
+    [RelayCommand]
+    void DeleteSelection()
+    {
+        if (Project.SelectedPage?.SelectedArea != null)
+            DeleteArea();
+        else
+            DeleteElement();
+    }
+
     [RelayCommand]
     void DeleteArea()
     {

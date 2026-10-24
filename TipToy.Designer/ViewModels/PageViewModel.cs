@@ -42,13 +42,18 @@ public partial class PageViewModel : ObservableObject
     {
         if (value != null)
             SelectedElement = null;
+        OnPropertyChanged(nameof(HasSelection));
     }
 
     partial void OnSelectedElementChanged(ElementViewModel? value)
     {
         if (value != null)
             SelectedArea = null;
+        OnPropertyChanged(nameof(HasSelection));
     }
+
+    /// <summary>Eine Fläche oder ein Element ist gewählt (kann gelöscht werden).</summary>
+    public bool HasSelection => SelectedArea != null || SelectedElement != null;
 
     void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {

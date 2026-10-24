@@ -100,6 +100,10 @@
                       IsEnabled="{Binding Project.History.CanRedo}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconRedo}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Auswahl _löschen" InputGesture="Delete" Command="{Binding DeleteSelectionCommand}"
+                      IsEnabled="{Binding Project.SelectedPage.HasSelection, FallbackValue=False}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconDelete}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
             <Separator />
             <MenuItem Header="_Bild einfügen …" Command="{Binding InsertImageCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconImage}" Width="14" Height="14" /></MenuItem.Icon>
@@ -227,6 +231,11 @@
                   <Button Classes="tool" Command="{Binding RedoCommand}" IsEnabled="{Binding Project.History.CanRedo}"
                           ToolTip.Tip="Wiederholen (Strg+Y)">
                     <PathIcon Data="{StaticResource IconRedo}" />
+                  </Button>
+                  <Button Classes="tool" Command="{Binding DeleteSelectionCommand}"
+                          IsEnabled="{Binding Project.SelectedPage.HasSelection, FallbackValue=False}"
+                          ToolTip.Tip="Gewählte Fläche, gewähltes Bild oder gewählten Text löschen (Entf)">
+                    <PathIcon Data="{StaticResource IconDelete}" />
                   </Button>
                   <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
                   <Button Classes="tool" Command="{Binding InsertImageCommand}" ToolTip.Tip="Foto oder Bild einfügen">
