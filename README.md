@@ -106,9 +106,8 @@ dotnet run --project TipToy.Designer.Browser
 dotnet publish TipToy.Designer.Browser -c Release -o publish   # Ergebnis: publish/wwwroot
 ```
 
-Unter *Datei → Beispiele* lassen sich die Beispielprojekte aus `examples/` (Tic-Tac-Toe, auch als
-C#-Programm) direkt öffnen. Per Adresse geht es auch gleich beim Start:
-`…/index.html?beispiel=tic-tac-toi` bzw. `?beispiel=tic-tac-toi-csharp`. Weitere Beispiele werden in
+Unter *Datei → Beispiele* lässt sich das Tic-Tac-Toe-Beispiel aus `examples/` direkt öffnen. Per
+Adresse geht es auch gleich beim Start: `…/index.html?beispiel=tic-tac-toi`. Weitere Beispiele werden in
 `TipToy.Designer.Browser/Examples.cs` und der `.csproj` eingetragen.
 
 Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem Push auf `master` und
@@ -124,6 +123,9 @@ Unterschiede zur Desktop-Version:
 - **Sprachausgabe:** eingebaut mit [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als
   JavaScript, Stimmen für de, en, es, fr, it, nl); die Texte werden als WAV eingebettet.
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.
+- **Kein C#-Programm:** Der Übersetzer (Roslyn) würde die Web-App mehr als verdoppeln, deshalb fehlt
+  der Tab *Programm (C#)*. Projekte mit C#-Programm lassen sich trotzdem öffnen und bauen – dann
+  mit den zuletzt (in der Desktop-Version) übersetzten Skripten.
 - Schriftarten: Es steht nur die eingebaute Schrift (Inter) zur Verfügung.
 
 ### Typischer Ablauf

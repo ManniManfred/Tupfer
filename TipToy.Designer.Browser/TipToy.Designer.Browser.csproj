@@ -8,16 +8,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <RootNamespace>TipToy.Designer</RootNamespace>
-    <!-- Nur die Framework-Bibliotheken kürzen; YAML/JSON und Roslyn arbeiten mit Reflection -->
+    <!-- Nur die Framework-Bibliotheken kürzen; YAML und JSON arbeiten mit Reflection -->
     <TrimMode>partial</TrimMode>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     <!-- Prozesse (tttool, externe Sprachausgabe) werden im Browser nie gestartet; JSON-Typen bleiben erhalten (s. o.) -->
     <NoWarn>$(NoWarn);CA1416;IL2026</NoWarn>
   </PropertyGroup>
 
-  <!-- Der Designer selbst wird aus TipToy.Designer mitübersetzt (ohne Desktop-Start und Windows-Sprachausgabe) -->
+  <!-- Der Designer selbst wird aus TipToy.Designer mitübersetzt (ohne Desktop-Start, Windows-Sprachausgabe und C#-Übersetzer) -->
   <ItemGroup>
-    <Compile Include="../TipToy.Designer/**/*.cs" Exclude="../TipToy.Designer/bin/**;../TipToy.Designer/obj/**;../TipToy.Designer/Program.cs;../TipToy.Designer/Gme/WindowsSpeech.cs"
+    <Compile Include="../TipToy.Designer/**/*.cs" Exclude="../TipToy.Designer/bin/**;../TipToy.Designer/obj/**;../TipToy.Designer/Program.cs;../TipToy.Designer/Gme/WindowsSpeech.cs;../TipToy.Designer/Compiler/ProgramCompiler.cs"
              Link="Designer/%(RecursiveDir)%(Filename)%(Extension)" />
     <AvaloniaXaml Include="../TipToy.Designer/**/*.axaml" Exclude="../TipToy.Designer/bin/**;../TipToy.Designer/obj/**"
                   Link="Designer/%(RecursiveDir)%(Filename)%(Extension)" />
@@ -30,7 +30,6 @@
   <ItemGroup>
     <Content Include="../examples/tic-tac-toi/tic-tac-toi.tiptoy.json" Link="wwwroot/examples/tic-tac-toi/tic-tac-toi.tiptoy.json" />
     <Content Include="../examples/tic-tac-toi/tic-tac-toi.png" Link="wwwroot/examples/tic-tac-toi/tic-tac-toi.png" />
-    <Content Include="../examples/tic-tac-toi-csharp/tic-tac-toi-csharp.tiptoy.json" Link="wwwroot/examples/tic-tac-toi-csharp/tic-tac-toi-csharp.tiptoy.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,7 +39,6 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
   </ItemGroup>
 
 </Project>

@@ -12,7 +12,6 @@ static class Examples
     static readonly (string Id, string Title, string Main, string[] Files)[] List =
     [
         ("tic-tac-toi", "Tic-Tac-Toe", "tic-tac-toi/tic-tac-toi.tiptoy.json", ["tic-tac-toi/tic-tac-toi.png"]),
-        ("tic-tac-toi-csharp", "Tic-Tac-Toe als C#-Programm", "tic-tac-toi-csharp/tic-tac-toi-csharp.tiptoy.json", ["tic-tac-toi/tic-tac-toi.png"]),
     ];
 
     public static IReadOnlyList<ExampleProject> Create(Uri baseUri)

@@ -6,28 +6,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace TipToy.Designer.Compiler;
 
-public record CompileError(int Line, int Column, string Message)
-{
-    public override string ToString() => Line > 0 ? $"Zeile {Line}, Spalte {Column}: {Message}" : Message;
-}
-
-public record CompiledScript(string Name, List<string> Lines);
-
-public class CompileResult
-{
-    public List<CompiledScript> Scripts { get; } = new();
-
-    /// <summary>Namen der Skripte zum Antippen ([Oid]-Methoden); alle anderen sind Hilfsskripte.</summary>
-    public List<string> EntryPoints { get; } = new();
-
-    /// <summary>Startwerte der Register im tttool-Format, z. B. "$zug := 1".</summary>
-    public string Init { get; set; } = "";
-
-    public List<CompileError> Errors { get; } = new();
-
-    public bool Success => Errors.Count == 0;
-}
-
 class CompileException : Exception
 {
     public SyntaxNode? Node { get; }
@@ -52,6 +30,9 @@ class CompileException : Exception
 /// </summary>
 public class ProgramCompiler
 {
+    /// <summary>In der Web-App fehlt der Übersetzer (ohne Roslyn ist sie deutlich kleiner).</summary>
+    public static bool IsAvailable => true;
+
     public const int MaxCommandsPerLine = 8;
     const int MaxTermsPerCondition = 32;
 

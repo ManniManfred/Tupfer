@@ -105,11 +105,14 @@ public partial class MainWindowViewModel : ObservableObject
     // ---------- C#-Programm ----------
 
     /// <summary>Übersetzt das C#-Programm, falls vorhanden. false bei Fehlern.</summary>
-    bool EnsureProgram() => string.IsNullOrWhiteSpace(Project.Program) || TryCompileProgram(quiet: true);
+    /// <summary>Ohne Übersetzer (Web-App) werden die zuletzt übersetzten, gespeicherten Skripte verwendet.</summary>
+    bool EnsureProgram() => string.IsNullOrWhiteSpace(Project.Program) || !ProgramCompiler.IsAvailable || TryCompileProgram(quiet: true);
 
     [RelayCommand]
     void CompileProgram()
     {
+        if (!ProgramCompiler.IsAvailable)
+            return;
         if (string.IsNullOrWhiteSpace(Project.Program))
         {
             ProgramErrors = "Noch kein Programm – „Beispiel einfügen“ zeigt, wie es geht.";
@@ -192,8 +195,12 @@ public partial class MainWindowViewModel : ObservableObject
     void AfterLoad()
     {
         ProgramErrors = ProgramOutput = "";
-        if (!string.IsNullOrWhiteSpace(Project.Program))
+        if (string.IsNullOrWhiteSpace(Project.Program))
+            return;
+        if (ProgramCompiler.IsAvailable)
             TryCompileProgram(quiet: true);
+        else
+            Log("Hinweis: Das C#-Programm lässt sich hier nicht bearbeiten – es werden die zuletzt übersetzten Skripte verwendet.");
     }
 
     [RelayCommand]
