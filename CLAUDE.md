@@ -9,6 +9,9 @@
 
 ## Projekt
 
+- **Versionsnummer:** steht in `Directory.Build.props` (`<Version>`) und wird im Titel angezeigt.
+  Bei jeder Änderung an der App mit hochzählen (Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle).
+
 - Sprache in Code-Kommentaren, UI und Dokumentation: Deutsch.
 - `TipToy.Designer/` – Avalonia-App (.NET 10): `dotnet build TipToy.Designer`
 - `TipToy.Designer.Browser/` – dieselbe App für den Browser (WebAssembly). Übersetzt die Quellen aus

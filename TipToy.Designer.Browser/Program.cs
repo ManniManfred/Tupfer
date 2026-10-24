@@ -18,6 +18,7 @@ static class Program
         TextToSpeech.PrepareAsync = BrowserInterop.LoadSpeechAsync;
         TextToSpeech.Synthesizer = BrowserInterop.Speak;
         Audio.Device = new BrowserAudio();
+        BrowserInterop.SetTitle(MainWindowViewModel.AppName);
 
         // main.js übergibt die Adresse der Seite
         var pageUri = new Uri(args[0]);

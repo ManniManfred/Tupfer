@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 && rm -
 RUN dotnet workload install wasm-tools
 WORKDIR /src
 # Erst nur die Projektdateien, damit die Pakete im Docker-Cache bleiben
+COPY Directory.Build.props ./
 COPY TipToy.Designer/TipToy.Designer.csproj TipToy.Designer/
 COPY TipToy.Designer.Browser/TipToy.Designer.Browser.csproj TipToy.Designer.Browser/
 RUN dotnet restore TipToy.Designer.Browser

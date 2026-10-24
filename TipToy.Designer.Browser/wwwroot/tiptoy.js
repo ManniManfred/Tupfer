@@ -13,6 +13,11 @@ export function download(fileName, data, mimeType) {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
+/** Setzt den Titel des Browser-Tabs. */
+export function setTitle(title) {
+    document.title = title;
+}
+
 // ---------- Sprachausgabe mit meSpeak (eSpeak als JavaScript) ----------
 
 let sources = null;

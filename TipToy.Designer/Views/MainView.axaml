@@ -55,7 +55,7 @@
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0">
           <Image Source="/Assets/TipToy.png" Width="28" Height="28" />
-          <TextBlock x:Name="AppTitle" Text="TipToy Designer" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"
+          <TextBlock x:Name="AppTitle" Text="{x:Static vm:MainWindowViewModel.AppName}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"
                      Foreground="{StaticResource TextPrimary}" />
         </StackPanel>
 

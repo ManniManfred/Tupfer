@@ -69,7 +69,13 @@ public partial class MainWindowViewModel : ObservableObject
 
     const int ProgramTab = 2;
 
-    public string Title => $"TipToy Designer – {(FilePath == null ? "Neues Projekt" : Path.GetFileName(FilePath))}";
+    /// <summary>Programmversion (aus Directory.Build.props), z. B. „1.2.0“.</summary>
+    public static string Version { get; } = typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "";
+
+    /// <summary>Programmname mit Version.</summary>
+    public static string AppName { get; } = $"TipToy Designer {Version}";
+
+    public string Title => $"{AppName} – {(FilePath == null ? "Neues Projekt" : Path.GetFileName(FilePath))}";
 
     string BaseDir => FilePath != null ? Path.GetDirectoryName(FilePath)! : Environment.CurrentDirectory;
 

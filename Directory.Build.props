@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- Version des TipToy Designers (Desktop und Browser), wird im Titel angezeigt.
+         Bei jeder Änderung hochzählen: Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle. -->
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+</Project>

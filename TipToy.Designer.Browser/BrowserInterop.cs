@@ -9,6 +9,10 @@ static partial class BrowserInterop
     [JSImport("download", "tiptoy")]
     public static partial void Download(string fileName, [JSMarshalAs<JSType.MemoryView>] Span<byte> data, string mimeType);
 
+    /// <summary>Setzt den Titel des Browser-Tabs.</summary>
+    [JSImport("setTitle", "tiptoy")]
+    public static partial void SetTitle(string title);
+
     /// <summary>Lädt die Sprachausgabe (meSpeak) und die Stimme für die Sprache.</summary>
     [JSImport("loadSpeech", "tiptoy")]
     public static partial Task LoadSpeechAsync(string language);
