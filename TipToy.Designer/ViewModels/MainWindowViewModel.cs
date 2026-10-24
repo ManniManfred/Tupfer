@@ -13,6 +13,12 @@ public interface IFileDialogs
 {
     Task<string?> OpenAsync(string title, string filterName, params string[] patterns);
     Task<string?> SaveAsync(string title, string suggestedName, string filterName, string extension);
+
+    /// <summary>Die Dateien wurden geschrieben (im Browser werden sie jetzt heruntergeladen).</summary>
+    Task SavedAsync(params string[] paths) => Task.CompletedTask;
+
+    /// <summary>Ein neues, leeres Projekt wurde angelegt.</summary>
+    void ProjectCreated() { }
 }
 
 public partial class MainWindowViewModel : ObservableObject
@@ -23,6 +29,9 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     public IFileDialogs? Dialogs { get; set; }
+
+    /// <summary>false im Browser: dort gibt es keine externen Programme wie tttool.</summary>
+    public static bool IsDesktop => !OperatingSystem.IsBrowser();
 
     [ObservableProperty] ProjectViewModel _project;
 
@@ -83,6 +92,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         Project = CreateDefaultProject();
         FilePath = null;
+        Dialogs?.ProjectCreated();
         ProgramErrors = ProgramOutput = "";
         Log("Neues Projekt angelegt.");
     }
@@ -236,6 +246,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         Project.AssignCodes();
         ProjectStore.Save(Project.ToFile(BaseDir), FilePath);
+        await Dialogs!.SavedAsync(FilePath);
         Log($"Gespeichert: {FilePath}");
     });
 
@@ -249,6 +260,7 @@ public partial class MainWindowViewModel : ObservableObject
         Project.AssignCodes();
         ProjectStore.Save(Project.ToFile(Path.GetDirectoryName(path)!), path);
         FilePath = path;
+        await Dialogs!.SavedAsync(path);
         Log($"Gespeichert: {path}");
     });
 
@@ -268,6 +280,7 @@ public partial class MainWindowViewModel : ObservableObject
         var path = await Dialogs!.SaveAsync("tttool-YAML exportieren", name + ".yaml", "tttool YAML", ".yaml");
         if (path == null) return;
         WriteYaml(path);
+        await Dialogs!.SavedAsync(path, TttoolYaml.CodesPathFor(path));
     });
 
     void WriteYaml(string path)
@@ -283,6 +296,18 @@ public partial class MainWindowViewModel : ObservableObject
     Task BuildGme() => Guard("GME-Erstellung", async () =>
     {
         if (!EnsureProgram()) return;
+        if (!IsDesktop)
+        {
+            // Im Browser wird die GME-Datei direkt heruntergeladen, ohne das Projekt zu speichern
+            var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt";
+            var path = Path.Combine(BaseDir, name + ".gme");
+            if (await BuildGmeInternal(Project.ToFile(BaseDir), BaseDir, path))
+            {
+                await Dialogs!.SavedAsync(path);
+                Log($"GME erstellt: {name}.gme – auf den Stift kopieren und Produkt-Code {Project.ProductId} antippen.");
+            }
+            return;
+        }
         if (FilePath == null)
         {
             Log("Bitte das Projekt zuerst speichern – die GME-Datei wird neben der Projektdatei erzeugt.");
@@ -327,6 +352,8 @@ public partial class MainWindowViewModel : ObservableObject
     async Task<bool> BuildGmeInternal(ProjectFile file, string baseDir, string gmePath)
     {
         Log($"Baue {Path.GetFileName(gmePath)} …");
+        if (file.Speak.Count > 0 && TextToSpeech.PrepareAsync is { } prepare)
+            await prepare(string.IsNullOrWhiteSpace(file.Language) ? "en" : file.Language);
         var tts = new TextToSpeech(Path.Combine(baseDir, "tts-cache"), LogFromAnyThread);
         var bytes = await Task.Run(() => GmeBuilder.Build(file, baseDir, tts.Speak, warn: m => LogFromAnyThread("Warnung: " + m)));
         await File.WriteAllBytesAsync(gmePath, bytes);
@@ -382,6 +409,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         PdfWriter.Write(path, specs, Project.Dpi, Project.PixelSize);
+        await Dialogs.SavedAsync(path);
         Log($"PDF geschrieben: {path}. Mit {Project.Dpi} dpi und ohne Skalierung („Tatsächliche Größe“) drucken.");
     });
 
@@ -400,6 +428,7 @@ public partial class MainWindowViewModel : ObservableObject
         entries.AddRange(Project.Scripts.Where(x => x.Code.HasValue && !x.Helper).Select(x => (x.Name, x.Code!.Value)));
 
         PdfWriter.WriteOidTable(path, Project.Comment, entries, Project.Dpi, Project.PixelSize);
+        await Dialogs.SavedAsync(path);
         Log($"OID-Tabelle geschrieben: {path}");
     });
 
@@ -411,9 +440,10 @@ public partial class MainWindowViewModel : ObservableObject
         var yaml = PrinterTest.Write(path);
         Log($"Testseite geschrieben: {path}");
         var gme = Path.ChangeExtension(yaml, ".gme");
-        bool ok = Project.UseTttool
+        bool ok = Project.UseTttool && IsDesktop
             ? await RunTttoolAssemble(yaml)
             : await BuildGmeInternal(PrinterTest.CreateProject(), Path.GetDirectoryName(yaml)!, gme);
+        await Dialogs.SavedAsync(ok ? [path, gme] : [path]);
         if (ok)
             Log($"GME erstellt: {gme} – auf den Stift kopieren, Seite drucken und die Varianten durchtippen.");
     });
@@ -430,6 +460,7 @@ public partial class MainWindowViewModel : ObservableObject
         var path = await Dialogs!.SaveAsync("OID als PNG exportieren", $"oid-{oid}.png", "PNG", ".png");
         if (path == null) return;
         PngWriter.WriteOidPng(path, oid, area.Width, area.Height, Project.Dpi, Project.PixelSize);
+        await Dialogs.SavedAsync(path);
         Log($"PNG geschrieben: {path} ({area.Width:0.#} × {area.Height:0.#} mm bei {Project.Dpi} dpi)");
     });
 

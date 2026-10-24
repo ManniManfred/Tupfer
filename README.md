@@ -13,6 +13,7 @@ Avalonia-Anwendung, mit der man eigene tiptoi-Seiten gestalten und drucken kann.
 | `tic-tac-toi.gme` | Fertig gebaute Spieldatei für den tiptoi-Stift |
 | `tic-tac-toi.pdf` | Druckvorlage mit Spielfeld und OID-Codes |
 | `TipToy.Designer/` | Avalonia-Anwendung zum Gestalten von tiptoi-Seiten (siehe unten) |
+| `TipToy.Designer.Browser/` | Der Designer als Web-App (WebAssembly, siehe „TipToy Designer im Browser“) |
 | `examples/tic-tac-toi/` | Das Tic-Tac-Toe-Spiel als Designer-Projekt mit Spielfeld-Grafik |
 | `examples/tic-tac-toi-csharp/` | Das Tic-Tac-Toe-Spiel als C#-Programm (siehe „Programmieren in C#“) |
 | `TipToy.Designer.Tests/` | Tests für den C#-Übersetzer |
@@ -93,6 +94,32 @@ gleich, die GME-Dateien bei gleichen Audiodateien byteweise identisch mit `tttoo
 Auch die Codes für Skripte werden nach demselben Verfahren vergeben, sodass YAML-Export und
 tttool zusammenpassen. Nur Spiele (`games`) und Timer kann der eingebaute Builder nicht – dafür
 unter *Projekt* „GME mit externem tttool bauen“ aktivieren.
+
+### TipToy Designer im Browser
+
+Der Designer läuft auch ohne Installation im Browser (WebAssembly). Lokal starten:
+
+```bash
+dotnet workload install wasm-tools   # einmalig
+dotnet run --project TipToy.Designer.Browser
+# veröffentlichen (statische Dateien, z. B. für einen Webserver):
+dotnet publish TipToy.Designer.Browser -c Release -o publish   # Ergebnis: publish/wwwroot
+```
+
+Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem Push auf `master` und
+veröffentlicht sie auf GitHub Pages (einmalig unter *Settings → Pages → Source* „GitHub Actions“
+wählen).
+
+Unterschiede zur Desktop-Version:
+
+- **Dateien:** Der Browser darf nicht direkt auf die Festplatte schreiben. Gespeicherte Projekte,
+  PDFs, PNGs, YAML- und GME-Dateien werden **heruntergeladen**. Ein Projekt mit Bildern oder
+  Audiodateien wird als `.zip` heruntergeladen; zum Öffnen das ZIP wählen – oder die
+  `.tiptoy.json` zusammen mit ihren Bildern (Mehrfachauswahl).
+- **Sprachausgabe:** eingebaut mit [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als
+  JavaScript, Stimmen für de, en, es, fr, it, nl); die Texte werden als WAV eingebettet.
+- **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.
+- Schriftarten: Es steht nur die eingebaute Schrift (Inter) zur Verfügung.
 
 ### Typischer Ablauf
 

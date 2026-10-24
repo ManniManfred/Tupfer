@@ -11,6 +11,10 @@
 
 - Sprache in Code-Kommentaren, UI und Dokumentation: Deutsch.
 - `TipToy.Designer/` – Avalonia-App (.NET 10): `dotnet build TipToy.Designer`
+- `TipToy.Designer.Browser/` – dieselbe App für den Browser (WebAssembly). Übersetzt die Quellen aus
+  `TipToy.Designer/` mit (verlinkt, keine Kopie); Browser-Eigenheiten (Dateidialoge mit Download,
+  Sprachausgabe mit meSpeak in `wwwroot/`) liegen nur dort. Braucht `dotnet workload install wasm-tools`:
+  `dotnet publish TipToy.Designer.Browser -c Release -o publish`
 - Tests (u. a. C#-Übersetzer gegen natives C# und Original-YAML): `dotnet test TipToy.Designer.Tests`
 - `TipToy/` – altes Konsolenprogramm (Windows Forms), lässt sich unter Linux nicht bauen.
 - OID-Erzeugung (`TipToy.Designer/Oid/`) und GME-Erstellung (`TipToy.Designer/Gme/`) sind

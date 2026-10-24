@@ -1,0 +1,570 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TipToy.Designer.ViewModels"
+             xmlns:views="using:TipToy.Designer.Views"
+             x:Class="TipToy.Designer.Views.MainView"
+             x:DataType="vm:MainWindowViewModel"
+             Background="{StaticResource AppBackground}">
+
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveProjectCommand}" />
+    <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenProjectCommand}" />
+    <KeyBinding Gesture="Ctrl+N" Command="{Binding NewProjectCommand}" />
+    <KeyBinding Gesture="F5" Command="{Binding BuildGmeCommand}" />
+    <KeyBinding Gesture="F6" Command="{Binding CompileProgramCommand}" />
+  </UserControl.KeyBindings>
+
+  <Grid RowDefinitions="Auto,*,6,140">
+
+    <!-- ================= Kopfzeile ================= -->
+    <Border Grid.Row="0" Background="{StaticResource CardBackground}"
+            BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,0,1" Padding="12,6">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0">
+          <Image Source="/Assets/TipToy.png" Width="28" Height="28" />
+          <TextBlock Text="TipToy Designer" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"
+                     Foreground="{StaticResource TextPrimary}" />
+        </StackPanel>
+
+        <Menu Grid.Column="1" VerticalAlignment="Center">
+          <MenuItem Header="_Datei">
+            <MenuItem Header="_Neu" InputGesture="Ctrl+N" Command="{Binding NewProjectCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconNew}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="_Öffnen …" InputGesture="Ctrl+O" Command="{Binding OpenProjectCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconOpen}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="_Speichern" InputGesture="Ctrl+S" Command="{Binding SaveProjectCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Speichern _unter …" Command="{Binding SaveProjectAsCommand}" />
+            <Separator />
+            <MenuItem Header="tttool-YAML _importieren …" Command="{Binding ImportYamlCommand}" />
+            <MenuItem Header="tttool-YAML _exportieren …" Command="{Binding ExportYamlCommand}" />
+          </MenuItem>
+          <MenuItem Header="_Bearbeiten">
+            <MenuItem Header="_Rückgängig" InputGesture="Ctrl+Z" Command="{Binding UndoCommand}"
+                      IsEnabled="{Binding Project.History.CanUndo}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconUndo}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="_Wiederholen" InputGesture="Ctrl+Y" Command="{Binding RedoCommand}"
+                      IsEnabled="{Binding Project.History.CanRedo}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconRedo}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="_Bild einfügen …" Command="{Binding InsertImageCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconImage}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="_Text einfügen" Command="{Binding InsertTextCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconText}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+          </MenuItem>
+          <MenuItem Header="_Erstellen">
+            <MenuItem Header="_GME-Datei bauen" InputGesture="F5" Command="{Binding BuildGmeCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconPlay}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="C#-Programm _übersetzen" InputGesture="F6" Command="{Binding CompileProgramCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconCode}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Seiten als _PDF …" Command="{Binding ExportPdfCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconPrint}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Bilder und Texte mitdrucken" ToggleType="CheckBox" IsChecked="{Binding PrintElements}" />
+            <MenuItem Header="OID-_Tabelle als PDF …" Command="{Binding ExportOidTableCommand}" />
+            <MenuItem Header="Gewählte Fläche als P_NG …" Command="{Binding ExportAreaPngCommand}" />
+            <Separator />
+            <MenuItem Header="_Drucker-Testseite …" Command="{Binding ExportPrinterTestCommand}" />
+          </MenuItem>
+        </Menu>
+
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+          <Button Classes="tool" Command="{Binding NewProjectCommand}" ToolTip.Tip="Neues Projekt (Strg+N)">
+            <PathIcon Data="{StaticResource IconNew}" />
+          </Button>
+          <Button Classes="tool" Command="{Binding OpenProjectCommand}" ToolTip.Tip="Projekt öffnen (Strg+O)">
+            <PathIcon Data="{StaticResource IconOpen}" />
+          </Button>
+          <Button Classes="tool" Command="{Binding SaveProjectCommand}" ToolTip.Tip="Speichern (Strg+S)">
+            <PathIcon Data="{StaticResource IconSave}" />
+          </Button>
+          <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
+          <Button Classes="tool" Command="{Binding ExportPdfCommand}" ToolTip.Tip="Seiten als PDF">
+            <StackPanel>
+              <PathIcon Data="{StaticResource IconPrint}" />
+              <TextBlock Text="PDF" />
+            </StackPanel>
+          </Button>
+          <Button Classes="accent" Command="{Binding BuildGmeCommand}" ToolTip.Tip="GME-Datei bauen (F5)" Margin="6,0,0,0">
+            <StackPanel>
+              <PathIcon Data="{StaticResource IconPlay}" />
+              <TextBlock Text="GME bauen" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <TabControl Grid.Row="1" Classes="main" SelectedIndex="{Binding SelectedTab}" Padding="12,8,12,12" Margin="0,4,0,0">
+
+      <!-- ================= Seiten ================= -->
+      <TabItem Header="Seiten">
+        <Grid ColumnDefinitions="265,12,*,12,290">
+          <Grid.KeyBindings>
+            <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
+            <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}" />
+            <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
+          </Grid.KeyBindings>
+          <Border Grid.Column="0" Classes="card" Padding="0">
+            <ScrollViewer>
+              <StackPanel Margin="14,12">
+                <TextBlock Classes="section" Text="Seiten" />
+                <ListBox ItemsSource="{Binding Project.Pages}" SelectedItem="{Binding Project.SelectedPage}" MaxHeight="200">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PageViewModel">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <WrapPanel Classes="buttons">
+                  <Button Command="{Binding AddPageCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Neue Seite" /></StackPanel>
+                  </Button>
+                  <Button Classes="danger" Command="{Binding RemovePageCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
+                  </Button>
+                </WrapPanel>
+
+                <StackPanel DataContext="{Binding Project.SelectedPage}" x:DataType="vm:PageViewModel"
+                            IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
+                  <TextBlock Classes="label" Text="Name" />
+                  <TextBox Text="{Binding Name}" />
+                  <TextBlock Classes="label" Text="Breite × Höhe (mm)" />
+                  <Grid ColumnDefinitions="*,Auto,*">
+                    <TextBox Text="{Binding WidthMm}" />
+                    <TextBlock Grid.Column="1" Text=" × " VerticalAlignment="Center" />
+                    <TextBox Grid.Column="2" Text="{Binding HeightMm}" />
+                  </Grid>
+                </StackPanel>
+
+                <TextBlock Classes="label" Text="Bedienung" />
+                <TextBlock Classes="hint"
+                           Text="• Auf freier Stelle ziehen: neue OID-Fläche&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben" />
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+
+          <Border Grid.Column="2" Classes="card" Padding="0" ClipToBounds="True">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,0,1" Padding="10,6">
+                <WrapPanel Orientation="Horizontal">
+                  <Button Classes="tool" Command="{Binding UndoCommand}" IsEnabled="{Binding Project.History.CanUndo}"
+                          ToolTip.Tip="Rückgängig (Strg+Z)">
+                    <PathIcon Data="{StaticResource IconUndo}" />
+                  </Button>
+                  <Button Classes="tool" Command="{Binding RedoCommand}" IsEnabled="{Binding Project.History.CanRedo}"
+                          ToolTip.Tip="Wiederholen (Strg+Y)">
+                    <PathIcon Data="{StaticResource IconRedo}" />
+                  </Button>
+                  <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
+                  <Button Classes="tool" Command="{Binding InsertImageCommand}" ToolTip.Tip="Foto oder Bild einfügen">
+                    <StackPanel><PathIcon Data="{StaticResource IconImage}" /><TextBlock Text="Bild" /></StackPanel>
+                  </Button>
+                  <Button Classes="tool" Command="{Binding InsertTextCommand}" ToolTip.Tip="Text einfügen">
+                    <StackPanel><PathIcon Data="{StaticResource IconText}" /><TextBlock Text="Text" /></StackPanel>
+                  </Button>
+                  <ToggleButton Classes="tool" IsChecked="{Binding AreasOnly}" Margin="4,0"
+                                ToolTip.Tip="Bilder und Texte sperren, um darauf OID-Flächen zu zeichnen">
+                    <StackPanel><PathIcon Data="{StaticResource IconArea}" /><TextBlock Text="Nur OID-Flächen" /></StackPanel>
+                  </ToggleButton>
+                  <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
+                  <Button Classes="tool" Command="{Binding ZoomOutCommand}" ToolTip.Tip="Verkleinern">
+                    <PathIcon Data="{StaticResource IconRemove}" />
+                  </Button>
+                  <Slider Width="110" Minimum="0.2" Maximum="4" Value="{Binding Zoom}" VerticalAlignment="Center" />
+                  <Button Classes="tool" Command="{Binding ZoomInCommand}" ToolTip.Tip="Vergrößern">
+                    <PathIcon Data="{StaticResource IconAdd}" />
+                  </Button>
+                  <TextBlock VerticalAlignment="Center" MinWidth="44" Margin="4,0,0,0" Classes="value"
+                             Text="{Binding Zoom, StringFormat={}{0:P0}}" />
+                </WrapPanel>
+              </Border>
+              <ScrollViewer x:Name="PageScroll" Background="{StaticResource CanvasBackground}"
+                            HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <Border Margin="24" HorizontalAlignment="Center" VerticalAlignment="Top"
+                        BoxShadow="0 4 16 0 #30000000">
+                  <views:PageCanvas x:Name="PageView" Page="{Binding Project.SelectedPage}" Zoom="{Binding Zoom}"
+                                    AreasOnly="{Binding AreasOnly}" CropMode="{Binding CropMode}" />
+                </Border>
+              </ScrollViewer>
+            </DockPanel>
+          </Border>
+
+          <Border Grid.Column="4" Classes="card" Padding="0">
+            <ScrollViewer>
+              <StackPanel Margin="14,12">
+                <StackPanel>
+                  <StackPanel.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                      <Binding Path="Project.SelectedPage.SelectedArea" Converter="{x:Static ObjectConverters.IsNull}" FallbackValue="True" />
+                      <Binding Path="Project.SelectedPage.SelectedElement" Converter="{x:Static ObjectConverters.IsNull}" FallbackValue="True" />
+                    </MultiBinding>
+                  </StackPanel.IsVisible>
+                  <TextBlock Classes="section" Text="Auswahl" />
+                  <TextBlock Classes="hint" Text="Nichts ausgewählt. Auf der Seite eine OID-Fläche, ein Bild oder einen Text anklicken – oder durch Ziehen auf freier Stelle eine neue OID-Fläche anlegen." />
+                </StackPanel>
+
+                <!-- Bild oder Text -->
+                <StackPanel DataContext="{Binding Project.SelectedPage.SelectedElement}" x:DataType="vm:ElementViewModel"
+                            IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
+                  <TextBlock Classes="section" Text="Bild" IsVisible="{Binding IsImage}" />
+                  <TextBlock Classes="section" Text="Text" IsVisible="{Binding IsText}" />
+                  <TextBlock Classes="hint" Text="{Binding FileName}" ToolTip.Tip="{Binding ImagePath}" IsVisible="{Binding IsImage}" />
+                  <StackPanel IsVisible="{Binding IsText}">
+                    <TextBox Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" Margin="0,4,0,0" />
+                    <TextBlock Classes="label" Text="Schriftart" />
+                    <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Static vm:ElementViewModel.FontNames}"
+                              SelectedItem="{Binding FontChoice}" />
+                    <TextBlock Classes="label" Text="Größe (pt)" />
+                    <Grid ColumnDefinitions="*,8,Auto,Auto">
+                      <TextBox Text="{Binding FontSize}" />
+                      <CheckBox Grid.Column="2" Content="Fett" IsChecked="{Binding Bold}" Margin="0,0,8,0" />
+                      <CheckBox Grid.Column="3" Content="Kursiv" IsChecked="{Binding Italic}" />
+                    </Grid>
+                    <TextBlock Classes="label" Text="Ausrichtung" />
+                    <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Static vm:ElementViewModel.AlignOptions}"
+                              SelectedItem="{Binding AlignOption}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AlignOption">
+                          <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Classes="label" Text="Farbe" />
+                    <Grid ColumnDefinitions="Auto,8,*">
+                      <Border Width="28" Height="28" CornerRadius="4" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"
+                              Background="{Binding ColorBrush}" />
+                      <TextBox Grid.Column="2" Text="{Binding Color}" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{x:Static vm:ElementViewModel.ColorPresets}" Margin="0,6,0,0">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ColorPreset">
+                          <Button Width="24" Height="24" Padding="0" Margin="0,0,4,4" CornerRadius="4"
+                                  BorderBrush="{StaticResource CardBorder}" BorderThickness="1"
+                                  Background="{Binding Brush}" ToolTip.Tip="{Binding Value}"
+                                  Command="{Binding $parent[ItemsControl].((vm:ElementViewModel)DataContext).SetColorCommand}"
+                                  CommandParameter="{Binding Value}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                  <TextBlock Classes="label" Text="Position X / Y (mm)" />
+                  <Grid ColumnDefinitions="*,8,*">
+                    <TextBox Text="{Binding X}" />
+                    <TextBox Grid.Column="2" Text="{Binding Y}" />
+                  </Grid>
+                  <TextBlock Classes="label" Text="Breite / Höhe (mm)" />
+                  <Grid ColumnDefinitions="*,8,*">
+                    <TextBox Text="{Binding Width}" />
+                    <TextBox Grid.Column="2" Text="{Binding Height}" />
+                  </Grid>
+                  <TextBlock Classes="label" Text="Drehung (Grad)" />
+                  <Grid ColumnDefinitions="*,6,Auto,Auto">
+                    <TextBox Text="{Binding Rotation}" />
+                    <Button Grid.Column="2" Classes="tool" Command="{Binding RotateCommand}" CommandParameter="-90"
+                            ToolTip.Tip="90° nach links drehen">
+                      <PathIcon Data="{StaticResource IconRotateLeft}" />
+                    </Button>
+                    <Button Grid.Column="3" Classes="tool" Command="{Binding RotateCommand}" CommandParameter="90"
+                            ToolTip.Tip="90° nach rechts drehen">
+                      <PathIcon Data="{StaticResource IconRotateRight}" />
+                    </Button>
+                  </Grid>
+                </StackPanel>
+                <WrapPanel Classes="buttons" Margin="0,14,0,0"
+                           IsVisible="{Binding Project.SelectedPage.SelectedElement, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
+                  <ToggleButton IsChecked="{Binding CropMode}" Margin="0,0,6,6"
+                                IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
+                                ToolTip.Tip="Mit den Anfassern den sichtbaren Ausschnitt ändern">
+                    <StackPanel><PathIcon Data="{StaticResource IconCrop}" /><TextBlock Text="Zuschneiden" /></StackPanel>
+                  </ToggleButton>
+                  <Button Content="Ganzes Bild" Command="{Binding Project.SelectedPage.SelectedElement.ResetCropCommand, FallbackValue={x:Null}}"
+                          IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
+                          ToolTip.Tip="Zuschnitt aufheben" />
+                  <Button Content="Auf Seite einpassen" Command="{Binding FitElementToPageCommand}" />
+                  <Button Content="Nach vorne" Command="{Binding BringToFrontCommand}" />
+                  <Button Content="Nach hinten" Command="{Binding SendToBackCommand}" />
+                  <Button Command="{Binding DuplicateElementCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconCopy}" /><TextBlock Text="Duplizieren" /></StackPanel>
+                  </Button>
+                  <Button Classes="danger" Command="{Binding DeleteElementCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
+                  </Button>
+                </WrapPanel>
+
+                <!-- OID-Fläche -->
+                <StackPanel DataContext="{Binding Project.SelectedPage.SelectedArea}" x:DataType="vm:AreaViewModel"
+                            IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
+                  <TextBlock Classes="section" Text="OID-Fläche" />
+                  <TextBlock Classes="label" Text="Beschriftung (optional)" Margin="0,4,0,4" />
+                  <TextBox Text="{Binding Label}" />
+                  <TextBlock Classes="label" Text="Ziel" />
+                  <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Static vm:AreaViewModel.TargetOptions}"
+                            SelectedItem="{Binding TargetOption}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TargetOption">
+                        <TextBlock Text="{Binding Name}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <StackPanel IsVisible="{Binding IsScript}">
+                    <TextBlock Classes="label" Text="Skript" />
+                    <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Project.ScriptNames}" SelectedItem="{Binding Script}" />
+                  </StackPanel>
+                  <TextBlock Classes="label" Text="OID-Code" />
+                  <TextBlock Classes="value" Text="{Binding Oid, TargetNullValue='– (Skript fehlt)'}" />
+                  <TextBlock Classes="label" Text="Position X / Y (mm)" />
+                  <Grid ColumnDefinitions="*,8,*">
+                    <TextBox Text="{Binding X}" />
+                    <TextBox Grid.Column="2" Text="{Binding Y}" />
+                  </Grid>
+                  <TextBlock Classes="label" Text="Breite / Höhe (mm)" />
+                  <Grid ColumnDefinitions="*,8,*">
+                    <TextBox Text="{Binding Width}" />
+                    <TextBox Grid.Column="2" Text="{Binding Height}" />
+                  </Grid>
+                </StackPanel>
+                <WrapPanel Classes="buttons" Margin="0,14,0,0"
+                           IsVisible="{Binding Project.SelectedPage.SelectedArea, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
+                  <Button Command="{Binding EditAreaScriptCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconEdit}" /><TextBlock Text="Skript bearbeiten" /></StackPanel>
+                  </Button>
+                  <Button Command="{Binding CreateScriptForAreaCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Neues Skript" /></StackPanel>
+                  </Button>
+                  <Button Command="{Binding DuplicateAreaCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconCopy}" /><TextBlock Text="Duplizieren" /></StackPanel>
+                  </Button>
+                  <Button Command="{Binding ExportAreaPngCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconImage}" /><TextBlock Text="Als PNG …" /></StackPanel>
+                  </Button>
+                  <Button Classes="danger" Command="{Binding DeleteAreaCommand}">
+                    <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
+                  </Button>
+                </WrapPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- ================= Skripte ================= -->
+      <TabItem Header="Skripte">
+        <Grid ColumnDefinitions="250,12,*,12,340">
+          <Border Grid.Column="0" Classes="card">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Top" Classes="section" Text="Skripte" />
+              <WrapPanel DockPanel.Dock="Bottom" Classes="buttons">
+                <Button Command="{Binding AddScriptCommand}">
+                  <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Neues Skript" /></StackPanel>
+                </Button>
+                <Button Classes="danger" Command="{Binding RemoveScriptCommand}">
+                  <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
+                </Button>
+              </WrapPanel>
+              <ListBox ItemsSource="{Binding Project.Scripts}" SelectedItem="{Binding Project.SelectedScript}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ScriptViewModel">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                      <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      <Border Grid.Column="1" Background="#E8F5E9" CornerRadius="4" Padding="5,1" Margin="6,0"
+                              VerticalAlignment="Center" IsVisible="{Binding Generated}">
+                        <TextBlock Foreground="#2E7D32" FontSize="11" FontWeight="SemiBold" Text="C#" />
+                      </Border>
+                      <TextBlock Grid.Column="2" Foreground="{StaticResource TextSecondary}" Text="{Binding Code}" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </DockPanel>
+          </Border>
+
+          <Border Grid.Column="2" Classes="card">
+            <Panel>
+              <TextBlock Classes="hint" Text="Kein Skript ausgewählt."
+                         IsVisible="{Binding Project.SelectedScript, Converter={x:Static ObjectConverters.IsNull}}" />
+              <DockPanel DataContext="{Binding Project.SelectedScript}" x:DataType="vm:ScriptViewModel"
+                         IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel DockPanel.Dock="Top">
+                  <Grid ColumnDefinitions="*,16,Auto">
+                    <StackPanel>
+                      <TextBlock Classes="label" Text="Name" Margin="0,0,0,4" />
+                      <TextBox Text="{Binding Name}" IsReadOnly="{Binding Generated}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                      <TextBlock Classes="label" Text="OID-Code" Margin="0,0,0,4" />
+                      <TextBlock Classes="value" FontSize="18" Text="{Binding Code}" Margin="0,4,0,0" />
+                    </StackPanel>
+                  </Grid>
+                  <TextBlock Classes="hint" Margin="0,8,0,0" IsVisible="{Binding Generated}"
+                             Text="Dieses Skript wird aus dem C#-Programm erzeugt und kann nur dort geändert werden." />
+                  <TextBlock Classes="label" Text="Zeilen (eine Bedingung/Aktion pro Zeile)" />
+                </StackPanel>
+                <TextBox Classes="code" AcceptsReturn="True" TextWrapping="NoWrap" Text="{Binding Text}" IsReadOnly="{Binding Generated}" />
+              </DockPanel>
+            </Panel>
+          </Border>
+
+          <Border Grid.Column="4" Classes="card" Padding="0">
+            <ScrollViewer>
+              <StackPanel Margin="14,12">
+                <TextBlock Classes="section" Text="Kurzreferenz (tttool)" />
+                <SelectableTextBlock Classes="hint" FontFamily="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace"
+                           Text="P(name)        Ton/Text abspielen&#10;P(a,b)         zufällig einen abspielen&#10;P(&quot;a b.ogg&quot;)   Dateiname mit Sonderzeichen&#10;PA(a,b)        alle nacheinander&#10;P?(name)       vielleicht abspielen&#10;J(skript)      zu Skript springen&#10;$r := 1        Register setzen&#10;$r += 1        rechnen (-=, *=, /=, %=)&#10;$r == 1?       Bedingung (!=, &lt;, &gt;, &lt;=, &gt;=)&#10;&#10;Beispiel:&#10;$feld == 0? $feld := 1 P(ok)&#10;$feld == 1? P(schon_belegt)&#10;&#10;Jede Zeile wird von oben geprüft,&#10;die erste passende wird ausgeführt.&#10;&#10;Namen in P(...) beziehen sich auf&#10;die Sprachausgabe oder auf Audio-&#10;dateien im Medienverzeichnis." />
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- ================= Programm (C#) ================= -->
+      <TabItem Header="Programm (C#)">
+        <Grid ColumnDefinitions="3*,12,2*" RowDefinitions="Auto,*">
+          <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="6" Margin="0,0,0,10">
+            <Button Classes="accent" Command="{Binding CompileProgramCommand}">
+              <StackPanel><PathIcon Data="{StaticResource IconCode}" /><TextBlock Text="Übersetzen (F6)" /></StackPanel>
+            </Button>
+            <Button Command="{Binding InsertProgramExampleCommand}">
+              <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Beispiel einfügen" /></StackPanel>
+            </Button>
+            <TextBlock Classes="hint" VerticalAlignment="Center" Margin="8,0,0,0"
+                       Text="Das Programm wird beim Bauen der GME-Datei und beim Export automatisch übersetzt." />
+          </StackPanel>
+          <Border Grid.Row="1" Classes="card" Padding="0">
+            <TextBox Classes="code" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                     BorderThickness="0" CornerRadius="10" Padding="12,10"
+                     Text="{Binding Project.Program}" />
+          </Border>
+          <Border Grid.Row="1" Grid.Column="2" Classes="card">
+            <Grid RowDefinitions="Auto,Auto,Auto,*">
+              <TextBlock Classes="section" Text="Meldungen" />
+              <SelectableTextBlock Grid.Row="1" TextWrapping="Wrap" MaxHeight="160" Text="{Binding ProgramErrors}" />
+              <Expander Grid.Row="2" Header="Kurzreferenz" Margin="0,8,0,4" HorizontalAlignment="Stretch">
+                <SelectableTextBlock Classes="hint" FontFamily="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace"
+                                     Text="int punkte = 3;       Feld = Register (0–65535)&#10;bool fertig;          bool = 0/1&#10;const int Max = 9;    Konstante&#10;&#10;[Oid] void Apfel()    Skript zum Antippen&#10;[Oid(&quot;apfel&quot;)]        mit eigenem Skriptnamen&#10;void Hilfe(int n)     wird eingesetzt (inline)&#10;&#10;Play(&quot;a&quot;)             abspielen&#10;PlayAll(&quot;a&quot;, &quot;b&quot;)    nacheinander&#10;PlayRandom(&quot;a&quot;, &quot;b&quot;) zufällig einer&#10;x = Random(6);        0 bis 5&#10;Cancel();             abbrechen&#10;&#10;if / else / switch, &amp;&amp;, ||, !&#10;+ - * / % &amp; | ^ &lt;&lt; &gt;&gt;  ++ -- += …&#10;return;               Skript beenden&#10;&#10;for (int i = 0; i &lt; 5; i++)&#10;foreach (var x in new[] { 1, 2 })&#10;                      feste Anzahl, wird ausgerollt&#10;&#10;Nicht möglich: while, break, Rekursion,&#10;Rückgabewerte, Texte, Arrays." />
+              </Expander>
+              <DockPanel Grid.Row="3">
+                <TextBlock DockPanel.Dock="Top" Classes="label" Text="Erzeugte Skripte" />
+                <TextBox Classes="code" IsReadOnly="True" TextWrapping="NoWrap" FontSize="12" Text="{Binding ProgramOutput}" />
+              </DockPanel>
+            </Grid>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- ================= Sprachausgabe ================= -->
+      <TabItem Header="Sprachausgabe">
+        <Border Classes="card">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+              <TextBlock Classes="section" Text="Texte für die Sprachausgabe" />
+              <TextBlock Classes="hint" Margin="0,0,0,6"
+                         Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet: unter Windows mit der eingebauten Stimme, unter Linux/macOS mit pico2wave, espeak oder say. Ist oggenc installiert, werden sie als OGG gespeichert, sonst als WAV. Alternativ eine Audiodatei (.ogg, .mp3, .wav) mit gleichem Namen im Medienverzeichnis ablegen." />
+              <WrapPanel Classes="buttons">
+                <Button Command="{Binding AddSpeakCommand}">
+                  <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Neuer Text" /></StackPanel>
+                </Button>
+                <Button Classes="danger" Command="{Binding RemoveSpeakCommand}">
+                  <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
+                </Button>
+              </WrapPanel>
+              <Grid ColumnDefinitions="200,*" Margin="10,6,10,2">
+                <TextBlock Classes="label" Text="Name" Margin="0" />
+                <TextBlock Classes="label" Grid.Column="1" Text="Text" Margin="8,0,0,0" />
+              </Grid>
+            </StackPanel>
+            <ListBox ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding Project.SelectedSpeak}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:SpeakViewModel">
+                  <Grid ColumnDefinitions="200,*">
+                    <TextBox Text="{Binding Name}" Margin="0,0,8,0" />
+                    <TextBox Grid.Column="1" Text="{Binding Text}" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </Border>
+      </TabItem>
+
+      <!-- ================= Projekt ================= -->
+      <TabItem Header="Projekt">
+        <ScrollViewer>
+          <Grid ColumnDefinitions="*,12,*" DataContext="{Binding Project}" x:DataType="vm:ProjectViewModel"
+                MaxWidth="1100" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Border Grid.Column="0" Classes="card" VerticalAlignment="Top">
+              <StackPanel>
+                <TextBlock Classes="section" Text="Produkt" />
+                <TextBlock Classes="label" Text="Produkt-ID" Margin="0,4,0,4" />
+                <TextBox Text="{Binding ProductId}" />
+                <TextBlock Classes="hint" Margin="0,4,0,0" Text="Muss zum Antippen des Produkt-Codes passen und sollte nicht mit originalen Ravensburger-Produkten kollidieren (z. B. 900–999)." />
+                <TextBlock Classes="label" Text="Kommentar" />
+                <TextBox Text="{Binding Comment}" />
+                <TextBlock Classes="label" Text="Begrüßung (welcome)" />
+                <TextBox Text="{Binding Welcome}" />
+                <TextBlock Classes="hint" Margin="0,4,0,0" Text="Kommagetrennte Liste von Texten/Audiodateien, die beim Anmelden abgespielt werden." />
+                <TextBlock Classes="label" Text="Initialisierung (init)" />
+                <TextBox Classes="code" Text="{Binding Init}" />
+                <TextBlock Classes="hint" Margin="0,4,0,0" Text="Bei einem C#-Programm werden die Startwerte aus den Feldern übernommen." />
+                <TextBlock Classes="label" Text="Sprache für Text-to-Speech (language)" />
+                <TextBox Text="{Binding Language}" />
+                <TextBlock Classes="label" Text="GME-Sprache (gme-lang, optional)" />
+                <TextBox Text="{Binding GmeLang}" />
+                <TextBlock Classes="label" Text="Medienverzeichnis (media-path, optional)" />
+                <TextBox Text="{Binding MediaPath}" />
+                <TextBlock Classes="hint" Margin="0,4,0,0" Text="z. B. audio/%s – %s wird durch den Namen ersetzt." />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Classes="card" VerticalAlignment="Top">
+              <StackPanel>
+                <TextBlock Classes="section" Text="GME-Erstellung und Druck" />
+                <StackPanel IsVisible="{x:Static vm:MainWindowViewModel.IsDesktop}">
+                  <CheckBox Content="GME mit externem tttool bauen" IsChecked="{Binding UseTttool}" />
+                  <TextBlock Classes="hint" Text="Normalerweise nicht nötig: Der Designer baut GME-Dateien selbst. tttool (github.com/entropia/tip-toi-reveng) wird nur für Spiele und Timer unter „Weitere YAML-Einträge“ gebraucht." />
+                  <TextBlock Classes="label" Text="Pfad zu tttool" IsVisible="{Binding UseTttool}" />
+                  <TextBox Text="{Binding TttoolPath}" IsVisible="{Binding UseTttool}" />
+                </StackPanel>
+                <TextBlock Classes="label" Text="Druckauflösung (dpi) / Punktgröße (Pixel)" />
+                <Grid ColumnDefinitions="*,8,*">
+                  <TextBox Text="{Binding Dpi}" />
+                  <TextBox Grid.Column="2" Text="{Binding PixelSize}" />
+                </Grid>
+                <TextBlock Classes="hint" Margin="0,4,0,0" Text="Standard: 1200 dpi, 2 Pixel. Werden Codes nicht erkannt, 600 dpi oder Punktgröße 3 probieren." />
+                <TextBlock Classes="label" Text="Wiederholen- / Stopp-Code" />
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                  <TextBlock Classes="value" Text="{Binding Replay}" />
+                  <TextBlock Classes="value" Text="{Binding Stop}" />
+                </StackPanel>
+                <TextBlock Classes="label" Text="Weitere YAML-Einträge (werden unverändert exportiert)" />
+                <TextBox Classes="code" AcceptsReturn="True" Height="200" Text="{Binding ExtraYaml}" />
+              </StackPanel>
+            </Border>
+          </Grid>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+
+    <!-- ================= Protokoll ================= -->
+    <GridSplitter Grid.Row="2" Background="Transparent" ResizeDirection="Rows" />
+    <Border Grid.Row="3" Classes="card" Margin="12,0,12,12" Padding="0" MinHeight="60">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="label" Text="PROTOKOLL" Margin="14,8,14,0" FontSize="11" />
+        <TextBox IsReadOnly="True" TextWrapping="Wrap" Classes="code" FontSize="12" Text="{Binding LogText}" x:Name="LogBox"
+                 BorderThickness="0" Background="Transparent" Padding="14,4,14,8" />
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>

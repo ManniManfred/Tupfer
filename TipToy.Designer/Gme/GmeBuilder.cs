@@ -17,7 +17,7 @@ public static class GmeBuilder
 {
     public const int MaxCommentLength = 49;
 
-    static readonly string[] MediaExtensions = { ".wav", ".ogg", ".flac", ".mp3" };
+    public static readonly string[] MediaExtensions = { ".wav", ".ogg", ".flac", ".mp3" };
 
     /// <param name="project">Projekt; fehlende Skriptcodes werden dabei vergeben.</param>
     /// <param name="baseDir">Verzeichnis, relativ zu dem das Medienverzeichnis gesucht wird.</param>

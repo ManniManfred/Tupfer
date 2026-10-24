@@ -1,0 +1,138 @@
+using System.IO.Compression;
+using Avalonia.Controls;
+using Avalonia.Platform.Storage;
+using TipToy.Designer.Gme;
+using TipToy.Designer.Services;
+using TipToy.Designer.ViewModels;
+using TipToy.Designer.Views;
+
+namespace TipToy.Designer;
+
+/// <summary>
+/// Dateidialoge im Browser. Die App arbeitet auf dem Speicher-Dateisystem von WebAssembly:
+/// Ausgewählte Dateien werden ins Arbeitsverzeichnis des Projekts kopiert, gespeicherte
+/// Dateien werden anschließend heruntergeladen. Ein Projekt mit Bildern oder Audiodateien
+/// wird als ZIP heruntergeladen und kann so auch wieder geöffnet werden.
+/// </summary>
+class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
+{
+    const string Root = "/tiptoy";
+    static int _workDirs;
+
+    /// <summary>Legt ein leeres Arbeitsverzeichnis an und macht es zum aktuellen Verzeichnis.</summary>
+    public static string NewWorkDir()
+    {
+        var dir = Path.Combine(Root, $"projekt{++_workDirs}");
+        Directory.CreateDirectory(dir);
+        Environment.CurrentDirectory = dir;
+        return dir;
+    }
+
+    static bool IsProjectPattern(string pattern) =>
+        pattern.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase)
+        || pattern.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)
+        || pattern.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
+
+    static bool Matches(string path, string pattern) =>
+        path.EndsWith(pattern.TrimStart('*'), StringComparison.OrdinalIgnoreCase);
+
+    public async Task<string?> OpenAsync(string title, string filterName, params string[] patterns)
+    {
+        // Projekte: mehrere Dateien (z. B. Projekt mit Bildern) oder ein ZIP; Browser kennen nur einfache Endungen
+        bool project = patterns.Any(IsProjectPattern);
+        var browserPatterns = patterns.Select(p => "*" + Path.GetExtension(p));
+        if (project)
+            browserPatterns = browserPatterns.Append("*.zip");
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = project,
+            FileTypeFilter = new[] { new FilePickerFileType(filterName) { Patterns = browserPatterns.Distinct().ToList() } },
+        });
+        if (files.Count == 0)
+            return null;
+
+        var dir = project ? NewWorkDir() : Environment.CurrentDirectory;
+        var copied = new List<string>();
+        foreach (var file in files)
+        {
+            if (project && file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                await using var stream = await file.OpenReadAsync();
+                await ZipFile.ExtractToDirectoryAsync(stream, dir, overwriteFiles: true);
+                copied.AddRange(Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).Order());
+            }
+            else
+            {
+                copied.Add(await WorkFiles.CopyAsync(file, dir));
+            }
+        }
+        var result = copied.Where(p => patterns.Any(pattern => Matches(p, pattern)))
+            .OrderBy(p => p.EndsWith(".codes.yaml", StringComparison.OrdinalIgnoreCase))
+            .FirstOrDefault();
+        // Neue Bilder sollen neben der Projektdatei landen, auch wenn sie im ZIP in einem Unterordner lag
+        if (project && result != null)
+            Environment.CurrentDirectory = Path.GetDirectoryName(result)!;
+        return result;
+    }
+
+    public Task<string?> SaveAsync(string title, string suggestedName, string filterName, string extension)
+    {
+        // Kein Dialog: Die Datei wird geschrieben und danach unter diesem Namen heruntergeladen
+        if (!suggestedName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            suggestedName += extension;
+        return Task.FromResult<string?>(Path.Combine(Environment.CurrentDirectory, suggestedName));
+    }
+
+    public Task SavedAsync(params string[] paths)
+    {
+        foreach (var path in paths.Where(File.Exists))
+        {
+            if (path.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
+            {
+                DownloadProject(path);
+            }
+            else
+            {
+                BrowserInterop.Download(Path.GetFileName(path), File.ReadAllBytes(path), MimeType(path));
+                File.Delete(path);
+            }
+        }
+        return Task.CompletedTask;
+    }
+
+    public void ProjectCreated() => NewWorkDir();
+
+    /// <summary>Lädt die Projektdatei herunter, zusammen mit Bildern und Audiodateien als ZIP.</summary>
+    static void DownloadProject(string path)
+    {
+        var dir = Path.GetDirectoryName(path)!;
+        var cache = Path.Combine(dir, "tts-cache") + Path.DirectorySeparatorChar;
+        var media = Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories)
+            .Where(f => !f.StartsWith(cache, StringComparison.Ordinal))
+            .Where(f => PageCanvas.ImageExtensions.Contains(Path.GetExtension(f))
+                        || GmeBuilder.MediaExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+            .Order()
+            .ToList();
+        if (media.Count == 0)
+        {
+            BrowserInterop.Download(Path.GetFileName(path), File.ReadAllBytes(path), "application/json");
+            return;
+        }
+
+        using var ms = new MemoryStream();
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            foreach (var file in media.Prepend(path))
+                zip.CreateEntryFromFile(file, Path.GetRelativePath(dir, file).Replace('\\', '/'));
+        BrowserInterop.Download(ProjectStore.BaseName(path) + ".zip", ms.ToArray(), "application/zip");
+    }
+
+    static string MimeType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".pdf" => "application/pdf",
+        ".png" => "image/png",
+        ".yaml" or ".yml" => "application/yaml",
+        ".json" => "application/json",
+        _ => "application/octet-stream",
+    };
+}

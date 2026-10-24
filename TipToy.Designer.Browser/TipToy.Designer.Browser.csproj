@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RootNamespace>TipToy.Designer</RootNamespace>
+    <!-- Nur die Framework-Bibliotheken kürzen; YAML/JSON und Roslyn arbeiten mit Reflection -->
+    <TrimMode>partial</TrimMode>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Prozesse (tttool, externe Sprachausgabe) werden im Browser nie gestartet; JSON-Typen bleiben erhalten (s. o.) -->
+    <NoWarn>$(NoWarn);CA1416;IL2026</NoWarn>
+  </PropertyGroup>
+
+  <!-- Der Designer selbst wird aus TipToy.Designer mitübersetzt (ohne Desktop-Start und Windows-Sprachausgabe) -->
+  <ItemGroup>
+    <Compile Include="../TipToy.Designer/**/*.cs" Exclude="../TipToy.Designer/bin/**;../TipToy.Designer/obj/**;../TipToy.Designer/Program.cs;../TipToy.Designer/Gme/WindowsSpeech.cs"
+             Link="Designer/%(RecursiveDir)%(Filename)%(Extension)" />
+    <AvaloniaXaml Include="../TipToy.Designer/**/*.axaml" Exclude="../TipToy.Designer/bin/**;../TipToy.Designer/obj/**"
+                  Link="Designer/%(RecursiveDir)%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../TipToy.Designer/Assets/TipToy.png" Link="Assets/TipToy.png" />
+    <AvaloniaResource Include="../TipToy.Designer/Assets/TipToy.ico" Link="Assets/TipToy.ico" />
+    <EmbeddedResource Include="../TipToy.Designer/Oid/KnownCodes.txt" LogicalName="KnownCodes.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Browser" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="YamlDotNet" Version="16.2.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+  </ItemGroup>
+
+</Project>

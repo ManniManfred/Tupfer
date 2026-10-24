@@ -76,7 +76,7 @@ public class PageCanvas : Control
     static readonly Cursor MoveCursor = new(StandardCursorType.SizeAll);
     static readonly Cursor CornerCursor = new(StandardCursorType.BottomRightCorner);
 
-    static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    public static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
 
     static PageCanvas()
@@ -265,8 +265,7 @@ public class PageCanvas : Control
 
     Point ToMm(Point px) => new(px.X / Scale, px.Y / Scale);
 
-    static bool IsImageFile(IStorageItem item) =>
-        item.TryGetLocalPath() is { } path && ImageExtensions.Contains(Path.GetExtension(path));
+    static bool IsImageFile(IStorageItem item) => item is IStorageFile && ImageExtensions.Contains(Path.GetExtension(item.Name));
 
     void OnDragOver(object? sender, DragEventArgs e)
     {
@@ -276,15 +275,27 @@ public class PageCanvas : Control
     }
 
     /// <summary>Aus dem Explorer gezogene Bilder an der Mausposition einfügen (mehrere leicht versetzt).</summary>
-    void OnDrop(object? sender, DragEventArgs e)
+    async void OnDrop(object? sender, DragEventArgs e)
     {
         e.Handled = true;
         if (Page is not { } page || e.DataTransfer.TryGetFiles() is not { } files)
             return;
-        var paths = files.Where(IsImageFile).Select(f => f.TryGetLocalPath()!).ToList();
+        var pos = ToMm(e.GetPosition(this));
+        var paths = new List<string>();
+        // Ohne lokalen Pfad (Browser) wird das Bild ins Arbeitsverzeichnis kopiert
+        foreach (var file in files.Where(IsImageFile).Cast<IStorageFile>())
+        {
+            try
+            {
+                paths.Add(file.TryGetLocalPath() ?? await WorkFiles.CopyAsync(file, Environment.CurrentDirectory));
+            }
+            catch (IOException)
+            {
+                // Nicht lesbare Datei überspringen
+            }
+        }
         if (paths.Count == 0)
             return;
-        var pos = ToMm(e.GetPosition(this));
         double offset = 0;
         History?.Change(() =>
         {

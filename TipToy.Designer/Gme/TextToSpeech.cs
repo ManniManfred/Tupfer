@@ -13,6 +13,15 @@ namespace TipToy.Designer.Gme;
 /// </summary>
 public class TextToSpeech
 {
+    /// <summary>
+    /// Eingebaute Sprachausgabe (Sprache, Text → WAV-Daten), ersetzt die externen Programme.
+    /// Wird im Browser gesetzt, wo keine Programme gestartet werden können.
+    /// </summary>
+    public static Func<string, string, byte[]>? Synthesizer { get; set; }
+
+    /// <summary>Wird mit der Sprache vor dem Bauen einer GME-Datei mit Texten aufgerufen, z. B. um die Sprachausgabe zu laden.</summary>
+    public static Func<string, Task>? PrepareAsync { get; set; }
+
     readonly string _cacheDir;
     readonly Action<string> _log;
     bool _warnedNoOgg;
@@ -29,6 +38,15 @@ public class TextToSpeech
         var key = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(language + "\n" + text)))[..16].ToLowerInvariant();
         var ogg = Path.Combine(_cacheDir, $"tts-{key}-{language}.ogg");
         var wav = Path.Combine(_cacheDir, $"tts-{key}-{language}.wav");
+        if (Synthesizer is { } synthesize)
+        {
+            if (File.Exists(wav))
+                return File.ReadAllBytes(wav);
+            _log($"Spreche „{text}“");
+            var data = synthesize(language, text);
+            File.WriteAllBytes(wav, data);
+            return data;
+        }
         if (File.Exists(ogg))
             return File.ReadAllBytes(ogg);
         if (File.Exists(wav) && !CanRun("oggenc"))

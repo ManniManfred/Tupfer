@@ -66,7 +66,9 @@ public partial class ProjectViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Log($"Bild '{path}' konnte nicht geladen werden: {ex.Message}");
+            // Wird beim Zeichnen aufgerufen – das Protokoll erst danach ändern
+            var message = $"Bild '{path}' konnte nicht geladen werden: {ex.Message}";
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => Log(message));
         }
         _images[path] = bmp;
         return bmp;
