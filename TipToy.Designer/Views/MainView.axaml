@@ -162,7 +162,7 @@
 
                 <TextBlock Classes="label" Text="Bedienung" />
                 <TextBlock Classes="hint"
-                           Text="• Auf freier Stelle ziehen: neue OID-Fläche&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben" />
+                           Text="• Auf freier Stelle ziehen: neue OID-Fläche (Rechteck oder Kreis, Umschalt = Quadrat/Kreis)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben" />
               </StackPanel>
             </ScrollViewer>
           </Border>
@@ -191,6 +191,19 @@
                     <StackPanel><PathIcon Data="{StaticResource IconArea}" /><TextBlock Text="Nur OID-Flächen" /></StackPanel>
                   </ToggleButton>
                   <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
+                  <ToggleButton Classes="tool" IsChecked="{Binding RectangleTool}"
+                                ToolTip.Tip="Neue OID-Flächen als Rechteck aufziehen">
+                    <PathIcon Data="{StaticResource IconShapeRect}" />
+                  </ToggleButton>
+                  <ToggleButton Classes="tool" IsChecked="{Binding EllipseTool}"
+                                ToolTip.Tip="Neue OID-Flächen als Kreis oder Ellipse aufziehen (Umschalt = Kreis)">
+                    <PathIcon Data="{StaticResource IconShapeCircle}" />
+                  </ToggleButton>
+                  <ToggleButton Classes="tool" IsChecked="{Binding PolygonTool}"
+                                ToolTip.Tip="Neue OID-Flächen als Polygon: Ecken anklicken, Doppelklick, Eingabetaste oder Klick auf die erste Ecke schließt ab">
+                    <PathIcon Data="{StaticResource IconShapePolygon}" />
+                  </ToggleButton>
+                  <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
                   <Button Classes="tool" Command="{Binding ZoomOutCommand}" ToolTip.Tip="Verkleinern">
                     <PathIcon Data="{StaticResource IconRemove}" />
                   </Button>
@@ -207,7 +220,8 @@
                 <Border Margin="24" HorizontalAlignment="Center" VerticalAlignment="Top"
                         BoxShadow="0 4 16 0 #30000000">
                   <views:PageCanvas x:Name="PageView" Page="{Binding Project.SelectedPage}" Zoom="{Binding Zoom}"
-                                    AreasOnly="{Binding AreasOnly}" CropMode="{Binding CropMode}" />
+                                    AreasOnly="{Binding AreasOnly}" CropMode="{Binding CropMode}"
+                                    AreaTool="{Binding AreaTool}" />
                 </Border>
               </ScrollViewer>
             </DockPanel>
@@ -339,6 +353,17 @@
                   </StackPanel>
                   <TextBlock Classes="label" Text="OID-Code" />
                   <TextBlock Classes="value" Text="{Binding Oid, TargetNullValue='– (Skript fehlt)'}" />
+                  <TextBlock Classes="label" Text="Form" />
+                  <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Static vm:AreaViewModel.ShapeOptions}"
+                            SelectedItem="{Binding ShapeOption}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ShapeOption">
+                        <TextBlock Text="{Binding Name}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Classes="hint" Margin="0,4,0,0" IsVisible="{Binding IsPolygon}"
+                             Text="Ecken ziehen: verschieben. Kreis in der Kantenmitte ziehen: Kante zum Bogen biegen (zurück zur Geraden ziehen = gerade). Doppelklick auf eine Ecke: löschen, auf eine Kantenmitte: neue Ecke." />
                   <TextBlock Classes="label" Text="Position X / Y (mm)" />
                   <Grid ColumnDefinitions="*,8,*">
                     <TextBox Text="{Binding X}" />

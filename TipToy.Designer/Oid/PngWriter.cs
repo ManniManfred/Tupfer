@@ -9,15 +9,39 @@ namespace TipToy.Designer.Oid;
 /// </summary>
 public static class PngWriter
 {
-    /// <summary>Schreibt eine OID-Fläche der angegebenen Größe (Kachel wird wiederholt).</summary>
-    public static void WriteOidPng(string path, int oid, double widthMm, double heightMm, int dpi = 1200, int pixelSize = 2)
+    /// <summary>
+    /// Schreibt eine OID-Fläche der angegebenen Größe (Kachel wird wiederholt). Mit
+    /// <paramref name="outline"/> (Polygonzug in mm relativ zur oberen linken Ecke) bleibt alles
+    /// außerhalb des Umrisses weiß.
+    /// </summary>
+    public static void WriteOidPng(string path, int oid, double widthMm, double heightMm, int dpi = 1200, int pixelSize = 2,
+        IReadOnlyList<(double X, double Y)>? outline = null)
     {
         var raw = OidCode.ToRawCode(oid) ?? throw new ArgumentException($"Für OID {oid} ist kein Raw-Code bekannt.");
         int tile = OidCode.TilePixelSize(dpi);
         var mask = OidCode.TileMask(raw, dpi, pixelSize);
         int w = (int)Math.Round(widthMm * dpi / 25.4);
         int h = (int)Math.Round(heightMm * dpi / 25.4);
-        WriteBilevel(path, w, h, dpi, (x, y) => mask[(y % tile) * tile + x % tile]);
+        if (outline is not { Count: >= 3 })
+        {
+            WriteBilevel(path, w, h, dpi, (x, y) => mask[(y % tile) * tile + x % tile]);
+            return;
+        }
+
+        // Je Zeile die Bereiche innerhalb des Umrisses (in Pixeln, gemessen in der Pixelmitte)
+        double pxPerMm = dpi / 25.4;
+        var scaled = outline.Select(p => (p.X * pxPerMm, p.Y * pxPerMm)).ToList();
+        int spansRow = -1;
+        List<(double From, double To)> spans = [];
+        WriteBilevel(path, w, h, dpi, (x, y) =>
+        {
+            if (y != spansRow)
+            {
+                spans = Model.AreaGeometry.Spans(scaled, y + 0.5);
+                spansRow = y;
+            }
+            return mask[(y % tile) * tile + x % tile] && spans.Any(s => x + 0.5 >= s.From && x + 0.5 < s.To);
+        });
     }
 
     /// <summary>Schreibt ein 1-Bit-Graustufen-PNG. <paramref name="isBlack"/> liefert true für schwarze Pixel.</summary>

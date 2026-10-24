@@ -13,7 +13,9 @@ namespace TipToy.Designer.Views;
 
 /// <summary>
 /// Zeichenfläche einer Seite: zeigt Bilder, Texte und OID-Flächen.
-/// Ziehen auf freier Fläche legt eine neue OID-Fläche an, Ziehen eines Objekts verschiebt es.
+/// Ziehen auf freier Fläche legt eine neue OID-Fläche an (Rechteck oder Ellipse, je nach
+/// <see cref="AreaTool"/>); Polygone werden Punkt für Punkt geklickt. Ziehen eines Objekts verschiebt es.
+/// Bei einem gewählten Polygon lassen sich Ecken verschieben und Kanten zu Kreisbögen ziehen.
 /// Bilder und Texte haben Anfasser zum Skalieren (bzw. Zuschneiden) und einen Drehgriff.
 /// Im Modus „Nur OID-Flächen“ sind Bilder und Texte gesperrt.
 /// </summary>
@@ -33,15 +35,29 @@ public class PageCanvas : Control
     public static readonly StyledProperty<bool> CropModeProperty =
         AvaloniaProperty.Register<PageCanvas, bool>(nameof(CropMode));
 
+    /// <summary>Form neuer OID-Flächen.</summary>
+    public static readonly StyledProperty<AreaShape> AreaToolProperty =
+        AvaloniaProperty.Register<PageCanvas, AreaShape>(nameof(AreaTool));
+
     const double PxPerMmAt100 = 96 / 25.4;
     const double HandleSize = 10;
     const double RotateHandleDistance = 24;
     const double Grid = 0.5;
     const double MinSizeMm = 3;
 
-    enum DragMode { None, Create, Move, Resize, MoveElement, ScaleElement, RotateElement }
+    enum DragMode { None, Create, Move, Resize, MoveElement, ScaleElement, RotateElement, MoveVertex, BendEdge }
+
+    /// <summary>Unter dieser Stichhöhe (mm) wird eine gebogene Kante wieder gerade.</summary>
+    const double StraightSnapMm = 0.3;
 
     DragMode _mode;
+
+    /// <summary>Gezogene Ecke bzw. Kante (von dieser Ecke zur nächsten) eines Polygons.</summary>
+    int _vertex;
+
+    /// <summary>Ecken des Polygons, das gerade geklickt wird (mm), null = es wird keins gezeichnet.</summary>
+    List<Point>? _drawing;
+    Point _hoverMm;
     Point _startMm;
     AreaEntry? _startRect;
     ElementEntry? _startElement;
@@ -75,6 +91,8 @@ public class PageCanvas : Control
     static readonly Cursor HandCursor = new(StandardCursorType.Hand);
     static readonly Cursor MoveCursor = new(StandardCursorType.SizeAll);
     static readonly Cursor CornerCursor = new(StandardCursorType.BottomRightCorner);
+    static readonly Cursor CrossCursor = new(StandardCursorType.Cross);
+    static readonly IPen DrawingPen = new Pen(new SolidColorBrush(Color.FromRgb(220, 110, 0)), 1.5, new DashStyle(new double[] { 4, 2 }, 0));
 
     public static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
@@ -82,7 +100,7 @@ public class PageCanvas : Control
     static PageCanvas()
     {
         AffectsMeasure<PageCanvas>(PageProperty, ZoomProperty);
-        AffectsRender<PageCanvas>(PageProperty, ZoomProperty, AreasOnlyProperty, CropModeProperty);
+        AffectsRender<PageCanvas>(PageProperty, ZoomProperty, AreasOnlyProperty, CropModeProperty, AreaToolProperty);
         FocusableProperty.OverrideDefaultValue<PageCanvas>(true);
         DragDrop.AllowDropProperty.OverrideDefaultValue<PageCanvas>(true);
     }
@@ -117,6 +135,12 @@ public class PageCanvas : Control
         set => SetValue(CropModeProperty, value);
     }
 
+    public AreaShape AreaTool
+    {
+        get => GetValue(AreaToolProperty);
+        set => SetValue(AreaToolProperty, value);
+    }
+
     double Scale => PxPerMmAt100 * Zoom;
 
     PageHistory? History => Page?.Project.History;
@@ -126,6 +150,8 @@ public class PageCanvas : Control
         base.OnPropertyChanged(change);
         if (change.Property == PageProperty)
             Subscribe(change.GetNewValue<PageViewModel?>());
+        if (change.Property == PageProperty || change.Property == AreaToolProperty)
+            _drawing = null;
     }
 
     void Subscribe(PageViewModel? page)
@@ -191,28 +217,88 @@ public class PageCanvas : Control
         }
 
         foreach (var area in page.Areas)
-        {
-            var r = ToPx(area);
-            bool selected = area == page.SelectedArea;
-            var fill = selected ? SelectedFill : area.Oid == null ? AreaFillInvalid : AreaFill;
-            ctx.DrawRectangle(fill, selected ? SelectedPen : AreaPen, r);
+            DrawArea(ctx, area, area == page.SelectedArea);
 
-            var text = new FormattedText(area.Caption, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                Typeface.Default, Math.Clamp(11 * Zoom, 9, 16), Brushes.Black)
-            {
-                MaxTextWidth = Math.Max(10, r.Width - 4),
-                MaxTextHeight = Math.Max(10, r.Height - 4),
-                Trimming = TextTrimming.CharacterEllipsis,
-            };
-            ctx.FillRectangle(LabelBackground, new Rect(r.X + 1, r.Y + 1, Math.Min(text.Width + 4, r.Width - 2), Math.Min(text.Height + 2, r.Height - 2)));
-            ctx.DrawText(text, new Point(r.X + 3, r.Y + 2));
-
-            if (selected)
-                ctx.FillRectangle(Brushes.DarkOrange, AreaHandleRect(r));
-        }
+        if (_drawing != null)
+            DrawPolygonInProgress(ctx, _drawing);
 
         if (!ElementsLocked && page.SelectedElement is { } sel)
             DrawSelection(ctx, sel);
+    }
+
+    void DrawArea(DrawingContext ctx, AreaViewModel area, bool selected)
+    {
+        var r = ToPx(area);
+        var fill = selected ? SelectedFill : area.Oid == null ? AreaFillInvalid : AreaFill;
+        var pen = selected ? SelectedPen : AreaPen;
+        if (area.IsRectangle)
+            ctx.DrawRectangle(fill, pen, r);
+        else
+            ctx.DrawGeometry(fill, pen, new PolylineGeometry(area.Outline().Select(p => new Point(p.X * Scale, p.Y * Scale)), true));
+
+        var text = new FormattedText(area.Caption, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            Typeface.Default, Math.Clamp(11 * Zoom, 9, 16), Brushes.Black)
+        {
+            MaxTextWidth = Math.Max(10, r.Width - 4),
+            MaxTextHeight = Math.Max(10, r.Height - 4),
+            Trimming = TextTrimming.CharacterEllipsis,
+        };
+        // Bei Rechtecken oben links, sonst in der Mitte (die Ecken des Rahmens liegen außerhalb)
+        var origin = area.IsRectangle
+            ? new Point(r.X + 3, r.Y + 2)
+            : new Point(r.Center.X - text.Width / 2, r.Center.Y - text.Height / 2);
+        ctx.FillRectangle(LabelBackground, new Rect(origin.X - 2, origin.Y - 1, Math.Min(text.Width + 4, r.Width - 2), Math.Min(text.Height + 2, r.Height - 2)));
+        ctx.DrawText(text, origin);
+
+        if (!selected)
+            return;
+        ctx.FillRectangle(Brushes.DarkOrange, AreaHandleRect(r));
+        if (area.IsPolygon)
+        {
+            var points = area.PagePoints.ToList();
+            for (int i = 0; i < points.Count; i++)
+            {
+                ctx.DrawEllipse(Brushes.White, HandlePen, EdgeHandlePx(points, i), HandleSize / 2 - 1, HandleSize / 2 - 1);
+                var v = ToPx(new Point(points[i].X, points[i].Y));
+                ctx.DrawRectangle(Brushes.White, HandlePen, new Rect(v.X - HandleSize / 2, v.Y - HandleSize / 2, HandleSize, HandleSize));
+            }
+        }
+    }
+
+    void DrawPolygonInProgress(DrawingContext ctx, List<Point> points)
+    {
+        var px = points.Select(ToPx).Append(ToPx(_hoverMm)).ToList();
+        ctx.DrawGeometry(AreaFill, DrawingPen, new PolylineGeometry(px, false));
+        for (int i = 0; i < points.Count; i++)
+        {
+            var p = px[i];
+            var size = i == 0 && points.Count >= 3 ? HandleSize + 4 : HandleSize;
+            ctx.DrawRectangle(i == 0 ? Brushes.DarkOrange : Brushes.White, HandlePen, new Rect(p.X - size / 2, p.Y - size / 2, size, size));
+        }
+    }
+
+    /// <summary>Anfasser einer Polygonkante (von Ecke i zur nächsten): der Scheitel des Bogens bzw. die Mitte.</summary>
+    Point EdgeHandlePx(IReadOnlyList<AreaPoint> points, int i)
+    {
+        var p = points[i];
+        var q = points[(i + 1) % points.Count];
+        var (ax, ay) = AreaGeometry.Apex(p.X, p.Y, q.X, q.Y, p.Bulge);
+        return ToPx(new Point(ax, ay));
+    }
+
+    static bool NearPx(Point a, Point b) => Math.Abs(a.X - b.X) <= HandleSize / 2 + 2 && Math.Abs(a.Y - b.Y) <= HandleSize / 2 + 2;
+
+    /// <summary>Getroffene Ecke (Vertex = true) oder Kante eines Polygons.</summary>
+    (int Index, bool Vertex)? HitPolygonHandle(AreaViewModel area, Point px)
+    {
+        var points = area.PagePoints.ToList();
+        for (int i = 0; i < points.Count; i++)
+            if (NearPx(ToPx(new Point(points[i].X, points[i].Y)), px))
+                return (i, true);
+        for (int i = 0; i < points.Count; i++)
+            if (NearPx(EdgeHandlePx(points, i), px))
+                return (i, false);
+        return null;
     }
 
     void DrawSelection(DrawingContext ctx, ElementViewModel e)
@@ -319,9 +405,33 @@ public class PageCanvas : Control
         Focus();
         var pos = e.GetPosition(this);
         _startMm = ToMm(pos);
+
+        if (_drawing != null)
+        {
+            ContinuePolygon(page, e.ClickCount);
+            e.Handled = true;
+            return;
+        }
+
         History?.BeginChange();
 
-        if (!ElementsLocked && page.SelectedElement is { } selElement && HitHandle(selElement, pos) is { } handle)
+        if (page.SelectedArea is { IsPolygon: true } poly && HitPolygonHandle(poly, pos) is { } ph)
+        {
+            _vertex = ph.Index;
+            if (e.ClickCount == 2)
+            {
+                // Doppelklick: Ecke löschen bzw. Kante in der Mitte teilen (ein dritter Klick zieht wieder)
+                if (ph.Vertex)
+                    RemoveVertex(poly, ph.Index);
+                else
+                    SplitEdge(poly, ph.Index);
+                History?.EndChange();
+                e.Handled = true;
+                return;
+            }
+            _mode = ph.Vertex ? DragMode.MoveVertex : DragMode.BendEdge;
+        }
+        else if (!ElementsLocked && page.SelectedElement is { } selElement && HitHandle(selElement, pos) is { } handle)
         {
             _handle = handle;
             _mode = handle == RotateHandle ? DragMode.RotateElement : DragMode.ScaleElement;
@@ -332,7 +442,7 @@ public class PageCanvas : Control
             _mode = DragMode.Resize;
             _startRect = sel.ToEntry();
         }
-        else if (page.Areas.LastOrDefault(a => ToPx(a).Contains(pos)) is { } hit)
+        else if (page.Areas.LastOrDefault(a => a.Contains(_startMm.X, _startMm.Y)) is { } hit)
         {
             page.SelectedArea = hit;
             _mode = DragMode.Move;
@@ -344,22 +454,102 @@ public class PageCanvas : Control
             _mode = DragMode.MoveElement;
             _startElement = hitElement.ToEntry(null);
         }
+        else if (AreaTool == AreaShape.Polygon)
+        {
+            // Erste Ecke eines neuen Polygons; die Fläche entsteht erst beim Abschließen
+            History?.EndChange();
+            page.SelectedArea = null;
+            page.SelectedElement = null;
+            _drawing = [SnapPoint(_startMm)];
+            _hoverMm = _drawing[0];
+            InvalidateVisual();
+            e.Handled = true;
+            return;
+        }
         else
         {
-            var project = page.Project;
-            var area = new AreaViewModel(project)
-            {
-                X = Snap(_startMm.X),
-                Y = Snap(_startMm.Y),
-                Target = AreaTarget.Script,
-                Script = project.SelectedScript?.Name ?? project.Scripts.FirstOrDefault()?.Name ?? "",
-            };
+            var area = NewArea(page.Project);
+            area.Shape = AreaTool;
+            area.X = Snap(_startMm.X);
+            area.Y = Snap(_startMm.Y);
             page.Areas.Add(area);
             page.SelectedArea = area;
             _mode = DragMode.Create;
         }
         e.Pointer.Capture(this);
         e.Handled = true;
+    }
+
+    static AreaViewModel NewArea(ProjectViewModel project) => new(project)
+    {
+        Target = AreaTarget.Script,
+        Script = project.SelectedScript?.Name ?? project.Scripts.FirstOrDefault()?.Name ?? "",
+    };
+
+    static Point SnapPoint(Point mm) => new(Snap(mm.X), Snap(mm.Y));
+
+    /// <summary>Klick beim Zeichnen eines Polygons: Ecke hinzufügen oder abschließen.</summary>
+    void ContinuePolygon(PageViewModel page, int clickCount)
+    {
+        var points = _drawing!;
+        var p = SnapPoint(ClampToPage(page, _startMm));
+        // Doppelklick oder Klick auf die erste Ecke schließt ab
+        if (clickCount >= 2 || (points.Count >= 3 && NearPx(ToPx(points[0]), ToPx(_startMm))))
+        {
+            FinishPolygon(page);
+            return;
+        }
+        if (p != points[^1])
+            points.Add(p);
+        InvalidateVisual();
+    }
+
+    void FinishPolygon(PageViewModel page)
+    {
+        var points = _drawing!.Distinct().ToList();
+        _drawing = null;
+        InvalidateVisual();
+        if (points.Count < 3)
+            return;
+        var area = NewArea(page.Project);
+        area.SetPolygon(points.Select(p => new AreaPoint(p.X, p.Y)).ToList());
+        page.Areas.Add(area);
+        page.SelectedArea = area;
+    }
+
+    static Point ClampToPage(PageViewModel page, Point mm) =>
+        new(Math.Clamp(mm.X, 0, page.WidthMm), Math.Clamp(mm.Y, 0, page.HeightMm));
+
+    /// <summary>Ersetzt eine Ecke des Polygons (Seitenkoordinaten).</summary>
+    static void UpdatePoints(AreaViewModel area, Func<List<AreaPoint>, List<AreaPoint>> change) =>
+        area.SetPolygon(change(area.PagePoints.ToList()));
+
+    static void RemoveVertex(AreaViewModel area, int index)
+    {
+        if (area.Points.Count <= 3)
+            return;
+        UpdatePoints(area, points =>
+        {
+            points.RemoveAt(index);
+            // Die Kante davor führt jetzt zu einer anderen Ecke: gerade machen
+            int prev = (index - 1 + points.Count) % points.Count;
+            points[prev] = points[prev] with { Bulge = 0 };
+            return points;
+        });
+    }
+
+    static void SplitEdge(AreaViewModel area, int index)
+    {
+        UpdatePoints(area, points =>
+        {
+            var p = points[index];
+            var q = points[(index + 1) % points.Count];
+            var (ax, ay) = AreaGeometry.Apex(p.X, p.Y, q.X, q.Y, p.Bulge);
+            double half = AreaGeometry.HalfBulge(p.Bulge);
+            points[index] = p with { Bulge = half };
+            points.Insert(index + 1, new AreaPoint(Snap(ax), Snap(ay), half));
+            return points;
+        });
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
@@ -374,13 +564,46 @@ public class PageCanvas : Control
         var pos = new Point(Math.Clamp(raw.X, 0, maxX), Math.Clamp(raw.Y, 0, maxY));
         bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
 
+        if (_drawing != null)
+        {
+            _hoverMm = SnapPoint(pos);
+            Cursor = CrossCursor;
+            InvalidateVisual();
+            return;
+        }
+
         switch (_mode)
         {
             case DragMode.Create when page.SelectedArea is { } area:
-                area.X = Snap(Math.Min(_startMm.X, pos.X));
-                area.Y = Snap(Math.Min(_startMm.Y, pos.Y));
-                area.Width = Snap(Math.Abs(pos.X - _startMm.X));
-                area.Height = Snap(Math.Abs(pos.Y - _startMm.Y));
+                double w = Math.Abs(pos.X - _startMm.X), h = Math.Abs(pos.Y - _startMm.Y);
+                // Umschalt: Kreis bzw. Quadrat
+                if (shift)
+                    w = h = Math.Max(w, h);
+                area.X = Snap(pos.X < _startMm.X ? _startMm.X - w : _startMm.X);
+                area.Y = Snap(pos.Y < _startMm.Y ? _startMm.Y - h : _startMm.Y);
+                area.Width = Snap(w);
+                area.Height = Snap(h);
+                break;
+            case DragMode.MoveVertex when page.SelectedArea is { IsPolygon: true } area:
+                var v = SnapPoint(pos);
+                UpdatePoints(area, points =>
+                {
+                    points[_vertex] = points[_vertex] with { X = v.X, Y = v.Y };
+                    return points;
+                });
+                break;
+            case DragMode.BendEdge when page.SelectedArea is { IsPolygon: true } area:
+                UpdatePoints(area, points =>
+                {
+                    var p = points[_vertex];
+                    var q = points[(_vertex + 1) % points.Count];
+                    double bulge = AreaGeometry.BulgeThrough(p.X, p.Y, q.X, q.Y, raw.X, raw.Y);
+                    double chord = Math.Sqrt((q.X - p.X) * (q.X - p.X) + (q.Y - p.Y) * (q.Y - p.Y));
+                    if (Math.Abs(bulge * chord / 2) < StraightSnapMm)
+                        bulge = 0;
+                    points[_vertex] = p with { Bulge = Math.Round(bulge, 4) };
+                    return points;
+                });
                 break;
             case DragMode.Move when _startRect != null && page.SelectedArea is { } area:
                 area.X = Snap(Math.Clamp(_startRect.X + pos.X - _startMm.X, 0, maxX - area.Width));
@@ -412,6 +635,8 @@ public class PageCanvas : Control
 
     Cursor? HoverCursor(PageViewModel page, Point px)
     {
+        if (page.SelectedArea is { IsPolygon: true } poly && HitPolygonHandle(poly, px) is { } ph)
+            return ph.Vertex ? MoveCursor : HandCursor;
         if (!ElementsLocked && page.SelectedElement is { } el && HitHandle(el, px) is { } h)
         {
             if (h == RotateHandle)
@@ -489,6 +714,9 @@ public class PageCanvas : Control
             page.Areas.Remove(area);
             page.SelectedArea = null;
         }
+        // Nach dem Skalieren den Rahmen eines Polygons wieder eng an den Umriss legen (Bögen)
+        if (_mode == DragMode.Resize && Page?.SelectedArea is { IsPolygon: true } scaled)
+            UpdatePoints(scaled, points => points);
         _mode = DragMode.None;
         _startRect = null;
         _startElement = null;
@@ -510,6 +738,20 @@ public class PageCanvas : Control
         base.OnKeyDown(e);
         if (Page is not { } page)
             return;
+
+        if (_drawing != null)
+        {
+            switch (e.Key)
+            {
+                case Key.Enter: FinishPolygon(page); break;
+                case Key.Escape: _drawing = null; InvalidateVisual(); break;
+                case Key.Back when _drawing.Count > 1: _drawing.RemoveAt(_drawing.Count - 1); InvalidateVisual(); break;
+                case Key.Back: _drawing = null; InvalidateVisual(); break;
+                default: return;
+            }
+            e.Handled = true;
+            return;
+        }
 
         double step = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 5 : 0.5;
         if (page.SelectedArea is { } area)

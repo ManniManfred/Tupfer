@@ -121,6 +121,26 @@ public enum AreaTarget
     Stop,
 }
 
+public enum AreaShape
+{
+    Rectangle,
+    Ellipse,
+    Polygon,
+}
+
+/// <summary>
+/// Eckpunkt eines Polygons in mm, relativ zur oberen linken Ecke der Fläche.
+/// <paramref name="Bulge"/> beschreibt die Kante zum nächsten Punkt: 0 = gerade, sonst ein Kreisbogen
+/// mit Bulge = tan(Bogenwinkel / 4) = 2 · Stichhöhe / Sehnenlänge (wie in DXF). Positiv wölbt
+/// sich der Bogen nach links (in Laufrichtung, y nach unten), negativ nach rechts.
+/// </summary>
+public record AreaPoint(double X, double Y,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] double Bulge = 0);
+
+/// <summary>
+/// Eine OID-Fläche. X/Y/Width/Height (mm) sind der umschließende Rahmen; bei einer Ellipse
+/// ist sie in diesen Rahmen eingepasst, ein Polygon wird durch <see cref="Points"/> beschrieben.
+/// </summary>
 public class AreaEntry
 {
     public string Label { get; set; } = "";
@@ -128,6 +148,14 @@ public class AreaEntry
     public double Y { get; set; }
     public double Width { get; set; }
     public double Height { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public AreaShape Shape { get; set; }
+
+    /// <summary>Nur bei <see cref="AreaShape.Polygon"/>: die Eckpunkte (mindestens drei).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<AreaPoint>? Points { get; set; }
+
     public AreaTarget Target { get; set; }
     public string Script { get; set; } = "";
 }

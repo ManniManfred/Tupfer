@@ -51,6 +51,16 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Auf der Seite nur OID-Flächen bearbeiten, Bilder und Texte sind gesperrt.</summary>
     [ObservableProperty] bool _areasOnly;
 
+    /// <summary>Form neuer OID-Flächen.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RectangleTool), nameof(EllipseTool), nameof(PolygonTool))]
+    AreaShape _areaTool;
+
+    // Für die Werkzeugknöpfe: Einschalten wählt die Form, Ausschalten wird ignoriert
+    public bool RectangleTool { get => AreaTool == AreaShape.Rectangle; set { if (value) AreaTool = AreaShape.Rectangle; else OnPropertyChanged(); } }
+    public bool EllipseTool { get => AreaTool == AreaShape.Ellipse; set { if (value) AreaTool = AreaShape.Ellipse; else OnPropertyChanged(); } }
+    public bool PolygonTool { get => AreaTool == AreaShape.Polygon; set { if (value) AreaTool = AreaShape.Polygon; else OnPropertyChanged(); } }
+
     /// <summary>Die Anfasser eines Bilds schneiden zu statt zu skalieren.</summary>
     [ObservableProperty] bool _cropMode;
     [ObservableProperty] int _selectedTab;
@@ -390,13 +400,11 @@ public partial class MainWindowViewModel : ObservableObject
             var areas = page.Areas.ToList();
             foreach (var a in areas.Where(a => a.Oid == null))
                 problems.Add($"{page.Name}: Fläche „{a.Caption}“ hat keinen gültigen Code.");
+            var outlines = areas.Select(a => a.Outline()).ToList();
             for (int i = 0; i < areas.Count; i++)
                 for (int j = i + 1; j < areas.Count; j++)
-                {
-                    var (a, b) = (areas[i], areas[j]);
-                    if (a.X < b.X + b.Width && b.X < a.X + a.Width && a.Y < b.Y + b.Height && b.Y < a.Y + a.Height)
-                        problems.Add($"{page.Name}: „{a.Caption}“ und „{b.Caption}“ überlappen sich.");
-                }
+                    if (AreaGeometry.Overlaps(outlines[i], outlines[j]))
+                        problems.Add($"{page.Name}: „{areas[i].Caption}“ und „{areas[j].Caption}“ überlappen sich.");
         }
         return problems;
     }
@@ -423,7 +431,7 @@ public partial class MainWindowViewModel : ObservableObject
                 Background = PrintElements ? ImageConverter.RenderPage(page) : null,
             };
             foreach (var a in page.Areas.Where(a => a.Oid != null && a.Width > 0 && a.Height > 0))
-                spec.Areas.Add(new OidArea(a.X, a.Y, a.Width, a.Height, a.Oid!.Value));
+                spec.Areas.Add(new OidArea(a.X, a.Y, a.Width, a.Height, a.Oid!.Value, Outline: a.IsRectangle ? null : a.Outline()));
             specs.Add(spec);
         }
 
@@ -478,7 +486,8 @@ public partial class MainWindowViewModel : ObservableObject
         }
         var path = await Dialogs!.SaveAsync("OID als PNG exportieren", $"oid-{oid}.png", "PNG", ".png");
         if (path == null) return;
-        PngWriter.WriteOidPng(path, oid, area.Width, area.Height, Project.Dpi, Project.PixelSize);
+        var outline = area.IsRectangle ? null : area.Outline().Select(p => (p.X - area.X, p.Y - area.Y)).ToList();
+        PngWriter.WriteOidPng(path, oid, area.Width, area.Height, Project.Dpi, Project.PixelSize, outline);
         await Dialogs.SavedAsync(path);
         Log($"PNG geschrieben: {path} ({area.Width:0.#} × {area.Height:0.#} mm bei {Project.Dpi} dpi)");
     });

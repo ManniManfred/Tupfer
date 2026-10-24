@@ -76,7 +76,8 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
 
 - **Seiten:** Fotos und Bilder einfügen – auch per Drag&Drop aus dem Explorer – (drehen, zuschneiden, skalieren) und Texte setzen
   (Schriftart, Größe, Farbe, Ausrichtung). Mit der Maus OID-Flächen aufziehen,
-  verschieben und in der Größe ändern. Jede Fläche wird einem Skript oder einem Sondercode
+  verschieben und in der Größe ändern – als Rechteck, Kreis/Ellipse oder beliebiges Polygon, dessen
+  Kanten sich zu Kreisbögen biegen lassen. Jede Fläche wird einem Skript oder einem Sondercode
   (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.
 - **Skripte:** tttool-Skripte bearbeiten, mit Kurzreferenz der Befehle.
 - **Programm (C#):** Spiellogik in C# schreiben statt in der Skriptsprache (siehe unten).

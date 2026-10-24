@@ -10,8 +10,11 @@ public record RgbImage(int Width, int Height, byte[] Rgb);
 /// <summary>
 /// Eine mit einem OID-Muster gefüllte Fläche, Angaben in mm ab oben links.
 /// Dpi und PixelSize überschreiben optional die Einstellungen des Dokuments.
+/// Ist <paramref name="Outline"/> gesetzt (Polygonzug in mm), wird nur dieser Umriss gefüllt,
+/// sonst das Rechteck.
 /// </summary>
-public record OidArea(double X, double Y, double Width, double Height, int Oid, int? Dpi = null, int? PixelSize = null);
+public record OidArea(double X, double Y, double Width, double Height, int Oid, int? Dpi = null, int? PixelSize = null,
+    IReadOnlyList<(double X, double Y)>? Outline = null);
 
 /// <summary>Ein Text auf der Seite, Angaben in mm ab oben links.</summary>
 public record PdfText(double X, double Y, double SizePt, string Text);
@@ -162,7 +165,17 @@ public class PdfWriter
                 int p = PatternFor(a.Oid, a.Dpi ?? _dpi, a.PixelSize ?? _pixelSize, ph);
                 if (usedPatterns.Add(p))
                     patterns.Append($" /P{p} {p} 0 R");
-                content.AppendLine($"/Pattern cs /P{p} scn {F(a.X * PtPerMm)} {F(ph - (a.Y + a.Height) * PtPerMm)} {F(a.Width * PtPerMm)} {F(a.Height * PtPerMm)} re f");
+                if (a.Outline is { Count: >= 3 } outline)
+                {
+                    content.Append($"/Pattern cs /P{p} scn");
+                    for (int i = 0; i < outline.Count; i++)
+                        content.Append($" {F(outline[i].X * PtPerMm)} {F(ph - outline[i].Y * PtPerMm)} {(i == 0 ? "m" : "l")}");
+                    content.AppendLine(" h f");
+                }
+                else
+                {
+                    content.AppendLine($"/Pattern cs /P{p} scn {F(a.X * PtPerMm)} {F(ph - (a.Y + a.Height) * PtPerMm)} {F(a.Width * PtPerMm)} {F(a.Height * PtPerMm)} re f");
+                }
             }
 
             foreach (var (x, y, w, h) in spec.Frames)
