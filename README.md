@@ -81,8 +81,12 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.
 - **Skripte:** tttool-Skripte bearbeiten, mit Kurzreferenz der Befehle.
 - **Programm (C#):** Spiellogik in C# schreiben statt in der Skriptsprache (siehe unten).
-- **Sprachausgabe:** Texte, die beim Bauen per Text-to-Speech vertont werden; alternativ eigene
-  Audiodateien (`.ogg`, `.mp3`, `.wav`) im Medienverzeichnis.
+- **Sprachausgabe:** Texte, die beim Bauen per Text-to-Speech vertont werden, mit Knopf zum Anhören.
+  Jeder Text kann stattdessen eine eigene Aufnahme bekommen – direkt mit dem Mikrofon aufgenommen
+  oder als Audiodatei (`.wav`, `.ogg`, `.mp3`) übernommen; sie liegt im Projektordner unter
+  `aufnahmen/`. Auf dem Desktop nutzt das unter Windows die eingebaute Audio-Schnittstelle, unter
+  Linux/macOS `paplay`/`aplay`/`ffplay`/`afplay` zum Abspielen und `arecord`, `sox` oder `ffmpeg`
+  zum Aufnehmen. Alternativ eigene Audiodateien im Medienverzeichnis.
 - **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
 - **Export:**
   - Seiten als druckfertige PDF (Bilder und Texte + OID-Muster in den Flächen)
@@ -136,6 +140,8 @@ Unterschiede zur Desktop-Version:
   `.tiptoy.json` zusammen mit ihren Bildern (Mehrfachauswahl).
 - **Sprachausgabe:** eingebaut mit [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als
   JavaScript, Stimmen für de, en, es, fr, it, nl); die Texte werden als WAV eingebettet.
+- **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
+  fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als WAV (mono, 22 kHz).
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.
 - **Kein C#-Programm:** Der Übersetzer (Roslyn) würde die Web-App mehr als verdoppeln, deshalb fehlt
   der Tab *Programm (C#)*. Projekte mit C#-Programm lassen sich trotzdem öffnen und bauen – dann

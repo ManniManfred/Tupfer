@@ -181,6 +181,13 @@ public static class GmeBuilder
     static byte[] LoadAudio(ProjectFile project, string baseDir, string name, Func<string, string, byte[]> speak)
     {
         var text = project.Speak.FirstOrDefault(s => s.Name == name);
+        if (text?.Recording is { Length: > 0 } recording)
+        {
+            var file = Path.GetFullPath(recording, baseDir);
+            return File.Exists(file)
+                ? File.ReadAllBytes(file)
+                : throw new GmeBuildException($"Die Aufnahme für „{name}“ fehlt: {file}");
+        }
         if (text != null)
             return speak(string.IsNullOrWhiteSpace(project.Language) ? "en" : project.Language, text.Text);
 

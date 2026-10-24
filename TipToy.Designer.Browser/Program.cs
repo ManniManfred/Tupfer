@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 using Avalonia;
 using Avalonia.Browser;
 using TipToy.Designer.Gme;
+using TipToy.Designer.Services;
 using TipToy.Designer.ViewModels;
 
 [assembly: SupportedOSPlatform("browser")]
@@ -16,6 +17,7 @@ static class Program
         App.CreateDialogs = topLevel => new BrowserFileDialogs(topLevel);
         TextToSpeech.PrepareAsync = BrowserInterop.LoadSpeechAsync;
         TextToSpeech.Synthesizer = BrowserInterop.Speak;
+        Audio.Device = new BrowserAudio();
 
         // main.js übergibt die Adresse der Seite
         var pageUri = new Uri(args[0]);

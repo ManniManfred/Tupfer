@@ -155,11 +155,13 @@ public static class TttoolYaml
             }
         }
 
-        if (project.Speak.Count > 0)
+        // Texte mit eigener Aufnahme sucht tttool als Audiodatei im Medienverzeichnis
+        var spoken = project.Speak.Where(s => string.IsNullOrEmpty(s.Recording)).ToList();
+        if (spoken.Count > 0)
         {
             sb.AppendLine();
             sb.AppendLine("speak:");
-            foreach (var s in project.Speak)
+            foreach (var s in spoken)
                 sb.AppendLine($"  {Quote(s.Name)}: {Quote(s.Text)}");
         }
 

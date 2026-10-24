@@ -42,4 +42,16 @@ public partial class SpeakViewModel : ObservableObject
 {
     [ObservableProperty] string _name = "";
     [ObservableProperty] string _text = "";
+
+    /// <summary>Eigene Aufnahme (absoluter Pfad); ersetzt beim Bauen die Sprachausgabe.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRecording), nameof(RecordingName))]
+    string? _recording;
+
+    /// <summary>Für diesen Text läuft gerade eine Aufnahme.</summary>
+    [ObservableProperty] bool _isRecording;
+
+    public bool HasRecording => !string.IsNullOrEmpty(Recording);
+
+    public string RecordingName => HasRecording ? Path.GetFileName(Recording!) : "";
 }

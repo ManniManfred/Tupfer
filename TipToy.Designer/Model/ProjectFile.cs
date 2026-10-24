@@ -49,6 +49,10 @@ public class SpeakEntry
 {
     public string Name { get; set; } = "";
     public string Text { get; set; } = "";
+
+    /// <summary>Eigene Aufnahme (Audiodatei relativ zum Projekt); wird statt der Sprachausgabe verwendet.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Recording { get; set; }
 }
 
 public class PageEntry

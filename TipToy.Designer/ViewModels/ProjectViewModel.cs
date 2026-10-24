@@ -204,7 +204,12 @@ public partial class ProjectViewModel : ObservableObject
         Dpi = Dpi,
         PixelSize = PixelSize,
         Scripts = Scripts.Select(s => s.ToEntry()).ToList(),
-        Speak = Speak.Select(s => new SpeakEntry { Name = s.Name, Text = s.Text }).ToList(),
+        Speak = Speak.Select(s => new SpeakEntry
+        {
+            Name = s.Name,
+            Text = s.Text,
+            Recording = s.HasRecording ? Path.GetRelativePath(baseDir, s.Recording!).Replace('\\', '/') : null,
+        }).ToList(),
         Pages = Pages.Select(p => p.ToEntry(baseDir)).ToList(),
     };
 
@@ -235,7 +240,12 @@ public partial class ProjectViewModel : ObservableObject
             script.Generated = s.Generated;
         }
         foreach (var s in f.Speak)
-            vm.Speak.Add(new SpeakViewModel { Name = s.Name, Text = s.Text });
+            vm.Speak.Add(new SpeakViewModel
+            {
+                Name = s.Name,
+                Text = s.Text,
+                Recording = string.IsNullOrEmpty(s.Recording) ? null : Path.GetFullPath(s.Recording, baseDir),
+            });
         foreach (var p in f.Pages)
             vm.Pages.Add(PageViewModel.FromEntry(vm, p, baseDir));
         if (vm.Pages.Count == 0)

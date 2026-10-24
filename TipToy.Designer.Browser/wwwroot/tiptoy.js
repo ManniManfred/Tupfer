@@ -74,3 +74,77 @@ export function speak(language, text) {
         throw new Error(`Sprachausgabe für „${text}“ fehlgeschlagen.`);
     return wav;
 }
+
+// ---------- Wiedergabe und Aufnahme ----------
+
+let player = null;
+
+/** Spielt Audiodaten ab; eine laufende Wiedergabe wird beendet. */
+export function playAudio(data, mimeType) {
+    if (player) {
+        player.pause();
+        URL.revokeObjectURL(player.src);
+    }
+    player = new Audio(URL.createObjectURL(new Blob([data.slice()], { type: mimeType })));
+    player.play().catch(e => console.warn('Wiedergabe nicht möglich:', e));
+}
+
+let recording = null;
+
+/** Startet eine Aufnahme vom Mikrofon (rohe Samples über die Web-Audio-API). */
+export async function startRecording() {
+    if (!navigator.mediaDevices?.getUserMedia)
+        throw new Error('Der Browser erlaubt hier keine Aufnahme (nur über https oder localhost).');
+    const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+    });
+    const context = new AudioContext();
+    const source = context.createMediaStreamSource(stream);
+    const processor = context.createScriptProcessor(4096, 1, 1);
+    const chunks = [];
+    processor.onaudioprocess = e => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+    source.connect(processor);
+    processor.connect(context.destination);
+    recording = { stream, context, source, processor, chunks };
+}
+
+/** Beendet die Aufnahme und liefert sie als WAV (mono, 16 Bit) in der gewünschten Abtastrate, Base64-kodiert. */
+export async function stopRecording(sampleRate) {
+    if (!recording)
+        throw new Error('Es läuft keine Aufnahme.');
+    const { stream, context, source, processor, chunks } = recording;
+    recording = null;
+    processor.disconnect();
+    source.disconnect();
+    stream.getTracks().forEach(t => t.stop());
+    const inputRate = context.sampleRate;
+    await context.close();
+
+    const input = new Float32Array(chunks.reduce((n, c) => n + c.length, 0));
+    let offset = 0;
+    for (const c of chunks) {
+        input.set(c, offset);
+        offset += c.length;
+    }
+    // Auf die Zielrate umrechnen (lineare Interpolation) und in 16 Bit wandeln
+    const count = Math.floor(input.length * sampleRate / inputRate);
+    const wav = new DataView(new ArrayBuffer(44 + count * 2));
+    const text = (pos, s) => [...s].forEach((ch, i) => wav.setUint8(pos + i, ch.charCodeAt(0)));
+    text(0, 'RIFF'); wav.setUint32(4, 36 + count * 2, true); text(8, 'WAVEfmt ');
+    wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 1, true);
+    wav.setUint32(24, sampleRate, true); wav.setUint32(28, sampleRate * 2, true);
+    wav.setUint16(32, 2, true); wav.setUint16(34, 16, true);
+    text(36, 'data'); wav.setUint32(40, count * 2, true);
+    for (let i = 0; i < count; i++) {
+        const pos = i * inputRate / sampleRate;
+        const j = Math.floor(pos), f = pos - j;
+        const v = (input[j] ?? 0) * (1 - f) + (input[j + 1] ?? input[j] ?? 0) * f;
+        wav.setInt16(44 + i * 2, Math.max(-1, Math.min(1, v)) * 0x7fff, true);
+    }
+
+    const bytes = new Uint8Array(wav.buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000)
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(binary);
+}

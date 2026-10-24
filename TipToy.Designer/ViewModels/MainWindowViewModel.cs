@@ -316,6 +316,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         var file = Project.ToFile(BaseDir);
         TttoolYaml.Export(file, path);
+        CopyRecordingsForTttool(file, Path.GetDirectoryName(path)!);
         Project.Replay = file.Replay;
         Project.Stop = file.Stop;
         Log($"YAML geschrieben: {path} (+ {Path.GetFileName(TttoolYaml.CodesPathFor(path))})");
@@ -658,6 +659,135 @@ public partial class MainWindowViewModel : ObservableObject
         var speak = new SpeakViewModel { Name = $"text{Project.Speak.Count + 1}" };
         Project.Speak.Add(speak);
         Project.SelectedSpeak = speak;
+    }
+
+    /// <summary>
+    /// tttool kennt keine Aufnahmen zu Texten, sondern sucht Audiodateien im Medienverzeichnis:
+    /// Aufnahmen dorthin kopieren (z. B. für „GME mit externem tttool bauen“).
+    /// </summary>
+    void CopyRecordingsForTttool(ProjectFile file, string yamlDir)
+    {
+        if (!IsDesktop)
+            return;
+        var pattern = string.IsNullOrWhiteSpace(file.MediaPath) ? "%s" : file.MediaPath;
+        foreach (var s in file.Speak.Where(s => !string.IsNullOrEmpty(s.Recording)))
+        {
+            var source = Path.GetFullPath(s.Recording!, BaseDir);
+            var target = Path.GetFullPath(pattern.Replace("%s", s.Name) + Path.GetExtension(source), yamlDir);
+            if (!File.Exists(source) || string.Equals(source, target, StringComparison.OrdinalIgnoreCase))
+                continue;
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(source, target, true);
+        }
+    }
+
+    // ---------- Anhören und Aufnehmen ----------
+
+    /// <summary>Spielt die Aufnahme bzw. die Sprachausgabe eines Textes ab.</summary>
+    [RelayCommand]
+    Task PlaySpeak(SpeakViewModel speak) => Guard("Wiedergabe", async () =>
+    {
+        byte[] data;
+        string extension;
+        if (speak.HasRecording)
+        {
+            data = await File.ReadAllBytesAsync(speak.Recording!);
+            extension = Path.GetExtension(speak.Recording!);
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(speak.Text))
+            {
+                Log($"„{speak.Name}“ hat noch keinen Text.");
+                return;
+            }
+            var language = string.IsNullOrWhiteSpace(Project.Language) ? "en" : Project.Language;
+            if (TextToSpeech.PrepareAsync is { } prepare)
+                await prepare(language);
+            // Ungespeicherte Projekte haben noch kein Verzeichnis für den Zwischenspeicher
+            var cache = FilePath == null && IsDesktop
+                ? Path.Combine(Path.GetTempPath(), "tiptoy-tts-cache")
+                : Path.Combine(BaseDir, "tts-cache");
+            var tts = new TextToSpeech(cache, LogFromAnyThread);
+            data = await Task.Run(() => tts.Speak(language, speak.Text));
+            extension = Audio.ExtensionOf(data);
+        }
+        await Audio.Device.PlayAsync(data, extension);
+    });
+
+    SpeakViewModel? _recordingSpeak;
+
+    /// <summary>Startet eine Aufnahme für den Text bzw. beendet die laufende und speichert sie.</summary>
+    [RelayCommand]
+    Task RecordSpeak(SpeakViewModel speak) => Guard("Aufnahme", async () =>
+    {
+        if (_recordingSpeak is { } current)
+        {
+            _recordingSpeak = null;
+            current.IsRecording = false;
+            var wav = await Audio.Device.StopRecordingAsync();
+            var path = RecordingPath(current, ".wav");
+            await File.WriteAllBytesAsync(path, wav);
+            current.Recording = path;
+            Log($"Aufnahme für „{current.Name}“ gespeichert ({Audio.WavSeconds(wav):0.0} s): {path}");
+            return;
+        }
+        if (!await EnsureProjectDir())
+            return;
+        await Audio.Device.StartRecordingAsync();
+        _recordingSpeak = speak;
+        speak.IsRecording = true;
+        Log($"Aufnahme für „{speak.Name}“ läuft – zum Beenden noch einmal auf den Stopp-Knopf klicken.");
+    });
+
+    /// <summary>Übernimmt eine vorhandene Audiodatei als Aufnahme des Textes.</summary>
+    [RelayCommand]
+    Task ImportRecording(SpeakViewModel speak) => Guard("Aufnahme laden", async () =>
+    {
+        if (!await EnsureProjectDir())
+            return;
+        var source = await Dialogs!.OpenAsync("Audiodatei wählen", "Audio", GmeBuilder.MediaExtensions.Select(e => "*" + e).ToArray());
+        if (source == null)
+            return;
+        var path = RecordingPath(speak, Path.GetExtension(source).ToLowerInvariant());
+        if (!string.Equals(Path.GetFullPath(source), path, StringComparison.OrdinalIgnoreCase))
+        {
+            // Im Browser liegt die gewählte Datei schon als Kopie im Projektverzeichnis
+            if (IsDesktop)
+                File.Copy(source, path, true);
+            else
+                File.Move(source, path, true);
+        }
+        speak.Recording = path;
+        Log($"Aufnahme für „{speak.Name}“: {path}");
+    });
+
+    [RelayCommand]
+    void RemoveRecording(SpeakViewModel speak)
+    {
+        if (!speak.HasRecording)
+            return;
+        speak.Recording = null;
+        Log($"„{speak.Name}“ verwendet wieder die Sprachausgabe.");
+    }
+
+    /// <summary>Aufnahmen liegen im Projektverzeichnis unter aufnahmen/, benannt nach dem Text.</summary>
+    string RecordingPath(SpeakViewModel speak, string extension)
+    {
+        var dir = Path.Combine(BaseDir, "aufnahmen");
+        Directory.CreateDirectory(dir);
+        var name = string.Concat(speak.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        return Path.Combine(dir, (name.Length > 0 ? name : "aufnahme") + extension);
+    }
+
+    /// <summary>Auf dem Desktop brauchen Aufnahmen ein gespeichertes Projekt (sie liegen daneben).</summary>
+    async Task<bool> EnsureProjectDir()
+    {
+        if (FilePath != null || !IsDesktop)
+            return true;
+        Log("Bitte das Projekt zuerst speichern – Aufnahmen werden neben der Projektdatei abgelegt.");
+        await SaveProjectAs();
+        return FilePath != null;
     }
 
     [RelayCommand]

@@ -560,7 +560,7 @@
             <StackPanel DockPanel.Dock="Top">
               <TextBlock Classes="section" Text="Texte für die Sprachausgabe" />
               <TextBlock Classes="hint" Margin="0,0,0,6"
-                         Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet: unter Windows mit der eingebauten Stimme, unter Linux/macOS mit pico2wave, espeak oder say. Ist oggenc installiert, werden sie als OGG gespeichert, sonst als WAV. Alternativ eine Audiodatei (.ogg, .mp3, .wav) mit gleichem Namen im Medienverzeichnis ablegen." />
+                         Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet (Wiedergabeknopf = anhören). Statt der Sprachausgabe kann jeder Text eine eigene Aufnahme bekommen: Der Mikrofonknopf nimmt auf (noch einmal klicken beendet), der Ordnerknopf übernimmt eine Audiodatei (.wav, .ogg, .mp3). Aufnahmen liegen im Projektordner unter aufnahmen/." />
               <WrapPanel Classes="buttons">
                 <Button Command="{Binding AddSpeakCommand}">
                   <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Neuer Text" /></StackPanel>
@@ -571,15 +571,50 @@
               </WrapPanel>
               <Grid ColumnDefinitions="Auto,*" Margin="10,6,10,2">
                 <TextBlock Classes="label speakname" Text="Name" Margin="0" />
-                <TextBlock Classes="label" Grid.Column="1" Text="Text" Margin="8,0,0,0" />
+                <TextBlock Classes="label" Grid.Column="1" Text="Text bzw. Aufnahme" Margin="8,0,0,0" />
               </Grid>
             </StackPanel>
             <ListBox ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding Project.SelectedSpeak}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:SpeakViewModel">
-                  <Grid ColumnDefinitions="Auto,*">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
                     <TextBox Classes="speakname" Text="{Binding Name}" Margin="0,0,8,0" />
-                    <TextBox Grid.Column="1" Text="{Binding Text}" />
+                    <TextBox Grid.Column="1" Text="{Binding Text}" IsVisible="{Binding !HasRecording}" />
+                    <Border Grid.Column="1" IsVisible="{Binding HasRecording}" Background="#E8F5E9" CornerRadius="4"
+                            Padding="8,0" ToolTip.Tip="{Binding Recording}">
+                      <DockPanel VerticalAlignment="Center">
+                        <Button DockPanel.Dock="Right" Classes="tool" Padding="4" Margin="4,0,-6,0"
+                                ToolTip.Tip="Aufnahme entfernen (wieder die Sprachausgabe verwenden)"
+                                Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).RemoveRecordingCommand}"
+                                CommandParameter="{Binding}">
+                          <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                        </Button>
+                        <PathIcon DockPanel.Dock="Left" Data="{StaticResource IconMic}" Width="14" Height="14"
+                                  Foreground="#2E7D32" Margin="0,0,6,0" />
+                        <TextBlock Text="{Binding RecordingName}" Foreground="#2E7D32" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                      </DockPanel>
+                    </Border>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="4,0,0,0">
+                      <Button Classes="tool" ToolTip.Tip="Anhören"
+                              Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
+                              CommandParameter="{Binding}">
+                        <PathIcon Data="{StaticResource IconPlay}" />
+                      </Button>
+                      <Button Classes="tool" ToolTip.Tip="Mit dem Mikrofon aufnehmen bzw. Aufnahme beenden"
+                              Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).RecordSpeakCommand}"
+                              CommandParameter="{Binding}">
+                        <Panel>
+                          <PathIcon Data="{StaticResource IconMic}" IsVisible="{Binding !IsRecording}" />
+                          <PathIcon Data="{StaticResource IconStop}" Foreground="#C62828" IsVisible="{Binding IsRecording}" />
+                        </Panel>
+                      </Button>
+                      <Button Classes="tool" ToolTip.Tip="Audiodatei als Aufnahme übernehmen"
+                              Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).ImportRecordingCommand}"
+                              CommandParameter="{Binding}">
+                        <PathIcon Data="{StaticResource IconOpen}" />
+                      </Button>
+                    </StackPanel>
                   </Grid>
                 </DataTemplate>
               </ListBox.ItemTemplate>
