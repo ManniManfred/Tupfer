@@ -115,6 +115,13 @@ Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem Push auf
 veröffentlicht sie auf GitHub Pages (einmalig unter *Settings → Pages → Source* „GitHub Actions“
 wählen).
 
+**Auf eigenem Server (z. B. CapRover):** `captain-definition` und `deploy/Dockerfile` bauen die
+Web-Version in einem Container (.NET-SDK mit `wasm-tools`) und liefern sie mit nginx aus. In
+CapRover eine App anlegen, HTTPS aktivieren und unter *Deployment* das GitHub-Repository
+(Branch `master`) eintragen – oder lokal `caprover deploy` ausführen. Der Bau braucht einige
+Minuten und etwa 2–3 GB Arbeitsspeicher. Lokal testen:
+`docker build -f deploy/Dockerfile -t tiptoy-web . && docker run -p 8080:80 tiptoy-web`
+
 Unterschiede zur Desktop-Version:
 
 - **Dateien:** Der Browser darf nicht direkt auf die Festplatte schreiben. Gespeicherte Projekte,
