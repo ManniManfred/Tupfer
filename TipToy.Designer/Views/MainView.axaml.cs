@@ -66,6 +66,7 @@ public partial class MainView : UserControl
         Classes.Set("compact", compact);
 
         AppTitle.IsVisible = !compact;
+        CompactVersion.IsVisible = compact;
         HeaderFileButtons.IsVisible = !compact;
         GmeLabel.IsVisible = !compact;
         ZoomSlider.IsVisible = !compact;

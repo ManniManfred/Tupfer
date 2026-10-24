@@ -59,6 +59,11 @@
                      Foreground="{StaticResource TextPrimary}" />
         </StackPanel>
 
+        <!-- Im kompakten Layout statt des Titels nur die Version -->
+        <TextBlock x:Name="CompactVersion" Grid.Column="2" IsVisible="False" Text="{x:Static vm:MainWindowViewModel.Version}"
+                   FontSize="11" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"
+                   HorizontalAlignment="Right" Margin="4,0,8,0" />
+
         <Menu Grid.Column="1" VerticalAlignment="Center">
           <MenuItem Header="_Datei">
             <MenuItem Header="_Neu" InputGesture="Ctrl+N" Command="{Binding NewProjectCommand}">
