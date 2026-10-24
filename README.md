@@ -96,6 +96,10 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   (welche Zeile, welche Befehle). *Neu starten* entspricht dem Antippen des Produkt-Codes.
   Spiele (`G`), Timer und Soundprofile werden nicht simuliert.
 - **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
+- **Drucken (Strg+P):** Seiten direkt drucken. Auf dem Desktop geht es an den Standarddrucker
+  (Windows: über das PDF-Programm, falls es Drucken anbietet; Linux/macOS: über `lp`), sonst öffnet
+  sich das PDF im PDF-Programm. Im Browser erscheint der Druckdialog; auf dem Handy öffnet sich das
+  PDF in einem neuen Tab. Immer ohne Skalierung („Tatsächliche Größe“ / 100 %) drucken.
 - **Export:**
   - Seiten als druckfertige PDF (Bilder und Texte + OID-Muster in den Flächen)
   - OID-Tabelle aller Codes als PDF, einzelne Flächen als PNG
@@ -163,7 +167,7 @@ Unterschiede zur Desktop-Version:
 3. Unter *Skripte* und *Sprachausgabe* festlegen, was beim Antippen passiert.
 4. Mit *Testen* (F8) die Flächen antippen und das Verhalten prüfen.
 5. *Erstellen → GME-Datei bauen* und die `.gme` auf den Stift kopieren.
-6. *Erstellen → Seiten als PDF* und mit 1200 dpi in Originalgröße drucken.
+6. *Erstellen → Seiten drucken* (oder *Seiten als PDF*) – mit 1200 dpi in Originalgröße drucken.
 
 Projekte werden als `*.tiptoy.json` gespeichert; Pfade zu Bildern relativ zur Projektdatei.
 Hintergrundbilder älterer Projekte werden beim Öffnen zu einem seitenfüllenden Bild.

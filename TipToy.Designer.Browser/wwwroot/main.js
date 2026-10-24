@@ -11,6 +11,12 @@ import * as tiptoy from './tiptoy.js';
     };
 }
 
+// Strg+P druckt in der App die Seiten (mit OID-Codes), nicht die Webseite selbst
+window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p')
+        e.preventDefault();
+}, true);
+
 const runtime = await dotnet
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()

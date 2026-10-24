@@ -13,6 +13,38 @@ export function download(fileName, data, mimeType) {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
+/**
+ * Druckt ein PDF über den Druckdialog des Browsers (unsichtbarer iframe mit der PDF-Anzeige).
+ * Ohne eingebaute PDF-Anzeige (z. B. auf dem Handy) wird es in einem neuen Tab geöffnet.
+ * Liefert true, wenn der Druckdialog geöffnet wird.
+ */
+export function printPdf(data) {
+    const url = URL.createObjectURL(new Blob([data.slice()], { type: 'application/pdf' }));
+    if (navigator.pdfViewerEnabled === false) {
+        if (!window.open(url, '_blank'))
+            download('seiten.pdf', data, 'application/pdf');
+        setTimeout(() => URL.revokeObjectURL(url), 600000);
+        return false;
+    }
+    document.getElementById('tiptoy-print')?.remove();
+    const frame = document.createElement('iframe');
+    frame.id = 'tiptoy-print';
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    // Die PDF-Anzeige braucht nach dem Laden noch einen Moment, bevor sie drucken kann
+    frame.onload = () => setTimeout(() => {
+        try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+        } catch (e) {
+            console.warn('Drucken im iframe nicht möglich:', e);
+            window.open(url, '_blank');
+        }
+    }, 500);
+    frame.src = url;
+    document.body.appendChild(frame);
+    return true;
+}
+
 /** Setzt den Titel des Browser-Tabs. */
 export function setTitle(title) {
     document.title = title;

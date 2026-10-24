@@ -19,6 +19,12 @@ public interface IFileDialogs
 
     /// <summary>Ein neues, leeres Projekt wurde angelegt.</summary>
     void ProjectCreated() { }
+
+    /// <summary>
+    /// Druckt die PDF-Datei direkt (Desktop: Standarddrucker, Browser: Druckdialog) und löscht sie danach,
+    /// sobald sie nicht mehr gebraucht wird. Liefert einen Hinweis, wie es weitergeht.
+    /// </summary>
+    Task<string> PrintAsync(string pdfPath);
 }
 
 public partial class MainWindowViewModel : ObservableObject
@@ -440,6 +446,29 @@ public partial class MainWindowViewModel : ObservableObject
         var path = await Dialogs!.SaveAsync("Seiten als PDF exportieren", name + ".pdf", "PDF", ".pdf");
         if (path == null) return;
 
+        PdfWriter.Write(path, CreatePageSpecs(), Project.Dpi, Project.PixelSize);
+        await Dialogs.SavedAsync(path);
+        Log($"PDF geschrieben: {path}. Mit {Project.Dpi} dpi und ohne Skalierung („Tatsächliche Größe“) drucken.");
+    });
+
+    [RelayCommand]
+    Task PrintPages() => Guard("Drucken", async () =>
+    {
+        if (!EnsureProgram()) return;
+        Project.AssignCodes();
+        var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "seiten";
+        var dir = Path.Combine(Path.GetTempPath(), "tiptoy-druck");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
+
+        PdfWriter.Write(path, CreatePageSpecs(), Project.Dpi, Project.PixelSize);
+        var hint = await Dialogs!.PrintAsync(path);
+        Notice($"{hint} Ohne Skalierung drucken („Tatsächliche Größe“ / 100 %), sonst erkennt der Stift die Codes nicht.");
+    });
+
+    /// <summary>PDF-Seiten mit OID-Mustern (und je nach Einstellung Bildern und Texten); meldet Probleme als Warnung.</summary>
+    List<PdfPageSpec> CreatePageSpecs()
+    {
         foreach (var p in Validate())
             Notice("Warnung: " + p);
 
@@ -456,11 +485,8 @@ public partial class MainWindowViewModel : ObservableObject
                 spec.Areas.Add(new OidArea(a.X, a.Y, a.Width, a.Height, a.Oid!.Value, Outline: a.IsRectangle ? null : a.Outline()));
             specs.Add(spec);
         }
-
-        PdfWriter.Write(path, specs, Project.Dpi, Project.PixelSize);
-        await Dialogs.SavedAsync(path);
-        Log($"PDF geschrieben: {path}. Mit {Project.Dpi} dpi und ohne Skalierung („Tatsächliche Größe“) drucken.");
-    });
+        return specs;
+    }
 
     [RelayCommand]
     Task ExportOidTable() => Guard("OID-Tabelle", async () =>

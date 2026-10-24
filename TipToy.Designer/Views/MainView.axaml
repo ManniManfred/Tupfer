@@ -11,6 +11,7 @@
     <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveProjectCommand}" />
     <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenProjectCommand}" />
     <KeyBinding Gesture="Ctrl+N" Command="{Binding NewProjectCommand}" />
+    <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintPagesCommand}" />
     <KeyBinding Gesture="F5" Command="{Binding BuildGmeCommand}" />
     <KeyBinding Gesture="F6" Command="{Binding CompileProgramCommand}" />
     <KeyBinding Gesture="F8" Command="{Binding ToggleTestModeCommand}" />
@@ -126,9 +127,10 @@
               <MenuItem.Icon><PathIcon Data="{StaticResource IconCode}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="Seiten als _PDF …" Command="{Binding ExportPdfCommand}">
+            <MenuItem Header="Seiten _drucken …" InputGesture="Ctrl+P" Command="{Binding PrintPagesCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconPrint}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Seiten als _PDF …" Command="{Binding ExportPdfCommand}" />
             <MenuItem Header="Bilder und Texte mitdrucken" ToggleType="CheckBox" IsChecked="{Binding PrintElements, Mode=TwoWay}" />
             <MenuItem Header="OID-_Tabelle als PDF …" Command="{Binding ExportOidTableCommand}" />
             <MenuItem Header="Gewählte Fläche als P_NG …" Command="{Binding ExportAreaPngCommand}" />
@@ -152,9 +154,15 @@
             <PathIcon Data="{StaticResource IconSave}" />
           </Button>
           <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
-          <Button Classes="tool" Command="{Binding ExportPdfCommand}" ToolTip.Tip="Seiten als PDF">
+          <Button Classes="tool" Command="{Binding PrintPagesCommand}" ToolTip.Tip="Seiten drucken (Strg+P)">
             <StackPanel>
               <PathIcon Data="{StaticResource IconPrint}" />
+              <TextBlock Text="Drucken" />
+            </StackPanel>
+          </Button>
+          <Button Classes="tool" Command="{Binding ExportPdfCommand}" ToolTip.Tip="Seiten als PDF">
+            <StackPanel>
+              <PathIcon Data="{StaticResource IconPdf}" />
               <TextBlock Text="PDF" />
             </StackPanel>
           </Button>

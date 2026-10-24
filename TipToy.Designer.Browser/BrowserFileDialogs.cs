@@ -103,6 +103,15 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
 
     public void ProjectCreated() => NewWorkDir();
 
+    public Task<string> PrintAsync(string pdfPath)
+    {
+        var data = File.ReadAllBytes(pdfPath);
+        File.Delete(pdfPath);
+        return Task.FromResult(BrowserInterop.PrintPdf(data)
+            ? "Druckdialog geöffnet."
+            : "Das PDF wurde in einem neuen Tab geöffnet – bitte dort drucken.");
+    }
+
     /// <summary>
     /// Lädt die Projektdatei herunter, zusammen mit Bildern und Audiodateien als ZIP. Das ZIP enthält das
     /// ganze Arbeitsverzeichnis, damit auch Pfade wie ../bilder/… beim erneuten Öffnen stimmen.

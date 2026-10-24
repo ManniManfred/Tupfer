@@ -9,6 +9,13 @@ static partial class BrowserInterop
     [JSImport("download", "tiptoy")]
     public static partial void Download(string fileName, [JSMarshalAs<JSType.MemoryView>] Span<byte> data, string mimeType);
 
+    /// <summary>
+    /// Druckt ein PDF über den Druckdialog des Browsers; ohne eingebaute PDF-Anzeige (z. B. auf dem Handy)
+    /// wird es stattdessen in einem neuen Tab geöffnet. true = Druckdialog.
+    /// </summary>
+    [JSImport("printPdf", "tiptoy")]
+    public static partial bool PrintPdf([JSMarshalAs<JSType.MemoryView>] Span<byte> data);
+
     /// <summary>Setzt den Titel des Browser-Tabs.</summary>
     [JSImport("setTitle", "tiptoy")]
     public static partial void SetTitle(string title);
