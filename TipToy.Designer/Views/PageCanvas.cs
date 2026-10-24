@@ -5,6 +5,8 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using System.Windows.Input;
 using TipToy.Designer.Model;
 using TipToy.Designer.Services;
 using TipToy.Designer.ViewModels;
@@ -17,6 +19,7 @@ namespace TipToy.Designer.Views;
 /// <see cref="AreaTool"/>); Polygone werden Punkt für Punkt geklickt. Ziehen eines Objekts verschiebt es.
 /// Bei einem gewählten Polygon lassen sich Ecken verschieben und Kanten zu Kreisbögen ziehen.
 /// Bilder und Texte haben Anfasser zum Skalieren (bzw. Zuschneiden) und einen Drehgriff.
+/// Im Testmodus wird nicht bearbeitet: Antippen einer Fläche führt <see cref="TestTapCommand"/> aus.
 /// Im Modus „Nur OID-Flächen“ sind Bilder und Texte gesperrt.
 /// </summary>
 public class PageCanvas : Control
@@ -38,6 +41,14 @@ public class PageCanvas : Control
     /// <summary>Form neuer OID-Flächen.</summary>
     public static readonly StyledProperty<AreaShape> AreaToolProperty =
         AvaloniaProperty.Register<PageCanvas, AreaShape>(nameof(AreaTool));
+
+    /// <summary>Testmodus: Antippen führt die Fläche aus, statt zu bearbeiten.</summary>
+    public static readonly StyledProperty<bool> TestModeProperty =
+        AvaloniaProperty.Register<PageCanvas, bool>(nameof(TestMode));
+
+    /// <summary>Wird im Testmodus mit der angetippten Fläche ausgeführt.</summary>
+    public static readonly StyledProperty<ICommand?> TestTapCommandProperty =
+        AvaloniaProperty.Register<PageCanvas, ICommand?>(nameof(TestTapCommand));
 
     const double PxPerMmAt100 = 96 / 25.4;
     const double HandleSize = 10;
@@ -79,6 +90,7 @@ public class PageCanvas : Control
 
     static readonly IBrush AreaFill = new SolidColorBrush(Color.FromArgb(70, 30, 120, 255));
     static readonly IBrush AreaFillInvalid = new SolidColorBrush(Color.FromArgb(90, 230, 40, 40));
+    static readonly IBrush TappedFill = new SolidColorBrush(Color.FromArgb(140, 40, 200, 80));
     static readonly IBrush SelectedFill = new SolidColorBrush(Color.FromArgb(110, 255, 160, 0));
     static readonly IPen AreaPen = new Pen(new SolidColorBrush(Color.FromRgb(30, 90, 200)), 1);
     static readonly IPen SelectedPen = new Pen(new SolidColorBrush(Color.FromRgb(220, 110, 0)), 2);
@@ -106,7 +118,7 @@ public class PageCanvas : Control
     static PageCanvas()
     {
         AffectsMeasure<PageCanvas>(PageProperty, ZoomProperty);
-        AffectsRender<PageCanvas>(PageProperty, ZoomProperty, AreasOnlyProperty, CropModeProperty, AreaToolProperty);
+        AffectsRender<PageCanvas>(PageProperty, ZoomProperty, AreasOnlyProperty, CropModeProperty, AreaToolProperty, TestModeProperty);
         FocusableProperty.OverrideDefaultValue<PageCanvas>(true);
         DragDrop.AllowDropProperty.OverrideDefaultValue<PageCanvas>(true);
     }
@@ -117,6 +129,18 @@ public class PageCanvas : Control
         AddHandler(DragDrop.DropEvent, OnDrop);
         // Beim Fokussieren (Antippen) nicht zur Ecke der Seite springen
         AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true);
+    }
+
+    public bool TestMode
+    {
+        get => GetValue(TestModeProperty);
+        set => SetValue(TestModeProperty, value);
+    }
+
+    public ICommand? TestTapCommand
+    {
+        get => GetValue(TestTapCommandProperty);
+        set => SetValue(TestTapCommandProperty, value);
     }
 
     public PageViewModel? Page
@@ -225,7 +249,7 @@ public class PageCanvas : Control
         }
 
         foreach (var area in page.Areas)
-            DrawArea(ctx, area, area == page.SelectedArea);
+            DrawArea(ctx, area, area == page.SelectedArea && !TestMode);
 
         if (_drawing != null)
             DrawPolygonInProgress(ctx, _drawing);
@@ -237,7 +261,7 @@ public class PageCanvas : Control
     void DrawArea(DrawingContext ctx, AreaViewModel area, bool selected)
     {
         var r = ToPx(area);
-        var fill = selected ? SelectedFill : area.Oid == null ? AreaFillInvalid : AreaFill;
+        var fill = area == _tapped ? TappedFill : selected ? SelectedFill : area.Oid == null ? AreaFillInvalid : AreaFill;
         var pen = selected ? SelectedPen : AreaPen;
         if (area.IsRectangle)
             ctx.DrawRectangle(fill, pen, r);
@@ -413,6 +437,13 @@ public class PageCanvas : Control
         if (Page is not { } page || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             return;
 
+        if (TestMode)
+        {
+            TestTap(page, ToMm(e.GetPosition(this)));
+            e.Handled = true;
+            return;
+        }
+
         if (_pointer != null)
         {
             // Zweiter Finger beim Aufziehen einer neuen Fläche: war nicht als Zeichnen gemeint
@@ -506,6 +537,29 @@ public class PageCanvas : Control
         e.Handled = true;
     }
 
+    /// <summary>Im Testmodus angetippte Fläche (wird kurz hervorgehoben).</summary>
+    AreaViewModel? _tapped;
+
+    void TestTap(PageViewModel page, Point mm)
+    {
+        _drawing = null;
+        // Wie beim Stift zählt die oberste Fläche an der Stelle
+        if (page.Areas.LastOrDefault(a => a.Contains(mm.X, mm.Y)) is not { } area)
+            return;
+        _tapped = area;
+        InvalidateVisual();
+        DispatcherTimer.RunOnce(() =>
+        {
+            if (_tapped == area)
+            {
+                _tapped = null;
+                InvalidateVisual();
+            }
+        }, TimeSpan.FromMilliseconds(300));
+        if (TestTapCommand is { } command && command.CanExecute(area))
+            command.Execute(area);
+    }
+
     static AreaViewModel NewArea(ProjectViewModel project) => new(project)
     {
         Target = AreaTarget.Script,
@@ -589,6 +643,12 @@ public class PageCanvas : Control
         double maxX = page.WidthMm, maxY = page.HeightMm;
         var pos = new Point(Math.Clamp(raw.X, 0, maxX), Math.Clamp(raw.Y, 0, maxY));
         bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+
+        if (TestMode)
+        {
+            Cursor = page.Areas.Any(a => a.Contains(raw.X, raw.Y)) ? HandCursor : null;
+            return;
+        }
 
         if (_drawing != null)
         {
@@ -770,7 +830,7 @@ public class PageCanvas : Control
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (Page is not { } page)
+        if (Page is not { } page || TestMode)
             return;
 
         if (_drawing != null)

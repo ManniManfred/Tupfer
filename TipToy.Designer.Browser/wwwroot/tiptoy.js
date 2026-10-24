@@ -83,15 +83,39 @@ export function speak(language, text) {
 // ---------- Wiedergabe und Aufnahme ----------
 
 let player = null;
+let playing = Promise.resolve();
 
-/** Spielt Audiodaten ab; eine laufende Wiedergabe wird beendet. */
+/** Startet die Wiedergabe von Audiodaten; eine laufende wird beendet. */
 export function playAudio(data, mimeType) {
+    stopAudio();
+    const audio = player = new Audio(URL.createObjectURL(new Blob([data.slice()], { type: mimeType })));
+    // Fertig am Ende, bei Fehlern und wenn die Wiedergabe abgebrochen wird (pause)
+    playing = new Promise(resolve => {
+        const done = () => {
+            URL.revokeObjectURL(audio.src);
+            resolve();
+        };
+        audio.addEventListener('ended', done);
+        audio.addEventListener('pause', done);
+        audio.addEventListener('error', done);
+        audio.play().catch(e => {
+            console.warn('Wiedergabe nicht möglich:', e);
+            done();
+        });
+    });
+}
+
+/** Ist erfüllt, wenn die zuletzt gestartete Wiedergabe zu Ende ist oder abgebrochen wurde. */
+export function waitAudio() {
+    return playing;
+}
+
+/** Beendet eine laufende Wiedergabe. */
+export function stopAudio() {
     if (player) {
         player.pause();
-        URL.revokeObjectURL(player.src);
+        player = null;
     }
-    player = new Audio(URL.createObjectURL(new Blob([data.slice()], { type: mimeType })));
-    player.play().catch(e => console.warn('Wiedergabe nicht möglich:', e));
 }
 
 let recording = null;

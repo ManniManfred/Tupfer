@@ -178,7 +178,8 @@ public static class GmeBuilder
         }
     }
 
-    static byte[] LoadAudio(ProjectFile project, string baseDir, string name, Func<string, string, byte[]> speak)
+    /// <summary>Audiodaten für einen Namen: Aufnahme, Sprachausgabe des Textes oder Datei im Medienverzeichnis.</summary>
+    public static byte[] LoadAudio(ProjectFile project, string baseDir, string name, Func<string, string, byte[]> speak)
     {
         var text = project.Speak.FirstOrDefault(s => s.Name == name);
         if (text?.Recording is { Length: > 0 } recording)

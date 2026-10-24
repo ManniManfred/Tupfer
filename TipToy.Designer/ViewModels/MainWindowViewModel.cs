@@ -79,6 +79,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     string BaseDir => FilePath != null ? Path.GetDirectoryName(FilePath)! : Environment.CurrentDirectory;
 
+    /// <summary>Zwischenspeicher der Sprachausgabe beim Anhören; ungespeicherte Projekte haben noch kein Verzeichnis.</summary>
+    string TtsCacheDir => FilePath == null && IsDesktop
+        ? Path.Combine(Path.GetTempPath(), "tiptoy-tts-cache")
+        : Path.Combine(BaseDir, "tts-cache");
+
     public void Log(string message) => LogText += message + Environment.NewLine;
 
     /// <summary>Protokoll unten anzeigen (Menü Erstellen); Fehler und Hinweise blenden es ein.</summary>
@@ -730,15 +735,14 @@ public partial class MainWindowViewModel : ObservableObject
             var language = string.IsNullOrWhiteSpace(Project.Language) ? "en" : Project.Language;
             if (TextToSpeech.PrepareAsync is { } prepare)
                 await prepare(language);
-            // Ungespeicherte Projekte haben noch kein Verzeichnis für den Zwischenspeicher
-            var cache = FilePath == null && IsDesktop
-                ? Path.Combine(Path.GetTempPath(), "tiptoy-tts-cache")
-                : Path.Combine(BaseDir, "tts-cache");
-            var tts = new TextToSpeech(cache, LogFromAnyThread);
+            var tts = new TextToSpeech(TtsCacheDir, LogFromAnyThread);
             data = await Task.Run(() => tts.Speak(language, speak.Text));
             extension = Audio.ExtensionOf(data);
         }
-        await Audio.Device.PlayAsync(data, extension);
+        // Nicht auf das Ende warten (der Knopf bliebe so lange gesperrt), nur sofortige Fehler melden
+        var playing = Audio.Device.PlayAsync(data, extension);
+        if (playing.IsCompleted)
+            await playing;
     });
 
     SpeakViewModel? _recordingSpeak;

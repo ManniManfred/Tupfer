@@ -17,9 +17,17 @@ static partial class BrowserInterop
     [JSImport("loadSpeech", "tiptoy")]
     public static partial Task LoadSpeechAsync(string language);
 
-    /// <summary>Spielt Audiodaten ab (MIME-Typ wie „audio/wav“); eine laufende Wiedergabe wird beendet.</summary>
+    /// <summary>Startet die Wiedergabe von Audiodaten (MIME-Typ wie „audio/wav“); eine laufende wird beendet.</summary>
     [JSImport("playAudio", "tiptoy")]
     public static partial void PlayAudio([JSMarshalAs<JSType.MemoryView>] Span<byte> data, string mimeType);
+
+    /// <summary>Ist fertig, wenn die zuletzt gestartete Wiedergabe zu Ende ist oder abgebrochen wurde.</summary>
+    [JSImport("waitAudio", "tiptoy")]
+    public static partial Task WaitAudioAsync();
+
+    /// <summary>Beendet eine laufende Wiedergabe.</summary>
+    [JSImport("stopAudio", "tiptoy")]
+    public static partial void StopAudio();
 
     /// <summary>Startet eine Aufnahme vom Mikrofon (fragt beim ersten Mal nach der Erlaubnis).</summary>
     [JSImport("startRecording", "tiptoy")]

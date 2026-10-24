@@ -87,6 +87,11 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   `aufnahmen/`. Auf dem Desktop nutzt das unter Windows die eingebaute Audio-Schnittstelle, unter
   Linux/macOS `paplay`/`aplay`/`ffplay`/`afplay` zum Abspielen und `arecord`, `sox` oder `ffmpeg`
   zum Aufnehmen. Alternativ eigene Audiodateien im Medienverzeichnis.
+- **Testen (F8):** Ohne Drucken und Stift ausprobieren – im Testmodus führt Antippen einer Fläche ihr
+  Skript aus wie der Stift: Register zählen mit, Sprünge werden verfolgt, Texte, Aufnahmen und
+  Audiodateien werden nacheinander abgespielt. Rechts stehen die Registerwerte und der Ablauf
+  (welche Zeile, welche Befehle). *Neu starten* entspricht dem Antippen des Produkt-Codes.
+  Spiele (`G`), Timer und Soundprofile werden nicht simuliert.
 - **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
 - **Export:**
   - Seiten als druckfertige PDF (Bilder und Texte + OID-Muster in den Flächen)
@@ -153,8 +158,9 @@ Unterschiede zur Desktop-Version:
 1. Projekt anlegen, Produkt-ID wählen (z. B. 900–999).
 2. Unter *Seiten* Bilder und Texte einfügen und Flächen aufziehen; eine Fläche als *Produkt (Anmelden)* markieren.
 3. Unter *Skripte* und *Sprachausgabe* festlegen, was beim Antippen passiert.
-4. *Erstellen → GME-Datei bauen* und die `.gme` auf den Stift kopieren.
-5. *Erstellen → Seiten als PDF* und mit 1200 dpi in Originalgröße drucken.
+4. Mit *Testen* (F8) die Flächen antippen und das Verhalten prüfen.
+5. *Erstellen → GME-Datei bauen* und die `.gme` auf den Stift kopieren.
+6. *Erstellen → Seiten als PDF* und mit 1200 dpi in Originalgröße drucken.
 
 Projekte werden als `*.tiptoy.json` gespeichert; Pfade zu Bildern relativ zur Projektdatei.
 Hintergrundbilder älterer Projekte werden beim Öffnen zu einem seitenfüllenden Bild.

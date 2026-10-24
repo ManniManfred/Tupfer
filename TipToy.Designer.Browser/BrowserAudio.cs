@@ -15,8 +15,10 @@ class BrowserAudio : IAudioDevice
             _ => "audio/wav",
         };
         BrowserInterop.PlayAudio(data, mime);
-        return Task.CompletedTask;
+        return BrowserInterop.WaitAudioAsync();
     }
+
+    public void StopPlayback() => BrowserInterop.StopAudio();
 
     public Task StartRecordingAsync() => BrowserInterop.StartRecordingAsync();
 

@@ -8,8 +8,14 @@ namespace TipToy.Designer.Services;
 /// <summary>Abspielen und Aufnehmen von Audio.</summary>
 public interface IAudioDevice
 {
-    /// <summary>Spielt Audiodaten ab (Dateiendung wie ".wav"); eine laufende Wiedergabe wird beendet.</summary>
+    /// <summary>
+    /// Spielt Audiodaten ab (Dateiendung wie ".wav"); eine laufende Wiedergabe wird beendet.
+    /// Ist fertig, wenn die Wiedergabe zu Ende ist oder abgebrochen wurde.
+    /// </summary>
     Task PlayAsync(byte[] data, string extension);
+
+    /// <summary>Beendet eine laufende Wiedergabe.</summary>
+    void StopPlayback();
 
     /// <summary>Startet eine Aufnahme vom Mikrofon.</summary>
     Task StartRecordingAsync();
@@ -25,9 +31,20 @@ public static class Audio
 
     public const int SampleRate = 22050;
 
-    /// <summary>Dateiendung anhand des Dateianfangs (OGG oder sonst WAV).</summary>
-    public static string ExtensionOf(byte[] data) =>
-        data.Length >= 4 && Encoding.ASCII.GetString(data, 0, 4) == "OggS" ? ".ogg" : ".wav";
+    /// <summary>Dateiendung anhand des Dateianfangs (OGG, FLAC, MP3 oder sonst WAV).</summary>
+    public static string ExtensionOf(byte[] data)
+    {
+        if (data.Length < 4)
+            return ".wav";
+        var magic = Encoding.ASCII.GetString(data, 0, 4);
+        if (magic == "OggS")
+            return ".ogg";
+        if (magic == "fLaC")
+            return ".flac";
+        if (magic.StartsWith("ID3") || (data[0] == 0xFF && (data[1] & 0xE0) == 0xE0))
+            return ".mp3";
+        return ".wav";
+    }
 
     /// <summary>Erzeugt eine WAV-Datei aus 16-Bit-Samples (mono).</summary>
     public static byte[] Wav(ReadOnlySpan<short> samples, int sampleRate = SampleRate)
@@ -96,16 +113,22 @@ public class DesktopAudio : IAudioDevice
 
     static string TempFile(string name) => Path.Combine(Path.GetTempPath(), $"tiptoy-{Environment.ProcessId}-{name}");
 
-    public Task PlayAsync(byte[] data, string extension)
+    /// <summary>Zählt die Wiedergaben, damit eine beendete nicht mehr auf ihr Ende wartet.</summary>
+    int _playId;
+
+    public async Task PlayAsync(byte[] data, string extension)
     {
         StopPlayback();
+        int id = _playId;
         var file = TempFile("play" + extension.ToLowerInvariant());
         File.WriteAllBytes(file, data);
         if (OperatingSystem.IsWindows())
         {
             Mci($"open \"{file}\" alias tiptoyplay");
             Mci("play tiptoyplay");
-            return Task.CompletedTask;
+            while (id == _playId && MciStatus("status tiptoyplay mode") == "playing")
+                await Task.Delay(100);
+            return;
         }
         bool wav = extension.Equals(".wav", StringComparison.OrdinalIgnoreCase);
         var players = new List<string[]>();
@@ -116,13 +139,14 @@ public class DesktopAudio : IAudioDevice
         players.Add(["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", file]);
         if (!wav)
             players.Add(["paplay", file]);
-        _player = StartFirst(players)
+        var player = _player = StartFirst(players)
             ?? throw new InvalidOperationException("Kein Programm zum Abspielen gefunden (paplay, aplay, ffplay oder afplay).");
-        return Task.CompletedTask;
+        await player.WaitForExitAsync();
     }
 
-    void StopPlayback()
+    public void StopPlayback()
     {
+        _playId++;
         if (OperatingSystem.IsWindows())
         {
             Mci("close tiptoyplay", throwOnError: false);
@@ -236,6 +260,13 @@ public class DesktopAudio : IAudioDevice
 
     [DllImport("winmm.dll", CharSet = CharSet.Unicode)]
     static extern bool mciGetErrorString(int error, StringBuilder text, int length);
+
+    /// <summary>Abfrage über MCI, z. B. „status … mode“; bei Fehlern leer.</summary>
+    static string MciStatus(string command)
+    {
+        var result = new StringBuilder(64);
+        return mciSendString(command, result, result.Capacity, IntPtr.Zero) == 0 ? result.ToString() : "";
+    }
 
     static void Mci(string command, bool throwOnError = true)
     {
