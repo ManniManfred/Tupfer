@@ -286,7 +286,10 @@ public class PageCanvas : Control
         return ToPx(new Point(ax, ay));
     }
 
-    static bool NearPx(Point a, Point b) => Math.Abs(a.X - b.X) <= HandleSize / 2 + 2 && Math.Abs(a.Y - b.Y) <= HandleSize / 2 + 2;
+    /// <summary>Zusätzlicher Spielraum (Pixel) beim Treffen der Anfasser; mit dem Finger größer.</summary>
+    double _slop = 2;
+
+    bool NearPx(Point a, Point b) => Math.Abs(a.X - b.X) <= HandleSize / 2 + _slop && Math.Abs(a.Y - b.Y) <= HandleSize / 2 + _slop;
 
     /// <summary>Getroffene Ecke (Vertex = true) oder Kante eines Polygons.</summary>
     (int Index, bool Vertex)? HitPolygonHandle(AreaViewModel area, Point px)
@@ -339,7 +342,7 @@ public class PageCanvas : Control
         foreach (var h in Handles.Append(RotateHandle))
         {
             var d = HandlePx(e, h) - px;
-            if (Math.Abs(d.X) <= HandleSize / 2 + 2 && Math.Abs(d.Y) <= HandleSize / 2 + 2)
+            if (Math.Abs(d.X) <= HandleSize / 2 + _slop && Math.Abs(d.Y) <= HandleSize / 2 + _slop)
                 return h;
         }
         return null;
@@ -403,6 +406,7 @@ public class PageCanvas : Control
             return;
 
         Focus();
+        _slop = e.Pointer.Type == PointerType.Touch ? 12 : 2;
         var pos = e.GetPosition(this);
         _startMm = ToMm(pos);
 
@@ -437,7 +441,7 @@ public class PageCanvas : Control
             _mode = handle == RotateHandle ? DragMode.RotateElement : DragMode.ScaleElement;
             _startElement = selElement.ToEntry(null);
         }
-        else if (page.SelectedArea is { } sel && AreaHandleRect(ToPx(sel)).Inflate(3).Contains(pos))
+        else if (page.SelectedArea is { } sel && AreaHandleRect(ToPx(sel)).Inflate(_slop + 1).Contains(pos))
         {
             _mode = DragMode.Resize;
             _startRect = sel.ToEntry();
@@ -628,6 +632,7 @@ public class PageCanvas : Control
                 el.Rotation = shift ? Math.Round(angle / 15) * 15 : Math.Round(angle);
                 break;
             case DragMode.None:
+                _slop = e.Pointer.Type == PointerType.Touch ? 12 : 2;
                 Cursor = HoverCursor(page, px);
                 break;
         }
@@ -646,7 +651,7 @@ public class PageCanvas : Control
             int sector = ((int)Math.Round(angle / 45) % 4 + 4) % 4;
             return ResizeCursors[sector];
         }
-        if (page.SelectedArea is { } area && AreaHandleRect(ToPx(area)).Inflate(3).Contains(px))
+        if (page.SelectedArea is { } area && AreaHandleRect(ToPx(area)).Inflate(_slop + 1).Contains(px))
             return CornerCursor;
         if (!ElementsLocked && page.SelectedElement is { } sel && sel.Contains(ToMm(px)))
             return MoveCursor;

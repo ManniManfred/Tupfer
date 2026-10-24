@@ -122,6 +122,12 @@ CapRover eine App anlegen, HTTPS aktivieren und unter *Deployment* das GitHub-Re
 Minuten und etwa 2–3 GB Arbeitsspeicher. Lokal testen:
 `docker build -f deploy/Dockerfile -t tiptoy-web . && docker run -p 8080:80 tiptoy-web`
 
+**Auf dem Handy:** Bei schmalen Bildschirmen (unter etwa 760 Pixel) schaltet die Oberfläche auf ein
+kompaktes Layout um: Im Tab *Seiten* wechselt man oben zwischen *Seite* (Zeichenfläche), *Seiten*
+und *Auswahl* (Eigenschaften), die Spalten der anderen Tabs stehen untereinander. Mit dem Pfeilkreuz
+(„Ansicht verschieben“) schiebt ein Finger die Seite und zwei Finger zoomen; der Doppelpfeil passt die
+Seite in die Breite ein. Am bequemsten ist trotzdem ein Tablet oder das Handy im Querformat.
+
 Unterschiede zur Desktop-Version:
 
 - **Dateien:** Der Browser darf nicht direkt auf die Festplatte schreiben. Gespeicherte Projekte,

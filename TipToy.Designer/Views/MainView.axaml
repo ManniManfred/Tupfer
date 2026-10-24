@@ -15,7 +15,39 @@
     <KeyBinding Gesture="F6" Command="{Binding CompileProgramCommand}" />
   </UserControl.KeyBindings>
 
-  <Grid RowDefinitions="Auto,*,6,140">
+  <UserControl.Styles>
+    <!-- Kompaktes Layout für schmale Bildschirme (Handy): Klasse „compact“ auf der Ansicht, siehe MainView.axaml.cs -->
+    <Style Selector=".compact TabControl.main > TabItem">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="7,0" />
+      <Setter Property="MinHeight" Value="34" />
+    </Style>
+    <Style Selector=".compact TabControl.main">
+      <Setter Property="Padding" Value="6,4,6,6" />
+    </Style>
+    <Style Selector=".compact Menu > MenuItem">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="6,4" />
+    </Style>
+    <Style Selector=".compact WrapPanel.canvastools TextBlock, .compact WrapPanel.canvastools > Border">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector=".compact WrapPanel.canvastools :is(Button).tool">
+      <Setter Property="Padding" Value="7,6" />
+    </Style>
+    <Style Selector=".compact StackPanel#CompactBar > ToggleButton">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="12,4" />
+    </Style>
+    <Style Selector="TextBox.speakname, TextBlock.speakname">
+      <Setter Property="Width" Value="200" />
+    </Style>
+    <Style Selector=".compact TextBox.speakname, .compact TextBlock.speakname">
+      <Setter Property="Width" Value="110" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid x:Name="RootGrid" RowDefinitions="Auto,*,6,140">
 
     <!-- ================= Kopfzeile ================= -->
     <Border Grid.Row="0" Background="{StaticResource CardBackground}"
@@ -23,7 +55,7 @@
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0">
           <Image Source="/Assets/TipToy.png" Width="28" Height="28" />
-          <TextBlock Text="TipToy Designer" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"
+          <TextBlock x:Name="AppTitle" Text="TipToy Designer" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"
                      Foreground="{StaticResource TextPrimary}" />
         </StackPanel>
 
@@ -92,6 +124,8 @@
         </Menu>
 
         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+          <!-- Im kompakten Layout nur über die Menüs erreichbar -->
+          <StackPanel x:Name="HeaderFileButtons" Orientation="Horizontal" Spacing="2">
           <Button Classes="tool" Command="{Binding NewProjectCommand}" ToolTip.Tip="Neues Projekt (Strg+N)">
             <PathIcon Data="{StaticResource IconNew}" />
           </Button>
@@ -108,10 +142,11 @@
               <TextBlock Text="PDF" />
             </StackPanel>
           </Button>
+          </StackPanel>
           <Button Classes="accent" Command="{Binding BuildGmeCommand}" ToolTip.Tip="GME-Datei bauen (F5)" Margin="6,0,0,0">
             <StackPanel>
               <PathIcon Data="{StaticResource IconPlay}" />
-              <TextBlock Text="GME bauen" />
+              <TextBlock x:Name="GmeLabel" Text="GME bauen" />
             </StackPanel>
           </Button>
         </StackPanel>
@@ -122,13 +157,20 @@
 
       <!-- ================= Seiten ================= -->
       <TabItem Header="Seiten">
-        <Grid ColumnDefinitions="265,12,*,12,290">
+        <DockPanel>
+        <!-- Nur im kompakten Layout: welcher der drei Bereiche zu sehen ist -->
+        <StackPanel x:Name="CompactBar" DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="0,0,0,6" IsVisible="False">
+          <ToggleButton x:Name="ShowCanvas" Content="Seite" IsChecked="True" />
+          <ToggleButton x:Name="ShowPages" Content="Seiten" />
+          <ToggleButton x:Name="ShowProperties" Content="Auswahl" />
+        </StackPanel>
+        <Grid x:Name="PagesGrid" ColumnDefinitions="265,12,*,12,290">
           <Grid.KeyBindings>
             <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
             <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}" />
             <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
           </Grid.KeyBindings>
-          <Border Grid.Column="0" Classes="card" Padding="0">
+          <Border x:Name="PagesPanel" Grid.Column="0" Classes="card" Padding="0">
             <ScrollViewer>
               <StackPanel Margin="14,12">
                 <TextBlock Classes="section" Text="Seiten" />
@@ -162,15 +204,15 @@
 
                 <TextBlock Classes="label" Text="Bedienung" />
                 <TextBlock Classes="hint"
-                           Text="• Auf freier Stelle ziehen: neue OID-Fläche (Rechteck oder Kreis, Umschalt = Quadrat/Kreis)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben" />
+                           Text="• Auf freier Stelle ziehen: neue OID-Fläche (Rechteck oder Kreis, Umschalt = Quadrat/Kreis)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben&#10;• Pfeilkreuz („Ansicht verschieben“) an: Ziehen verschiebt, zwei Finger zoomen&#10;• Doppelpfeil: Seite in die Breite einpassen" />
               </StackPanel>
             </ScrollViewer>
           </Border>
 
-          <Border Grid.Column="2" Classes="card" Padding="0" ClipToBounds="True">
+          <Border x:Name="CanvasPanel" Grid.Column="2" Classes="card" Padding="0" ClipToBounds="True">
             <DockPanel>
               <Border DockPanel.Dock="Top" BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,0,1" Padding="10,6">
-                <WrapPanel Orientation="Horizontal">
+                <WrapPanel Classes="canvastools" Orientation="Horizontal">
                   <Button Classes="tool" Command="{Binding UndoCommand}" IsEnabled="{Binding Project.History.CanUndo}"
                           ToolTip.Tip="Rückgängig (Strg+Z)">
                     <PathIcon Data="{StaticResource IconUndo}" />
@@ -207,12 +249,19 @@
                   <Button Classes="tool" Command="{Binding ZoomOutCommand}" ToolTip.Tip="Verkleinern">
                     <PathIcon Data="{StaticResource IconRemove}" />
                   </Button>
-                  <Slider Width="110" Minimum="0.2" Maximum="4" Value="{Binding Zoom}" VerticalAlignment="Center" />
+                  <Slider x:Name="ZoomSlider" Width="110" Minimum="0.2" Maximum="4" Value="{Binding Zoom}" VerticalAlignment="Center" />
                   <Button Classes="tool" Command="{Binding ZoomInCommand}" ToolTip.Tip="Vergrößern">
                     <PathIcon Data="{StaticResource IconAdd}" />
                   </Button>
                   <TextBlock VerticalAlignment="Center" MinWidth="44" Margin="4,0,0,0" Classes="value"
                              Text="{Binding Zoom, StringFormat={}{0:P0}}" />
+                  <Button x:Name="FitButton" Classes="tool" ToolTip.Tip="Seite in die Breite einpassen">
+                    <PathIcon Data="{StaticResource IconFit}" />
+                  </Button>
+                  <ToggleButton x:Name="PanToggle" Classes="tool"
+                                ToolTip.Tip="Ansicht verschieben: Ziehen schiebt die Seite statt zu zeichnen, zwei Finger zoomen">
+                    <PathIcon Data="{StaticResource IconPan}" />
+                  </ToggleButton>
                 </WrapPanel>
               </Border>
               <ScrollViewer x:Name="PageScroll" Background="{StaticResource CanvasBackground}"
@@ -227,7 +276,7 @@
             </DockPanel>
           </Border>
 
-          <Border Grid.Column="4" Classes="card" Padding="0">
+          <Border x:Name="PropertiesPanel" Grid.Column="4" Classes="card" Padding="0">
             <ScrollViewer>
               <StackPanel Margin="14,12">
                 <StackPanel>
@@ -397,11 +446,12 @@
             </ScrollViewer>
           </Border>
         </Grid>
+        </DockPanel>
       </TabItem>
 
       <!-- ================= Skripte ================= -->
       <TabItem Header="Skripte">
-        <Grid ColumnDefinitions="250,12,*,12,340">
+        <Grid x:Name="ScriptsGrid" ColumnDefinitions="250,12,*,12,340">
           <Border Grid.Column="0" Classes="card">
             <DockPanel>
               <TextBlock DockPanel.Dock="Top" Classes="section" Text="Skripte" />
@@ -519,16 +569,16 @@
                   <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
                 </Button>
               </WrapPanel>
-              <Grid ColumnDefinitions="200,*" Margin="10,6,10,2">
-                <TextBlock Classes="label" Text="Name" Margin="0" />
+              <Grid ColumnDefinitions="Auto,*" Margin="10,6,10,2">
+                <TextBlock Classes="label speakname" Text="Name" Margin="0" />
                 <TextBlock Classes="label" Grid.Column="1" Text="Text" Margin="8,0,0,0" />
               </Grid>
             </StackPanel>
             <ListBox ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding Project.SelectedSpeak}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:SpeakViewModel">
-                  <Grid ColumnDefinitions="200,*">
-                    <TextBox Text="{Binding Name}" Margin="0,0,8,0" />
+                  <Grid ColumnDefinitions="Auto,*">
+                    <TextBox Classes="speakname" Text="{Binding Name}" Margin="0,0,8,0" />
                     <TextBox Grid.Column="1" Text="{Binding Text}" />
                   </Grid>
                 </DataTemplate>
@@ -541,7 +591,7 @@
       <!-- ================= Projekt ================= -->
       <TabItem Header="Projekt">
         <ScrollViewer>
-          <Grid ColumnDefinitions="*,12,*" DataContext="{Binding Project}" x:DataType="vm:ProjectViewModel"
+          <Grid x:Name="ProjectGrid" ColumnDefinitions="*,12,*" DataContext="{Binding Project}" x:DataType="vm:ProjectViewModel"
                 MaxWidth="1100" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Border Grid.Column="0" Classes="card" VerticalAlignment="Top">
               <StackPanel>
@@ -596,7 +646,7 @@
     </TabControl>
 
     <!-- ================= Protokoll ================= -->
-    <GridSplitter Grid.Row="2" Background="Transparent" ResizeDirection="Rows" />
+    <GridSplitter x:Name="LogSplitter" Grid.Row="2" Background="Transparent" ResizeDirection="Rows" />
     <Border Grid.Row="3" Classes="card" Margin="12,0,12,12" Padding="0" MinHeight="60">
       <DockPanel>
         <TextBlock DockPanel.Dock="Top" Classes="label" Text="PROTOKOLL" Margin="14,8,14,0" FontSize="11" />
