@@ -136,4 +136,64 @@ public class PageEditTests
         Assert.Null(saved.BackgroundImage);
         Assert.Equal("bild.png", Assert.Single(saved.Elements).ImagePath);
     }
+
+    [Fact]
+    public void Reihenfolge_EineEbeneUeberspringtNichtUeberlappende()
+    {
+        var (project, page) = NewProject();
+        var a = AddText(page, "A");                 // 0–40 × 0–10
+        var b = AddText(page, "B"); b.X = 100;      // liegt woanders
+        var c = AddText(page, "C"); c.X = 20;       // überlappt A
+
+        // A eine Ebene nach vorne: über C, B wird übersprungen
+        Assert.True(page.MoveElement(a, ElementOrder.Forward));
+        Assert.Equal(new[] { b, c, a }, page.Elements);
+        Assert.False(page.MoveElement(a, ElementOrder.Forward));
+
+        // Wieder zurück: unter C
+        Assert.True(page.MoveElement(a, ElementOrder.Backward));
+        Assert.Equal(new[] { b, a, c }, page.Elements);
+
+        // Ohne Überlappung nach hinten: ganz nach unten
+        Assert.False(page.MoveElement(c, ElementOrder.Front));
+        Assert.True(page.MoveElement(b, ElementOrder.Front));
+        Assert.Equal(new[] { a, c, b }, page.Elements);
+        Assert.True(page.MoveElement(b, ElementOrder.Backward));
+        Assert.Equal(new[] { b, a, c }, page.Elements);
+
+        // Ebenen-Liste: oberstes zuerst; Rückgängig stellt die Reihenfolge wieder her
+        Assert.Equal(new[] { c, a, b }, page.Layers);
+        project.History.Undo();
+        Assert.Equal(new[] { "A", "C", "B" }, page.Elements.Select(e => e.Text));
+        Assert.Equal(new[] { "B", "C", "A" }, page.Layers.Select(e => e.Text));
+    }
+
+    [Fact]
+    public void Reihenfolge_GanzNachVorneUndHinten()
+    {
+        var (_, page) = NewProject();
+        var a = AddText(page, "A");
+        var b = AddText(page, "B");
+        var c = AddText(page, "C");
+        Assert.True(page.MoveElement(a, ElementOrder.Front));
+        Assert.Equal(new[] { b, c, a }, page.Elements);
+        Assert.True(page.MoveElement(a, ElementOrder.Back));
+        Assert.Equal(new[] { a, b, c }, page.Elements);
+        Assert.False(page.MoveElement(a, ElementOrder.Back));
+    }
+
+    [Fact]
+    public void Ebenenliste_ZeigtAuswahl()
+    {
+        var (_, page) = NewProject();
+        var a = AddText(page, "A");
+        var b = AddText(page, "B");
+        page.SelectedElement = a;
+        Assert.True(a.IsSelected);
+        page.SelectedElement = b;
+        Assert.False(a.IsSelected);
+        Assert.True(b.IsSelected);
+        page.SelectedArea = new AreaViewModel(page.Project);
+        Assert.False(b.IsSelected);
+    }
 }

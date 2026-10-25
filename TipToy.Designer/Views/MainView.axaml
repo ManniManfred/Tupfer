@@ -16,6 +16,10 @@
     <KeyBinding Gesture="Shift+F5" Command="{Binding SaveToPenCommand}" />
     <KeyBinding Gesture="F6" Command="{Binding CompileProgramCommand}" />
     <KeyBinding Gesture="F8" Command="{Binding ToggleTestModeCommand}" />
+    <KeyBinding Gesture="Ctrl+PageUp" Command="{Binding BringForwardCommand}" />
+    <KeyBinding Gesture="Ctrl+PageDown" Command="{Binding SendBackwardCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+PageUp" Command="{Binding BringToFrontCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+PageDown" Command="{Binding SendToBackCommand}" />
   </UserControl.KeyBindings>
 
   <UserControl.Styles>
@@ -106,6 +110,20 @@
             <MenuItem Header="Auswahl _löschen" InputGesture="Delete" Command="{Binding DeleteSelectionCommand}"
                       IsEnabled="{Binding Project.SelectedPage.HasSelection, FallbackValue=False}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconDelete}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="_Reihenfolge" IsEnabled="{Binding Project.SelectedPage.SelectedElement, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
+              <MenuItem Header="Ganz nach _vorne" InputGesture="Ctrl+Shift+PageUp" Command="{Binding BringToFrontCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconToFront}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="Eine Ebene nach v_orne" InputGesture="Ctrl+PageUp" Command="{Binding BringForwardCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconForward}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="Eine Ebene nach _hinten" InputGesture="Ctrl+PageDown" Command="{Binding SendBackwardCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconBackward}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="Ganz nach h_inten" InputGesture="Ctrl+Shift+PageDown" Command="{Binding SendToBackCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconToBack}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
             </MenuItem>
             <Separator />
             <MenuItem Header="_Bild einfügen …" Command="{Binding InsertImageCommand}">
@@ -236,11 +254,25 @@
                     <TextBlock Grid.Column="1" Text=" × " VerticalAlignment="Center" />
                     <TextBox Grid.Column="2" Text="{Binding HeightMm}" />
                   </Grid>
+                  <StackPanel IsVisible="{Binding HasLayers}">
+                    <TextBlock Classes="label" Text="Bilder und Texte (oberstes zuerst)" />
+                    <ItemsControl ItemsSource="{Binding Layers}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ElementViewModel">
+                          <Button Classes="layer" Classes.selected="{Binding IsSelected}" ToolTip.Tip="Auswählen (auch wenn es verdeckt ist)"
+                                  Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectElementCommand}"
+                                  CommandParameter="{Binding}">
+                            <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
                 </StackPanel>
 
                 <TextBlock Classes="label" Text="Bedienung" />
                 <TextBlock Classes="hint"
-                           Text="• Auf freier Stelle ziehen: neue OID-Fläche (Rechteck oder Kreis, Umschalt = Quadrat/Kreis)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben&#10;• Pfeilkreuz („Ansicht verschieben“) an: Ziehen verschiebt, zwei Finger zoomen&#10;• Doppelpfeil: Seite in die Breite einpassen&#10;• „Testen“ (F8): Flächen antippen wie mit dem Stift" />
+                           Text="• Auf freier Stelle ziehen: neue OID-Fläche (Rechteck oder Kreis, Umschalt = Quadrat/Kreis)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Bild↑/↓: Bild oder Text eine Ebene nach vorne/hinten (mit Umschalt: ganz)&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben&#10;• Pfeilkreuz („Ansicht verschieben“) an: Ziehen verschiebt, zwei Finger zoomen&#10;• Doppelpfeil: Seite in die Breite einpassen&#10;• „Testen“ (F8): Flächen antippen wie mit dem Stift" />
               </StackPanel>
             </ScrollViewer>
           </Border>
@@ -429,7 +461,24 @@
                     </Button>
                   </Grid>
                 </StackPanel>
-                <WrapPanel Classes="buttons" Margin="0,14,0,0"
+                <StackPanel IsVisible="{Binding Project.SelectedPage.SelectedElement, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
+                  <TextBlock Classes="label" Text="Reihenfolge" />
+                  <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="tool" Command="{Binding SendToBackCommand}" ToolTip.Tip="Ganz nach hinten (Strg+Umschalt+Bild↓)">
+                      <PathIcon Data="{StaticResource IconToBack}" />
+                    </Button>
+                    <Button Classes="tool" Command="{Binding SendBackwardCommand}" ToolTip.Tip="Eine Ebene nach hinten (Strg+Bild↓)">
+                      <PathIcon Data="{StaticResource IconBackward}" />
+                    </Button>
+                    <Button Classes="tool" Command="{Binding BringForwardCommand}" ToolTip.Tip="Eine Ebene nach vorne (Strg+Bild↑)">
+                      <PathIcon Data="{StaticResource IconForward}" />
+                    </Button>
+                    <Button Classes="tool" Command="{Binding BringToFrontCommand}" ToolTip.Tip="Ganz nach vorne (Strg+Umschalt+Bild↑)">
+                      <PathIcon Data="{StaticResource IconToFront}" />
+                    </Button>
+                  </StackPanel>
+                </StackPanel>
+                <WrapPanel Classes="buttons" Margin="0,10,0,0"
                            IsVisible="{Binding Project.SelectedPage.SelectedElement, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
                   <ToggleButton IsChecked="{Binding CropMode}" Margin="0,0,6,6"
                                 IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
@@ -440,8 +489,6 @@
                           IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
                           ToolTip.Tip="Zuschnitt aufheben" />
                   <Button Content="Auf Seite einpassen" Command="{Binding FitElementToPageCommand}" />
-                  <Button Content="Nach vorne" Command="{Binding BringToFrontCommand}" />
-                  <Button Content="Nach hinten" Command="{Binding SendToBackCommand}" />
                   <Button Command="{Binding DuplicateElementCommand}">
                     <StackPanel><PathIcon Data="{StaticResource IconCopy}" /><TextBlock Text="Duplizieren" /></StackPanel>
                   </Button>

@@ -630,15 +630,24 @@ public partial class MainWindowViewModel : ObservableObject
         page.SelectedElement = copy;
     }
 
-    [RelayCommand] void BringToFront() => MoveElement(toFront: true);
-    [RelayCommand] void SendToBack() => MoveElement(toFront: false);
+    [RelayCommand] void BringToFront() => MoveElement(ElementOrder.Front);
+    [RelayCommand] void BringForward() => MoveElement(ElementOrder.Forward);
+    [RelayCommand] void SendBackward() => MoveElement(ElementOrder.Backward);
+    [RelayCommand] void SendToBack() => MoveElement(ElementOrder.Back);
 
-    void MoveElement(bool toFront)
+    void MoveElement(ElementOrder order)
     {
-        if (Project.SelectedPage is not { SelectedElement: { } element } page) return;
-        int from = page.Elements.IndexOf(element), to = toFront ? page.Elements.Count - 1 : 0;
-        if (from != to)
-            page.Elements.Move(from, to);
+        if (Project.SelectedPage is { SelectedElement: { } element } page)
+            page.MoveElement(element, order);
+    }
+
+    /// <summary>Wählt ein Bild oder einen Text aus der Ebenen-Liste (auch wenn es verdeckt ist).</summary>
+    [RelayCommand]
+    void SelectElement(ElementViewModel element)
+    {
+        if (Project.SelectedPage is not { } page) return;
+        page.SelectedElement = element;
+        AreasOnly = false;
     }
 
     /// <summary>Passt das Element ungedreht und mit gleichem Seitenverhältnis in die Seite ein.</summary>

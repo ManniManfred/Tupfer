@@ -19,6 +19,10 @@
     <StreamGeometry x:Key="IconTap">M10,9A1,1 0 0,1 11,8A1,1 0 0,1 12,9V13.47L13.21,13.6L18.15,15.79C18.68,16.03 19,16.56 19,17.14V21.5C18.97,22.32 18.32,22.97 17.5,23H11C10.62,23 10.26,22.85 10,22.57L5.1,18.37L5.84,17.6C6.03,17.39 6.3,17.28 6.58,17.28H6.8L10,19V9M11,5A4,4 0 0,1 15,9C15,10.5 14.2,11.77 13,12.46V11.24C13.61,10.69 14,9.89 14,9A3,3 0 0,0 11,6A3,3 0 0,0 8,9C8,9.89 8.39,10.69 9,11.24V12.46C7.8,11.77 7,10.5 7,9A4,4 0 0,1 11,5Z</StreamGeometry>
     <StreamGeometry x:Key="IconPlay">M8,5.14V19.14L19,12.14L8,5.14Z</StreamGeometry>
     <StreamGeometry x:Key="IconCode">M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z</StreamGeometry>
+    <StreamGeometry x:Key="IconToFront">M2,2H11V6H9V4H4V9H6V11H2V2M22,13V22H13V18H15V20H20V15H18V13H22M8,8H16V16H8V8Z</StreamGeometry>
+    <StreamGeometry x:Key="IconForward">M2,2H16V16H2V2M22,8V22H8V18H10V20H20V10H18V8H22Z</StreamGeometry>
+    <StreamGeometry x:Key="IconBackward">M2,2H16V16H2V2M22,8V22H8V18H18V8H22M4,4V14H14V4H4Z</StreamGeometry>
+    <StreamGeometry x:Key="IconToBack">M2,2H11V11H2V2M9,4H4V9H9V4M22,13V22H13V13H22M15,20H20V15H15V20M16,8V11H13V8H16M11,16H8V13H11V16Z</StreamGeometry>
     <StreamGeometry x:Key="IconPen">M15,7H16V11H15V7M8,7H9V11H8V7M7,3V9H6V21H18V9H17V3H7M15,5V9H9V5H15Z</StreamGeometry>
     <StreamGeometry x:Key="IconPdf">M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H19M10.59,10.08C10.57,10.13 10.3,11.84 8.5,14.77C8.5,14.77 5,16.58 5.83,17.94C6.5,19 8.15,17.9 9.56,15.27C9.56,15.27 11.38,14.63 13.79,14.45C13.79,14.45 17.65,16.19 18.17,14.34C18.69,12.5 15.12,12.9 14.5,13.09C14.5,13.09 12.46,11.75 12,9.89C12,9.89 13.13,5.95 11.38,6C9.63,6.05 10.29,9.12 10.59,10.08M11.4,11.13C11.43,11.13 11.87,12.33 13.29,13.58C13.29,13.58 10.96,14.04 9.9,14.5C9.9,14.5 10.9,12.75 11.4,11.13M15.16,13.82C15.73,13.67 17.5,14 17.43,14.33C17.36,14.66 15.16,13.82 15.16,13.82M7.77,15.65C7.24,16.89 6.33,17.67 6.1,17.66C5.87,17.65 6.81,16.17 7.77,15.65M11.4,8.76C11.4,8.71 11.5,7.33 11.5,7.33C11.5,7.33 11.86,8.69 11.4,8.76Z</StreamGeometry>
     <StreamGeometry x:Key="IconPrint">M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z</StreamGeometry>
@@ -142,6 +146,18 @@
     </Style>
     <Style Selector="WrapPanel.buttons > Button">
       <Setter Property="Margin" Value="0,0,6,6" />
+    </Style>
+
+    <!-- Ebenen-Liste (Bilder und Texte einer Seite) -->
+    <Style Selector="Button.layer">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="8,5" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Button.layer.selected">
+      <Setter Property="Background" Value="#F8C9AE" />
     </Style>
 
     <!-- Reiter -->

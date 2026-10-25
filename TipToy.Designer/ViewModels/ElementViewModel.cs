@@ -130,6 +130,19 @@ public partial class ElementViewModel : ObservableObject
 
     public Point Center => new(X + Width / 2, Y + Height / 2);
 
+    /// <summary>Gewählt (für die Ebenen-Liste); gehört nicht zum Projekt.</summary>
+    [ObservableProperty] bool _isSelected;
+
+    /// <summary>Umschließendes Rechteck auf der Seite (mm), auch bei gedrehten Elementen.</summary>
+    public Rect Bounds()
+    {
+        var e = ToEntry(null);
+        var corners = new[] { new Point(0, 0), new Point(Width, 0), new Point(0, Height), new Point(Width, Height) }
+            .Select(p => ToPage(e, p)).ToList();
+        double left = corners.Min(p => p.X), top = corners.Min(p => p.Y);
+        return new Rect(left, top, corners.Max(p => p.X) - left, corners.Max(p => p.Y) - top);
+    }
+
     partial void OnRotationChanged(double value)
     {
         // Auf -180 … 180 Grad halten

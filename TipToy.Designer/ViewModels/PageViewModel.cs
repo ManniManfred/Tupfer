@@ -7,6 +7,9 @@ using TipToy.Designer.Model;
 
 namespace TipToy.Designer.ViewModels;
 
+/// <summary>Änderung der Zeichenreihenfolge eines Bildes oder Textes.</summary>
+public enum ElementOrder { Back, Backward, Forward, Front }
+
 public partial class PageViewModel : ObservableObject
 {
     public PageViewModel(ProjectViewModel project)
@@ -15,6 +18,7 @@ public partial class PageViewModel : ObservableObject
         PropertyChanged += (_, e) => Changed?.Invoke(this, e.PropertyName);
         Areas.CollectionChanged += OnCollectionChanged;
         Elements.CollectionChanged += OnCollectionChanged;
+        Elements.CollectionChanged += (_, _) => SyncLayers();
     }
 
     public ProjectViewModel Project { get; }
@@ -31,6 +35,9 @@ public partial class PageViewModel : ObservableObject
     /// <summary>Bilder und Texte in Zeichenreihenfolge (das letzte liegt oben).</summary>
     public ObservableCollection<ElementViewModel> Elements { get; } = new();
 
+    /// <summary>Bilder und Texte für die Ebenen-Liste: das oberste zuerst.</summary>
+    public ObservableCollection<ElementViewModel> Layers { get; } = new();
+
     /// <summary>
     /// Wird bei jeder Änderung der Seite, ihrer Flächen oder Elemente ausgelöst:
     /// Absender und Name der Eigenschaft, null bei Änderungen der Listen.
@@ -45,11 +52,61 @@ public partial class PageViewModel : ObservableObject
         OnPropertyChanged(nameof(HasSelection));
     }
 
-    partial void OnSelectedElementChanged(ElementViewModel? value)
+    partial void OnSelectedElementChanged(ElementViewModel? oldValue, ElementViewModel? newValue)
     {
-        if (value != null)
+        if (newValue != null)
             SelectedArea = null;
+        if (oldValue != null)
+            oldValue.IsSelected = false;
+        if (newValue != null)
+            newValue.IsSelected = true;
         OnPropertyChanged(nameof(HasSelection));
+    }
+
+    /// <summary>Gleicht die Ebenen-Liste ab, ohne sie neu aufzubauen.</summary>
+    void SyncLayers()
+    {
+        var target = Elements.Reverse().ToList();
+        for (int i = 0; i < target.Count; i++)
+        {
+            int index = Layers.IndexOf(target[i]);
+            if (index < 0)
+                Layers.Insert(i, target[i]);
+            else if (index != i)
+                Layers.Move(index, i);
+        }
+        while (Layers.Count > target.Count)
+            Layers.RemoveAt(Layers.Count - 1);
+        OnPropertyChanged(nameof(HasLayers));
+    }
+
+    public bool HasLayers => Layers.Count > 0;
+
+    /// <summary>
+    /// Ändert die Zeichenreihenfolge. Eine Ebene vor bzw. zurück heißt: über bzw. unter das nächste
+    /// Element, das sich mit diesem überschneidet – sonst wäre oft keine Änderung zu sehen.
+    /// false, wenn es schon ganz oben bzw. unten liegt.
+    /// </summary>
+    public bool MoveElement(ElementViewModel element, ElementOrder order)
+    {
+        int from = Elements.IndexOf(element);
+        if (from < 0)
+            return false;
+        int last = Elements.Count - 1;
+        var bounds = element.Bounds();
+        int to = order switch
+        {
+            ElementOrder.Back => 0,
+            ElementOrder.Front => last,
+            ElementOrder.Forward => Enumerable.Range(from + 1, last - from)
+                .FirstOrDefault(i => Elements[i].Bounds().Intersects(bounds), last),
+            _ => Enumerable.Range(0, from).Reverse()
+                .Select(i => (int?)i).FirstOrDefault(i => Elements[i!.Value].Bounds().Intersects(bounds)) ?? 0,
+        };
+        if (to == from)
+            return false;
+        Elements.Move(from, to);
+        return true;
     }
 
     /// <summary>Eine Fläche oder ein Element ist gewählt (kann gelöscht werden).</summary>
