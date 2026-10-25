@@ -29,7 +29,7 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
     }
 
     static bool IsProjectPattern(string pattern) =>
-        ProjectStore.IsProjectFile(pattern)
+        pattern.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase)
         || pattern.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)
         || pattern.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
 
@@ -88,7 +88,7 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
     {
         foreach (var path in paths.Where(File.Exists))
         {
-            if (ProjectStore.IsProjectFile(path))
+            if (path.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
             {
                 DownloadProject(path);
             }

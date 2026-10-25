@@ -8,12 +8,6 @@ public static class ProjectStore
 {
     public const string Extension = ".tupfer.json";
 
-    /// <summary>Endung aus der Zeit vor der Umbenennung (TipToy Designer); solche Projekte lassen sich weiter öffnen.</summary>
-    public const string OldExtension = ".tiptoy.json";
-
-    public static bool IsProjectFile(string path) =>
-        path.EndsWith(Extension, StringComparison.OrdinalIgnoreCase) || path.EndsWith(OldExtension, StringComparison.OrdinalIgnoreCase);
-
     static readonly JsonSerializerOptions Options = new()
     {
         WriteIndented = true,
@@ -29,12 +23,12 @@ public static class ProjectStore
 
     public static string ToJson(ProjectFile project) => JsonSerializer.Serialize(project, Options);
 
-    /// <summary>Basisname ohne ".tupfer.json" (bzw. ".tiptoy.json"), z. B. "tic-tac-toi".</summary>
+    /// <summary>Basisname ohne ".tupfer.json", z. B. "tic-tac-toi".</summary>
     public static string BaseName(string projectPath)
     {
         var name = Path.GetFileName(projectPath);
-        return IsProjectFile(name)
-            ? name[..^Extension.Length] // beide Endungen sind gleich lang
+        return name.EndsWith(Extension, StringComparison.OrdinalIgnoreCase)
+            ? name[..^Extension.Length]
             : Path.GetFileNameWithoutExtension(name);
     }
 }

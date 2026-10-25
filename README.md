@@ -6,8 +6,7 @@ GME-Datei für den Stift bauen und die Seiten mit OID-Codes drucken. Er läuft a
 (Windows, Linux, macOS) und im Browser. OID-Codes und GME-Dateien entsprechen
 [tttool](https://github.com/entropia/tip-toi-reveng), das selbst aber nicht benötigt wird.
 
-Bis Version 1.10 hieß das Projekt „TipToy Designer“. Projekte mit der alten Endung `.tiptoy.json`
-lassen sich weiterhin öffnen; gespeichert wird als `.tupfer.json`.
+Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 
 ## Inhalt
 

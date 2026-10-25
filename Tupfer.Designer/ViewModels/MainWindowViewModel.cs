@@ -256,7 +256,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task OpenProject() => Guard("Öffnen", async () =>
     {
-        var path = await Dialogs!.OpenAsync("Projekt öffnen", "Tupfer-Projekt", "*" + ProjectStore.Extension, "*" + ProjectStore.OldExtension);
+        var path = await Dialogs!.OpenAsync("Projekt öffnen", "Tupfer-Projekt", "*" + ProjectStore.Extension);
         if (path != null)
             LoadProject(path);
     });

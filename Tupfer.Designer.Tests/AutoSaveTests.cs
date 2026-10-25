@@ -51,13 +51,4 @@ public class AutoSaveTests
             Directory.Delete(dir, true);
         }
     }
-
-    [Theory]
-    [InlineData("/projekte/spiel.tupfer.json")]
-    [InlineData("/projekte/spiel.tiptoy.json")]
-    public void ProjektdateiAuchMitAlterEndung(string path)
-    {
-        Assert.True(ProjectStore.IsProjectFile(path));
-        Assert.Equal("spiel", ProjectStore.BaseName(path));
-    }
 }
