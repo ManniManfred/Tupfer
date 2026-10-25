@@ -1,4 +1,4 @@
-# Baut die Browser-Version des TipToy Designers und veröffentlicht sie auf GitHub Pages.
+# Baut die Browser-Version des Tupfer Designers und veröffentlicht sie auf GitHub Pages.
 # Einmalig nötig: Repository → Settings → Pages → Source: „GitHub Actions“.
 name: Web-Version
 
@@ -27,7 +27,7 @@ jobs:
       - name: WebAssembly-Werkzeuge installieren
         run: dotnet workload install wasm-tools
       - name: Veröffentlichen
-        run: dotnet publish TipToy.Designer.Browser -c Release -o publish
+        run: dotnet publish Tupfer.Designer.Browser -c Release -o publish
       - uses: actions/upload-pages-artifact@v3
         with:
           path: publish/wwwroot

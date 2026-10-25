@@ -1,6 +1,6 @@
 **/bin/
 **/obj/
 .git/
-TipToy.Designer.Tests/
+Tupfer.Designer.Tests/
 *.gme
 *.pdf

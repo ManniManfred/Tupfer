@@ -1,5 +1,5 @@
 // Platzhalter für die IDE: Mit dieser Datei lassen sich Stift-Programme in Visual Studio, Rider
-// oder VS Code mit IntelliSense schreiben. Beim Übersetzen im TipToy Designer werden diese Klassen
+// oder VS Code mit IntelliSense schreiben. Beim Übersetzen im Tupfer Designer werden diese Klassen
 // ignoriert – sie können also auch mit in das Programm kopiert werden.
 using System;
 

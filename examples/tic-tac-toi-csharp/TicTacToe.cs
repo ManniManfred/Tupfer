@@ -1,4 +1,4 @@
-// Tic-Tac-Toe für den tiptoi-Stift – als C#-Programm für den TipToy Designer.
+// Tic-Tac-Toe für den tiptoi-Stift – als C#-Programm für den Tupfer Designer.
 // Zwei Spieler tippen abwechselnd auf die neun Felder.
 
 class TicTacToe : TipToi

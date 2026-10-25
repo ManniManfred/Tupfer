@@ -1,13 +1,13 @@
 # Fremdbestandteile und Lizenzen
 
-Der TipToy Designer selbst steht unter der [MIT-Lizenz](LICENSE). Er enthält bzw. nutzt die
+Der Tupfer Designer selbst steht unter der [MIT-Lizenz](LICENSE). Er enthält bzw. nutzt die
 folgenden Bestandteile Dritter.
 
 ## Portierter Code
 
 ### tttool (tip-toi-reveng)
 
-`TipToy.Designer/Oid/` (OID-Codes) und `TipToy.Designer/Gme/` (GME-Dateien, Skriptsprache) sind
+`Tupfer.Designer/Oid/` (OID-Codes) und `Tupfer.Designer/Gme/` (GME-Dateien, Skriptsprache) sind
 Portierungen von [tttool](https://github.com/entropia/tip-toi-reveng) nach C#.
 
 ```
@@ -37,7 +37,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 | Bestandteil | Ort | Lizenz |
 |---|---|---|
-| [meSpeak](https://www.masswerk.at/mespeak/) 2.0.2 (Norbert Landsteiner) mit eSpeak (Jonathan Duddington) über [speak.js](https://github.com/kripken/speak.js) | `TipToy.Designer.Browser/wwwroot/mespeak/` | GNU GPL 3, Text in [`COPYING`](TipToy.Designer.Browser/wwwroot/mespeak/COPYING); Quelltext: npm-Paket [`mespeak`](https://www.npmjs.com/package/mespeak) |
+| [meSpeak](https://www.masswerk.at/mespeak/) 2.0.2 (Norbert Landsteiner) mit eSpeak (Jonathan Duddington) über [speak.js](https://github.com/kripken/speak.js) | `Tupfer.Designer.Browser/wwwroot/mespeak/` | GNU GPL 3, Text in [`COPYING`](Tupfer.Designer.Browser/wwwroot/mespeak/COPYING); Quelltext: npm-Paket [`mespeak`](https://www.npmjs.com/package/mespeak) |
 
 Die meSpeak-Dateien sind unverändert und werden von der Browser-Version nur geladen (eigene
 Dateien, Aufruf über JavaScript). Sie behalten ihre GPL-Lizenz.

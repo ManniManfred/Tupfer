@@ -13,14 +13,14 @@
   Bei jeder Änderung an der App mit hochzählen (Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle).
 
 - Sprache in Code-Kommentaren, UI und Dokumentation: Deutsch.
-- `TipToy.Designer/` – Avalonia-App (.NET 10): `dotnet build TipToy.Designer`
-- `TipToy.Designer.Browser/` – dieselbe App für den Browser (WebAssembly). Übersetzt die Quellen aus
-  `TipToy.Designer/` mit (verlinkt, keine Kopie); Browser-Eigenheiten (Dateidialoge mit Download,
+- `Tupfer.Designer/` – Avalonia-App (.NET 10): `dotnet build Tupfer.Designer`
+- `Tupfer.Designer.Browser/` – dieselbe App für den Browser (WebAssembly). Übersetzt die Quellen aus
+  `Tupfer.Designer/` mit (verlinkt, keine Kopie); Browser-Eigenheiten (Dateidialoge mit Download,
   Sprachausgabe mit Piper von CDN/Hugging Face, Rückfall meSpeak in `wwwroot/`) liegen nur dort. Ohne C#-Übersetzer (kein Roslyn):
   `Compiler/ProgramCompiler.cs` wird durch einen Platzhalter ersetzt. Braucht `dotnet workload install wasm-tools`:
-  `dotnet publish TipToy.Designer.Browser -c Release -o publish`
-- Tests (u. a. C#-Übersetzer gegen natives C#): `dotnet test TipToy.Designer.Tests`
-- OID-Erzeugung (`TipToy.Designer/Oid/`) und GME-Erstellung (`TipToy.Designer/Gme/`) sind
+  `dotnet publish Tupfer.Designer.Browser -c Release -o publish`
+- Tests (u. a. C#-Übersetzer gegen natives C#): `dotnet test Tupfer.Designer.Tests`
+- OID-Erzeugung (`Tupfer.Designer/Oid/`) und GME-Erstellung (`Tupfer.Designer/Gme/`) sind
   Portierungen von tttool (github.com/entropia/tip-toi-reveng, Referenz: Version 1.11).
   Sie müssen pixel- bzw. byteweise mit `tttool oid-code` und `tttool assemble --no-date`
   übereinstimmen; Änderungen dort gegen tttool prüfen.

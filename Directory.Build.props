@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <!-- Version des TipToy Designers (Desktop und Browser), wird im Titel angezeigt.
+    <!-- Version des Tupfer Designers (Desktop und Browser), wird im Titel angezeigt.
          Bei jeder Änderung hochzählen: Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle. -->
-    <Version>1.10.3</Version>
+    <Version>1.11.0</Version>
   </PropertyGroup>
 </Project>

@@ -1,0 +1,362 @@
+{
+  "Version": 1,
+  "ProductId": 901,
+  "Comment": "Tic Tac Toe in C#",
+  "Language": "de",
+  "GmeLang": "",
+  "Init": "$zug := 1",
+  "Welcome": "welcome, player1",
+  "MediaPath": "",
+  "ExtraYaml": "",
+  "Program": "// Tic-Tac-Toe f\u00FCr den tiptoi-Stift \u2013 als C#-Programm f\u00FCr den Tupfer Designer.\n// Gleiches Verhalten wie tic-tac-toi.yaml: zwei Spieler tippen abwechselnd auf die neun Felder.\n\nclass TicTacToe : TipToi\n{\n    // Wer ist dran? 1 = Kreuz, 2 = Kreis\n    int zug = 1;\n\n    // Anzahl der belegten Felder\n    int belegt;\n\n    // Spielfeld: 0 = frei, 1 = Kreuz, 2 = Kreis (O/M/U = oben/mitte/unten, L/M/R = links/mitte/rechts)\n    int OL, OM, OR, ML, MM, MR, UL, UM, UR;\n\n    [Oid] void feldOL() { if (OL == 0) { OL = zug; Gesetzt(); } else Belegt(OL); }\n    [Oid] void feldOM() { if (OM == 0) { OM = zug; Gesetzt(); } else Belegt(OM); }\n    [Oid] void feldOR() { if (OR == 0) { OR = zug; Gesetzt(); } else Belegt(OR); }\n    [Oid] void feldML() { if (ML == 0) { ML = zug; Gesetzt(); } else Belegt(ML); }\n    [Oid] void feldMM() { if (MM == 0) { MM = zug; Gesetzt(); } else Belegt(MM); }\n    [Oid] void feldMR() { if (MR == 0) { MR = zug; Gesetzt(); } else Belegt(MR); }\n    [Oid] void feldUL() { if (UL == 0) { UL = zug; Gesetzt(); } else Belegt(UL); }\n    [Oid] void feldUM() { if (UM == 0) { UM = zug; Gesetzt(); } else Belegt(UM); }\n    [Oid] void feldUR() { if (UR == 0) { UR = zug; Gesetzt(); } else Belegt(UR); }\n\n    void Belegt(int feld)\n    {\n        if (feld == 1)\n            Play(\u0022here_cross\u0022);\n        else\n            Play(\u0022here_circle\u0022);\n        Ansage();\n    }\n\n    void Gesetzt()\n    {\n        belegt\u002B\u002B;\n        if (zug == 1)\n            Play(\u0022here_now_cross\u0022);\n        else\n            Play(\u0022here_now_circle\u0022);\n\n        if (OL == zug \u0026\u0026 ML == zug \u0026\u0026 UL == zug ||\n            OM == zug \u0026\u0026 MM == zug \u0026\u0026 UM == zug ||\n            OR == zug \u0026\u0026 MR == zug \u0026\u0026 UR == zug ||\n            OL == zug \u0026\u0026 OM == zug \u0026\u0026 OR == zug ||\n            ML == zug \u0026\u0026 MM == zug \u0026\u0026 MR == zug ||\n            UL == zug \u0026\u0026 UM == zug \u0026\u0026 UR == zug ||\n            OL == zug \u0026\u0026 MM == zug \u0026\u0026 UR == zug ||\n            OR == zug \u0026\u0026 MM == zug \u0026\u0026 UL == zug)\n        {\n            if (zug == 1)\n                Play(\u0022player1wins\u0022);\n            else\n                Play(\u0022player2wins\u0022);\n            zug = 3 - zug;   // der Verlierer beginnt\n            Neu();\n        }\n        else if (belegt == 9)\n        {\n            Play(\u0022draw\u0022);\n            Neu();\n        }\n        else\n        {\n            zug = 3 - zug;\n            Ansage();\n        }\n    }\n\n    void Neu()\n    {\n        belegt = 0;\n        OL = 0; OM = 0; OR = 0;\n        ML = 0; MM = 0; MR = 0;\n        UL = 0; UM = 0; UR = 0;\n        Ansage();\n    }\n\n    void Ansage()\n    {\n        if (zug == 1)\n            Play(\u0022player1\u0022);\n        else\n            Play(\u0022player2\u0022);\n    }\n}\n",
+  "Replay": 11979,
+  "Stop": 11980,
+  "TttoolPath": "tttool",
+  "UseTttool": false,
+  "Dpi": 1200,
+  "PixelSize": 2,
+  "Scripts": [
+    {
+      "Name": "feldOL",
+      "Code": 11986,
+      "Lines": [
+        "$OL == 0? $zug == 1? $OL := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$OL == 0? $OL := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $OL J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldOM",
+      "Code": 11994,
+      "Lines": [
+        "$OM == 0? $zug == 1? $OM := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$OM == 0? $OM := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $OM J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldOR",
+      "Code": 11995,
+      "Lines": [
+        "$OR == 0? $zug == 1? $OR := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$OR == 0? $OR := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $OR J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldML",
+      "Code": 11983,
+      "Lines": [
+        "$ML == 0? $zug == 1? $ML := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$ML == 0? $ML := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $ML J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldMM",
+      "Code": 11984,
+      "Lines": [
+        "$MM == 0? $zug == 1? $MM := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$MM == 0? $MM := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $MM J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldMR",
+      "Code": 11985,
+      "Lines": [
+        "$MR == 0? $zug == 1? $MR := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$MR == 0? $MR := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $MR J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldUL",
+      "Code": 11996,
+      "Lines": [
+        "$UL == 0? $zug == 1? $UL := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$UL == 0? $UL := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $UL J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldUM",
+      "Code": 11997,
+      "Lines": [
+        "$UM == 0? $zug == 1? $UM := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$UM == 0? $UM := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $UM J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldUR",
+      "Code": 11998,
+      "Lines": [
+        "$UR == 0? $zug == 1? $UR := $zug $belegt \u002B= 1 P(here_now_cross) J(feldOL_1)",
+        "$UR == 0? $UR := $zug $belegt \u002B= 1 P(here_now_circle) J(feldOL_1)",
+        "$Belegt_feld := $UR J(feldOL_2)"
+      ],
+      "Generated": true,
+      "Helper": false
+    },
+    {
+      "Name": "feldOL_1",
+      "Code": 11987,
+      "Lines": [
+        "$OL == $zug? $ML == $zug? $UL == $zug? $zug == 1? P(player1wins) J(feldOL_3)",
+        "$OL == $zug? $ML == $zug? $UL == $zug? P(player2wins) J(feldOL_3)",
+        "$OM == $zug? $MM == $zug? $UM == $zug? $zug == 1? P(player1wins) J(feldOL_3)",
+        "$OM == $zug? $MM == $zug? $UM == $zug? P(player2wins) J(feldOL_3)",
+        "$OR == $zug? $MR == $zug? $UR == $zug? $zug == 1? P(player1wins) J(feldOL_3)",
+        "$OR == $zug? $MR == $zug? $UR == $zug? P(player2wins) J(feldOL_3)",
+        "$OL == $zug? $OM == $zug? $OR == $zug? $zug == 1? P(player1wins) J(feldOL_3)",
+        "$OL == $zug? $OM == $zug? $OR == $zug? P(player2wins) J(feldOL_3)",
+        "$ML == $zug? $MM == $zug? $MR == $zug? $zug == 1? P(player1wins) J(feldOL_3)",
+        "$ML == $zug? $MM == $zug? $MR == $zug? P(player2wins) J(feldOL_3)",
+        "$UL == $zug? $UM == $zug? $UR == $zug? $zug == 1? P(player1wins) J(feldOL_3)",
+        "$UL == $zug? $UM == $zug? $UR == $zug? P(player2wins) J(feldOL_3)",
+        "$OL == $zug? $MM == $zug? $UR == $zug? $zug == 1? P(player1wins) J(feldOL_3)",
+        "$OL == $zug? $MM == $zug? $UR == $zug? P(player2wins) J(feldOL_3)",
+        "$OR == $zug? $MM == $zug? $UL == $zug? $zug == 1? P(player1wins) J(feldOL_3)",
+        "$OR == $zug? $MM == $zug? $UL == $zug? P(player2wins) J(feldOL_3)",
+        "$belegt == 9? $zug == 1? P(draw) $belegt := 0 $OL := 0 $OM := 0 $OR := 0 $ML := 0 $MM := 0 J(feldOL_12)",
+        "$belegt == 9? P(draw) $belegt := 0 $OL := 0 $OM := 0 $OR := 0 $ML := 0 $MM := 0 J(feldOL_13)",
+        "$_t1 := 3 $_t1 -= $zug $zug := $_t1 J(feldOL_11)"
+      ],
+      "Generated": true,
+      "Helper": true
+    },
+    {
+      "Name": "feldOL_2",
+      "Code": 11992,
+      "Lines": [
+        "$Belegt_feld == 1? P(here_cross) J(feldOL_11)",
+        "P(here_circle) J(feldOL_11)"
+      ],
+      "Generated": true,
+      "Helper": true
+    },
+    {
+      "Name": "feldOL_3",
+      "Code": 11993,
+      "Lines": [
+        "$_t1 := 3 $_t1 -= $zug $zug := $_t1 $belegt := 0 $OL := 0 $OM := 0 $OR := 0 J(feldOL_16)"
+      ],
+      "Generated": true,
+      "Helper": true
+    },
+    {
+      "Name": "feldOL_11",
+      "Code": 11988,
+      "Lines": [
+        "$zug == 1? P(player1)",
+        "P(player2)"
+      ],
+      "Generated": true,
+      "Helper": true
+    },
+    {
+      "Name": "feldOL_12",
+      "Code": 11989,
+      "Lines": [
+        "$MR := 0 $UL := 0 $UM := 0 $UR := 0 P(player1)"
+      ],
+      "Generated": true,
+      "Helper": true
+    },
+    {
+      "Name": "feldOL_13",
+      "Code": 11990,
+      "Lines": [
+        "$MR := 0 $UL := 0 $UM := 0 $UR := 0 P(player2)"
+      ],
+      "Generated": true,
+      "Helper": true
+    },
+    {
+      "Name": "feldOL_16",
+      "Code": 11991,
+      "Lines": [
+        "$ML := 0 $MM := 0 $MR := 0 $UL := 0 $UM := 0 $UR := 0 J(feldOL_11)"
+      ],
+      "Generated": true,
+      "Helper": true
+    }
+  ],
+  "Speak": [
+    {
+      "Name": "welcome",
+      "Text": "Willkommen bei Tic-Tac-Tiptoi."
+    },
+    {
+      "Name": "player1",
+      "Text": "Kreuz ist dran."
+    },
+    {
+      "Name": "player2",
+      "Text": "Kreis ist dran."
+    },
+    {
+      "Name": "here_cross",
+      "Text": "Hier ist schon ein Kreuz"
+    },
+    {
+      "Name": "here_circle",
+      "Text": "Hier ist schon ein Kreis"
+    },
+    {
+      "Name": "here_now_cross",
+      "Text": "Hier ist jetzt ein Kreuz"
+    },
+    {
+      "Name": "here_now_circle",
+      "Text": "Hier ist jetzt ein Kreis"
+    },
+    {
+      "Name": "player1wins",
+      "Text": "Kreuz gewinnt."
+    },
+    {
+      "Name": "player2wins",
+      "Text": "Kreis gewinnt."
+    },
+    {
+      "Name": "draw",
+      "Text": "Unentschieden"
+    }
+  ],
+  "Pages": [
+    {
+      "Name": "Spielfeld",
+      "WidthMm": 210,
+      "HeightMm": 297,
+      "BackgroundImage": "../tic-tac-toi/tic-tac-toi.png",
+      "Areas": [
+        {
+          "Label": "",
+          "X": 33,
+          "Y": 63,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldOL"
+        },
+        {
+          "Label": "",
+          "X": 83,
+          "Y": 63,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldOM"
+        },
+        {
+          "Label": "",
+          "X": 133,
+          "Y": 63,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldOR"
+        },
+        {
+          "Label": "",
+          "X": 33,
+          "Y": 113,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldML"
+        },
+        {
+          "Label": "",
+          "X": 83,
+          "Y": 113,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldMM"
+        },
+        {
+          "Label": "",
+          "X": 133,
+          "Y": 113,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldMR"
+        },
+        {
+          "Label": "",
+          "X": 33,
+          "Y": 163,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldUL"
+        },
+        {
+          "Label": "",
+          "X": 83,
+          "Y": 163,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldUM"
+        },
+        {
+          "Label": "",
+          "X": 133,
+          "Y": 163,
+          "Width": 44,
+          "Height": 44,
+          "Target": "Script",
+          "Script": "feldUR"
+        },
+        {
+          "Label": "Start",
+          "X": 42,
+          "Y": 232,
+          "Width": 26,
+          "Height": 26,
+          "Target": "Product",
+          "Script": ""
+        },
+        {
+          "Label": "",
+          "X": 97,
+          "Y": 232,
+          "Width": 26,
+          "Height": 26,
+          "Target": "Replay",
+          "Script": ""
+        },
+        {
+          "Label": "",
+          "X": 152,
+          "Y": 232,
+          "Width": 26,
+          "Height": 26,
+          "Target": "Stop",
+          "Script": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Tupfer.Designer.ViewModels"
+        xmlns:views="using:Tupfer.Designer.Views"
+        x:Class="Tupfer.Designer.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{Binding Title}"
+        Icon="/Assets/Tupfer.ico"
+        Background="{StaticResource AppBackground}"
+        Width="1300" Height="850" MinWidth="900" MinHeight="600">
+
+  <views:MainView />
+</Window>

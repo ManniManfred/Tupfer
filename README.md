@@ -1,18 +1,21 @@
-# TipToy Designer
+# Tupfer Designer
 
-Mit dem **TipToy Designer** gestaltet man eigene Seiten für den Ravensburger **tiptoi**-Stift:
+Mit dem **Tupfer Designer** gestaltet man eigene Seiten für den Ravensburger **tiptoi**-Stift:
 Bilder und Texte setzen, OID-Flächen aufziehen, Skripte und Sprachausgaben festlegen, die
 GME-Datei für den Stift bauen und die Seiten mit OID-Codes drucken. Er läuft als Desktop-Anwendung
 (Windows, Linux, macOS) und im Browser. OID-Codes und GME-Dateien entsprechen
 [tttool](https://github.com/entropia/tip-toi-reveng), das selbst aber nicht benötigt wird.
 
+Bis Version 1.10 hieß das Projekt „TipToy Designer“. Projekte mit der alten Endung `.tiptoy.json`
+lassen sich weiterhin öffnen; gespeichert wird als `.tupfer.json`.
+
 ## Inhalt
 
 | Ordner | Beschreibung |
 | --- | --- |
-| `TipToy.Designer/` | Die Anwendung (Avalonia, .NET 10) |
-| `TipToy.Designer.Browser/` | Dieselbe Anwendung als Web-App (WebAssembly, siehe „TipToy Designer im Browser“) |
-| `TipToy.Designer.Tests/` | Tests (OID/GME, Stift-Simulation, C#-Übersetzer, Bearbeiten) |
+| `Tupfer.Designer/` | Die Anwendung (Avalonia, .NET 10) |
+| `Tupfer.Designer.Browser/` | Dieselbe Anwendung als Web-App (WebAssembly, siehe „Tupfer Designer im Browser“) |
+| `Tupfer.Designer.Tests/` | Tests (OID/GME, Stift-Simulation, C#-Übersetzer, Bearbeiten) |
 | `examples/tic-tac-toi/` | Beispiel: Tic-Tac-Toe als Designer-Projekt mit Spielfeld-Grafik (auch in der Web-App) |
 | `examples/tic-tac-toi-csharp/` | Dasselbe Spiel als C#-Programm (siehe „Programmieren in C#“) |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
@@ -24,7 +27,7 @@ Zwei Spieler – **Kreuz** und **Kreis** – tippen abwechselnd auf die neun Fel
 an, wer an der Reihe ist und ob ein Feld schon belegt ist, und erkennt Sieg (Reihe, Spalte,
 Diagonale) sowie Unentschieden. Danach wartet das Spiel, bis *Start* angetippt wird.
 
-Ausprobieren: `examples/tic-tac-toi/tic-tac-toi.tiptoy.json` öffnen (in der Web-App unter
+Ausprobieren: `examples/tic-tac-toi/tic-tac-toi.tupfer.json` öffnen (in der Web-App unter
 *Datei → Beispiele*), mit *Testen* (F8) ohne Stift durchspielen, dann *Auf den Stift speichern*
 und *Seiten drucken*. Zum Starten auf dem Stift zuerst *Start* (Produkt-Code `900`) antippen.
 
@@ -34,9 +37,9 @@ sonst erkennt der Stift sie nicht zuverlässig (siehe „Drucker testen“).
 ## Starten (Desktop)
 
 ```bash
-dotnet run --project TipToy.Designer
+dotnet run --project Tupfer.Designer
 # oder direkt mit einem Projekt bzw. einer tttool-YAML-Datei:
-dotnet run --project TipToy.Designer -- examples/tic-tac-toi/tic-tac-toi.tiptoy.json
+dotnet run --project Tupfer.Designer -- examples/tic-tac-toi/tic-tac-toi.tupfer.json
 ```
 
 Voraussetzung: .NET 10 SDK. **tttool wird nicht benötigt** – der Designer erzeugt OID-Codes und
@@ -70,7 +73,7 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
 - **Automatisch gesichert:** Der Bearbeitungsstand wird laufend (jede Sekunde, wenn sich etwas
   geändert hat) gesichert und beim nächsten Start wiederhergestellt – auch ein noch nicht gespeichertes
   Projekt. Im Browser übersteht er so ein Neuladen der Seite (gespeichert im Browser mit Bildern und
-  Aufnahmen), auf dem Desktop einen Absturz (`%AppData%\TipToyDesigner` bzw. `~/.config/TipToyDesigner`).
+  Aufnahmen), auf dem Desktop einen Absturz (`%AppData%\TupferDesigner` bzw. `~/.config/TupferDesigner`).
   Das ersetzt nicht das Speichern: Die Projektdatei selbst wird nur mit *Speichern* geändert.
   Rückgängig/Wiederholen gilt nach dem Neustart erst für neue Änderungen.
 - **Projekt:** Produkt-ID, Begrüßung, Initialisierung, Druckeinstellungen usw.
@@ -95,20 +98,20 @@ Auch die Codes für Skripte werden nach demselben Verfahren vergeben, sodass YAM
 tttool zusammenpassen. Nur Spiele (`games`) und Timer kann der eingebaute Builder nicht – dafür
 unter *Projekt* „GME mit externem tttool bauen“ aktivieren.
 
-## TipToy Designer im Browser
+## Tupfer Designer im Browser
 
 Der Designer läuft auch ohne Installation im Browser (WebAssembly). Lokal starten:
 
 ```bash
 dotnet workload install wasm-tools   # einmalig
-dotnet run --project TipToy.Designer.Browser
+dotnet run --project Tupfer.Designer.Browser
 # veröffentlichen (statische Dateien, z. B. für einen Webserver):
-dotnet publish TipToy.Designer.Browser -c Release -o publish   # Ergebnis: publish/wwwroot
+dotnet publish Tupfer.Designer.Browser -c Release -o publish   # Ergebnis: publish/wwwroot
 ```
 
 Unter *Datei → Beispiele* lässt sich das Tic-Tac-Toe-Beispiel aus `examples/` direkt öffnen. Per
 Adresse geht es auch gleich beim Start: `…/index.html?beispiel=tic-tac-toi`. Weitere Beispiele werden in
-`TipToy.Designer.Browser/Examples.cs` und der `.csproj` eingetragen.
+`Tupfer.Designer.Browser/Examples.cs` und der `.csproj` eingetragen.
 
 Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem Push auf `master` und
 veröffentlicht sie auf GitHub Pages (einmalig unter *Settings → Pages → Source* „GitHub Actions“
@@ -119,7 +122,7 @@ Web-Version in einem Container (.NET-SDK mit `wasm-tools`) und liefern sie mit n
 CapRover eine App anlegen, HTTPS aktivieren und unter *Deployment* das GitHub-Repository
 (Branch `master`) eintragen – oder lokal `caprover deploy` ausführen. Der Bau braucht einige
 Minuten und etwa 2–3 GB Arbeitsspeicher. Lokal testen:
-`docker build -f deploy/Dockerfile -t tiptoy-web . && docker run -p 8080:80 tiptoy-web`
+`docker build -f deploy/Dockerfile -t tupfer-web . && docker run -p 8080:80 tupfer-web`
 
 **Auf dem Handy:** Bei schmalen Bildschirmen (unter etwa 760 Pixel) schaltet die Oberfläche auf ein
 kompaktes Layout um: Im Tab *Seiten* wechselt man oben zwischen *Seite* (Zeichenfläche), *Seiten*
@@ -132,7 +135,7 @@ Unterschiede zur Desktop-Version:
 - **Dateien:** Der Browser darf nicht direkt auf die Festplatte schreiben. Gespeicherte Projekte,
   PDFs, PNGs, YAML- und GME-Dateien werden **heruntergeladen**. Ein Projekt mit Bildern oder
   Audiodateien wird als `.zip` heruntergeladen; zum Öffnen das ZIP wählen – oder die
-  `.tiptoy.json` zusammen mit ihren Bildern (Mehrfachauswahl).
+  `.tupfer.json` zusammen mit ihren Bildern (Mehrfachauswahl).
 - **Sprachausgabe:** natürlich klingende Stimmen mit [Piper](https://github.com/rhasspy/piper)
   (neuronale Sprachausgabe, läuft im Browser). Im Tab *Sprachausgabe* wählt man die Stimme des
   Projekts und bei Bedarf für jeden Text eine eigene, z. B. für verschiedene Figuren: Deutsch mit
@@ -161,7 +164,7 @@ Unterschiede zur Desktop-Version:
 5. *Erstellen → Auf den Stift speichern* (oder *GME-Datei bauen* und die `.gme` selbst auf den Stift kopieren).
 6. *Erstellen → Seiten drucken* (oder *Seiten als PDF*) – mit 1200 dpi in Originalgröße drucken.
 
-Projekte werden als `*.tiptoy.json` gespeichert; Pfade zu Bildern relativ zur Projektdatei.
+Projekte werden als `*.tupfer.json` gespeichert; Pfade zu Bildern relativ zur Projektdatei.
 Hintergrundbilder älterer Projekte werden beim Öffnen zu einem seitenfüllenden Bild.
 
 ## Programmieren in C#
@@ -214,8 +217,8 @@ Bedingungen auf berechneten Werten und Zeilen mit mehr als 8 Befehlen werden auf
 verteilt, die per Sprung (`J`) folgen; der Stift springt erst, wenn die laufende Ausgabe zu Ende ist.
 
 `examples/tic-tac-toi-csharp/` enthält Tic-Tac-Toe als C#-Programm. Die Datei `TipToi.cs` dort
-liefert IntelliSense in der IDE. Die Tests in `TipToy.Designer.Tests` vergleichen das übersetzte
-Programm mit dem echten C#-Programm (`dotnet test TipToy.Designer.Tests`).
+liefert IntelliSense in der IDE. Die Tests in `Tupfer.Designer.Tests` vergleichen das übersetzte
+Programm mit dem echten C#-Programm (`dotnet test Tupfer.Designer.Tests`).
 
 ## Drucker testen
 
@@ -249,7 +252,7 @@ Die Testseite lässt sich im Designer jederzeit neu erzeugen: *Erstellen → Dru
 
 ## Lizenz
 
-Der TipToy Designer steht unter der [MIT-Lizenz](LICENSE): Jeder darf ihn nutzen, verändern und
+Der Tupfer Designer steht unter der [MIT-Lizenz](LICENSE): Jeder darf ihn nutzen, verändern und
 weitergeben, auch kommerziell, solange der Lizenzhinweis erhalten bleibt.
 
 Ausnahmen und Fremdbestandteile (u. a. die Portierung von tttool, MIT; meSpeak, GPL 3; die

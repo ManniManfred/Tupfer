@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Programme/**" />
+    <None Include="Programme/**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../examples/tic-tac-toi-csharp/TicTacToe.cs" Link="Programme/TicTacToe.cs" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../examples/tic-tac-toi-csharp/tic-tac-toi-csharp.tupfer.json" Link="Programme/tic-tac-toi-csharp.tupfer.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../examples/tic-tac-toi/tic-tac-toi.tupfer.json" Link="Programme/tic-tac-toi.tupfer.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Tupfer.Designer/Tupfer.Designer.csproj" />
+  </ItemGroup>
+
+</Project>
