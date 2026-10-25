@@ -19,7 +19,7 @@ public static class Voices
         new("de_DE-ramona-low", "Ramona – weiblich"),
         new("de_DE-eva_k-x_low", "Eva – weiblich (einfache Qualität)"),
         new("de_DE-karlsson-low", "Karlsson – männlich"),
-        new("de_DE-pavoque-low", "Pavoque – männlich"),
+        new("de_DE-pavoque-low", "Pavoque – männlich (nur nicht-kommerziell)"),
         new("de_DE-thorsten_emotional-medium#amused", "Thorsten fröhlich"),
         new("de_DE-thorsten_emotional-medium#surprised", "Thorsten überrascht"),
         new("de_DE-thorsten_emotional-medium#whisper", "Thorsten flüsternd"),

@@ -246,3 +246,14 @@ Die Testseite lässt sich im Designer jederzeit neu erzeugen: *Erstellen → Dru
 
 - [tttool / tip-toi-reveng](https://github.com/entropia/tip-toi-reveng) – Werkzeug zum Erstellen eigener tiptoi-Inhalte
 - [tttool-Dokumentation](https://tttool.readthedocs.io/)
+
+## Lizenz
+
+Der TipToy Designer steht unter der [MIT-Lizenz](LICENSE): Jeder darf ihn nutzen, verändern und
+weitergeben, auch kommerziell, solange der Lizenzhinweis erhalten bleibt.
+
+Ausnahmen und Fremdbestandteile (u. a. die Portierung von tttool, MIT; meSpeak, GPL 3; die
+Lizenzen der Piper-Stimmen) stehen in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+„tiptoi“ ist eine eingetragene Marke der Ravensburger Verlag GmbH. Dieses Projekt steht in keiner
+Verbindung zu Ravensburger.
