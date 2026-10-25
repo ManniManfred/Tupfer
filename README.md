@@ -133,8 +133,13 @@ Unterschiede zur Desktop-Version:
   PDFs, PNGs, YAML- und GME-Dateien werden **heruntergeladen**. Ein Projekt mit Bildern oder
   Audiodateien wird als `.zip` heruntergeladen; zum Öffnen das ZIP wählen – oder die
   `.tiptoy.json` zusammen mit ihren Bildern (Mehrfachauswahl).
-- **Sprachausgabe:** eingebaut mit [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als
-  JavaScript, Stimmen für de, en, es, fr, it, nl); die Texte werden als WAV eingebettet.
+- **Sprachausgabe:** natürlich klingende Stimmen mit [Piper](https://github.com/rhasspy/piper)
+  (neuronale Sprachausgabe, läuft im Browser; Deutsch „Thorsten“, außerdem Englisch, Französisch,
+  Spanisch). Beim ersten Vorlesen werden Laufzeit und Stimme geladen – etwa 90 MB von cdnjs,
+  jsDelivr und Hugging Face –, danach kommen sie aus dem Browser-Cache. Die Texte bleiben dabei im
+  Browser. Ist das Laden nicht möglich (oder für Italienisch und Niederländisch), spricht
+  [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als JavaScript, klingt deutlich künstlicher).
+  Die Texte werden als WAV eingebettet.
 - **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
   fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als WAV (mono, 22 kHz).
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.

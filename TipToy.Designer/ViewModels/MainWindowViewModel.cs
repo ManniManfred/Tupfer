@@ -438,9 +438,9 @@ public partial class MainWindowViewModel : ObservableObject
     async Task<bool> BuildGmeInternal(ProjectFile file, string baseDir, string gmePath)
     {
         Log($"Baue {Path.GetFileName(gmePath)} …");
-        if (file.Speak.Count > 0 && TextToSpeech.PrepareAsync is { } prepare)
-            await prepare(string.IsNullOrWhiteSpace(file.Language) ? "en" : file.Language);
-        var tts = new TextToSpeech(Path.Combine(baseDir, "tts-cache"), LogFromAnyThread);
+        var tts = new TextToSpeech(Path.Combine(baseDir, "tts-cache"), LogFromAnyThread, Notice);
+        await tts.PrepareAsync(string.IsNullOrWhiteSpace(file.Language) ? "en" : file.Language,
+            file.Speak.Where(s => string.IsNullOrEmpty(s.Recording)).Select(s => s.Text));
         var bytes = await Task.Run(() => GmeBuilder.Build(file, baseDir, tts.Speak, warn: m => LogFromAnyThread("Warnung: " + m)));
         await File.WriteAllBytesAsync(gmePath, bytes);
         Log($"{bytes.Length / 1024.0:0.#} KB, {file.Scripts.Count} Skripte.");
@@ -797,9 +797,8 @@ public partial class MainWindowViewModel : ObservableObject
                 return;
             }
             var language = string.IsNullOrWhiteSpace(Project.Language) ? "en" : Project.Language;
-            if (TextToSpeech.PrepareAsync is { } prepare)
-                await prepare(language);
-            var tts = new TextToSpeech(TtsCacheDir, LogFromAnyThread);
+            var tts = new TextToSpeech(TtsCacheDir, LogFromAnyThread, Notice);
+            await tts.PrepareAsync(language, [speak.Text]);
             data = await Task.Run(() => tts.Speak(language, speak.Text));
             extension = Audio.ExtensionOf(data);
         }

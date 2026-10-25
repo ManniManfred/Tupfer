@@ -80,6 +80,13 @@ static partial class BrowserInterop
     [JSImport("stopRecording", "tiptoy")]
     public static partial Task<string> StopRecordingAsync(int sampleRate);
 
+    /// <summary>
+    /// Spricht den Text mit einer natürlichen Stimme (Piper, lädt beim ersten Mal etwa 90 MB),
+    /// liefert WAV-Daten Base64-kodiert. Wirft, wenn es für die Sprache keine gibt oder das Laden scheitert.
+    /// </summary>
+    [JSImport("speakNatural", "tiptoy")]
+    public static partial Task<string> SpeakNaturalAsync(string language, string text);
+
     /// <summary>Spricht den Text, liefert WAV-Daten. Vorher muss <see cref="LoadSpeechAsync"/> aufgerufen worden sein.</summary>
     [JSImport("speak", "tiptoy")]
     [return: JSMarshalAs<JSType.Array<JSType.Number>>]

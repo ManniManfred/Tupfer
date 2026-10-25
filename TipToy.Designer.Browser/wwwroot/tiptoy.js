@@ -217,6 +217,144 @@ export function speak(language, text) {
     return wav;
 }
 
+// ---------- Natürliche Sprachausgabe mit Piper (neuronale Stimmen, läuft im Browser) ----------
+// Laufzeit, Lautschrift und Stimmen werden beim ersten Gebrauch geladen (zusammen etwa 90 MB)
+// und vom Browser zwischengespeichert, die Stimmen dauerhaft im Cache-Speicher.
+
+const PIPER_ORT = 'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/';
+const PIPER_PHONEMIZE = 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize';
+const PIPER_VOICES = 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/';
+
+/** Stimme je Sprache (Pfad in piper-voices ohne Endung); andere Sprachen sprechen weiter mit meSpeak. */
+const PIPER_VOICE = {
+    de: 'de/de_DE/thorsten/medium/de_DE-thorsten-medium',
+    en: 'en/en_US/lessac/medium/en_US-lessac-medium',
+    fr: 'fr/fr_FR/siwis/medium/fr_FR-siwis-medium',
+    es: 'es/es_ES/davefx/medium/es_ES-davefx-medium',
+};
+
+const piperVoices = {};
+let piperPhonemizer = null;
+
+function loadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`${new URL(url).host} ist nicht erreichbar`));
+        document.head.appendChild(script);
+    });
+}
+
+/** Lädt eine Datei, beim ersten Mal aus dem Netz, danach aus dem Cache-Speicher des Browsers. */
+async function fetchCached(url) {
+    const cache = 'caches' in window ? await caches.open('tiptoy-piper') : null;
+    let response = cache && await cache.match(url);
+    if (!response) {
+        try {
+            response = await fetch(url);
+        } catch {
+            throw new Error(`${new URL(url).host} ist nicht erreichbar`);
+        }
+        if (!response.ok)
+            throw new Error(`${url}: ${response.status} ${response.statusText}`);
+        if (cache)
+            await cache.put(url, response.clone()).catch(() => { });
+    }
+    return response;
+}
+
+/** Wandelt Text in Lautschrift-IDs (espeak-ng); eine Instanz wird wiederverwendet, solange sie läuft. */
+let phonemizeOut = null, phonemizeErr = null;
+async function phonemize(espeakVoice, text) {
+    if (!window.createPiperPhonemize)
+        await loadScript(PIPER_PHONEMIZE + '.js');
+    for (let attempt = 0; ; attempt++) {
+        piperPhonemizer ??= await window.createPiperPhonemize({
+            print: line => { phonemizeOut = line; },
+            printErr: line => { phonemizeErr = line; },
+            locateFile: file => file.endsWith('.wasm') ? PIPER_PHONEMIZE + '.wasm' : file.endsWith('.data') ? PIPER_PHONEMIZE + '.data' : file,
+        });
+        phonemizeOut = phonemizeErr = null;
+        try {
+            piperPhonemizer.callMain(['-l', espeakVoice, '--input', JSON.stringify([{ text }]), '--espeak_data', '/espeak-ng-data']);
+        } catch (e) {
+            phonemizeErr ??= String(e);
+        }
+        if (phonemizeOut)
+            return JSON.parse(phonemizeOut).phoneme_ids;
+        piperPhonemizer = null; // neu starten und noch einmal versuchen
+        if (attempt === 1)
+            throw new Error('Lautschrift fehlgeschlagen: ' + (phonemizeErr ?? 'keine Ausgabe'));
+    }
+}
+
+async function loadPiperVoice(language) {
+    const path = PIPER_VOICE[language];
+    if (!path)
+        throw new Error(`Für die Sprache „${language}“ gibt es keine natürliche Stimme.`);
+    if (!window.ort) {
+        await loadScript(PIPER_ORT + 'ort.min.js');
+        ort.env.wasm.wasmPaths = PIPER_ORT;
+        // Mehrere Threads gehen nur auf Seiten mit Cross-Origin-Isolation
+        ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
+    }
+    const [config, model] = await Promise.all([
+        fetchCached(PIPER_VOICES + path + '.onnx.json').then(r => r.json()),
+        fetchCached(PIPER_VOICES + path + '.onnx').then(r => r.arrayBuffer()),
+    ]);
+    const session = await ort.InferenceSession.create(model);
+    return { config, session };
+}
+
+/** Lädt die natürliche Stimme für die Sprache (beim ersten Mal aus dem Netz). Wirft, wenn es keine gibt. */
+export async function loadNaturalVoice(language) {
+    piperVoices[language] ??= loadPiperVoice(language);
+    try {
+        await piperVoices[language];
+    } catch (e) {
+        delete piperVoices[language];
+        throw e;
+    }
+}
+
+/** Spricht den Text mit der natürlichen Stimme, liefert WAV (mono, 16 Bit) Base64-kodiert. */
+export async function speakNatural(language, text) {
+    await loadNaturalVoice(language);
+    const { config, session } = await piperVoices[language];
+    const ids = await phonemize(config.espeak.voice, text.trim());
+    const inference = config.inference ?? {};
+    const feeds = {
+        input: new ort.Tensor('int64', BigInt64Array.from(ids, BigInt), [1, ids.length]),
+        input_lengths: new ort.Tensor('int64', BigInt64Array.from([BigInt(ids.length)]), [1]),
+        scales: new ort.Tensor('float32', Float32Array.from([inference.noise_scale ?? 0.667, inference.length_scale ?? 1, inference.noise_w ?? 0.8]), [3]),
+    };
+    if (config.num_speakers > 1)
+        feeds.sid = new ort.Tensor('int64', BigInt64Array.from([0n]), [1]);
+    const samples = (await session.run(feeds)).output.data;
+    return btoa(toBinary(wavFromSamples(samples, config.audio.sample_rate)));
+}
+
+function wavFromSamples(samples, sampleRate) {
+    const wav = new DataView(new ArrayBuffer(44 + samples.length * 2));
+    const text = (pos, s) => [...s].forEach((ch, i) => wav.setUint8(pos + i, ch.charCodeAt(0)));
+    text(0, 'RIFF'); wav.setUint32(4, 36 + samples.length * 2, true); text(8, 'WAVEfmt ');
+    wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 1, true);
+    wav.setUint32(24, sampleRate, true); wav.setUint32(28, sampleRate * 2, true);
+    wav.setUint16(32, 2, true); wav.setUint16(34, 16, true);
+    text(36, 'data'); wav.setUint32(40, samples.length * 2, true);
+    for (let i = 0; i < samples.length; i++)
+        wav.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 0x7fff, true);
+    return new Uint8Array(wav.buffer);
+}
+
+function toBinary(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000)
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return binary;
+}
+
 // ---------- Wiedergabe und Aufnahme ----------
 
 let player = null;

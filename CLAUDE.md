@@ -16,7 +16,7 @@
 - `TipToy.Designer/` – Avalonia-App (.NET 10): `dotnet build TipToy.Designer`
 - `TipToy.Designer.Browser/` – dieselbe App für den Browser (WebAssembly). Übersetzt die Quellen aus
   `TipToy.Designer/` mit (verlinkt, keine Kopie); Browser-Eigenheiten (Dateidialoge mit Download,
-  Sprachausgabe mit meSpeak in `wwwroot/`) liegen nur dort. Ohne C#-Übersetzer (kein Roslyn):
+  Sprachausgabe mit Piper von CDN/Hugging Face, Rückfall meSpeak in `wwwroot/`) liegen nur dort. Ohne C#-Übersetzer (kein Roslyn):
   `Compiler/ProgramCompiler.cs` wird durch einen Platzhalter ersetzt. Braucht `dotnet workload install wasm-tools`:
   `dotnet publish TipToy.Designer.Browser -c Release -o publish`
 - Tests (u. a. C#-Übersetzer gegen natives C#): `dotnet test TipToy.Designer.Tests`

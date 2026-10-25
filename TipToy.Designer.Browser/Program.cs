@@ -15,7 +15,8 @@ static class Program
     {
         BrowserFileDialogs.NewWorkDir();
         App.CreateDialogs = topLevel => new BrowserFileDialogs(topLevel);
-        TextToSpeech.PrepareAsync = BrowserInterop.LoadSpeechAsync;
+        TextToSpeech.LoadAsync = BrowserInterop.LoadSpeechAsync;
+        TextToSpeech.NaturalSynthesizer = async (language, text) => Convert.FromBase64String(await BrowserInterop.SpeakNaturalAsync(language, text));
         TextToSpeech.Synthesizer = BrowserInterop.Speak;
         Audio.Device = new BrowserAudio();
         MainWindowViewModel.AutoSaveStore = new BrowserAutoSaveStore();

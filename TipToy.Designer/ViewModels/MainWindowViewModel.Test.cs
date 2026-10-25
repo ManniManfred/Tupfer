@@ -122,9 +122,8 @@ public partial class MainWindowViewModel
         int id = _testPlayId;
         var file = Project.ToFile(BaseDir);
         var language = string.IsNullOrWhiteSpace(Project.Language) ? "en" : Project.Language;
-        if (TextToSpeech.PrepareAsync is { } prepare && names.Any(n => file.Speak.Any(s => s.Name == n && s.Recording == null)))
-            await prepare(language);
-        var tts = new TextToSpeech(TtsCacheDir, LogFromAnyThread);
+        var tts = new TextToSpeech(TtsCacheDir, LogFromAnyThread, Notice);
+        await tts.PrepareAsync(language, file.Speak.Where(s => names.Contains(s.Name) && string.IsNullOrEmpty(s.Recording)).Select(s => s.Text));
         foreach (var name in names)
         {
             byte[] data;
