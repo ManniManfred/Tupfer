@@ -12,7 +12,6 @@ namespace Tupfer.Designer;
 class BrowserAutoSaveStore : IAutoSaveStore
 {
     const string Root = "/tupfer";
-    const string OldRoot = "/tiptoy";
     string? _json;
     string? _mediaKey;
 
@@ -53,13 +52,6 @@ class BrowserAutoSaveStore : IAutoSaveStore
         var snapshot = JsonSerializer.Deserialize<AutoSaveSnapshot>(json);
         if (snapshot == null)
             return null;
-        // Stand aus der Zeit vor der Umbenennung: Arbeitsverzeichnis hieß /tiptoy
-        snapshot = snapshot with
-        {
-            FilePath = snapshot.FilePath == null ? null : Migrate(snapshot.FilePath),
-            BaseDir = Migrate(snapshot.BaseDir),
-            CurrentDirectory = Migrate(snapshot.CurrentDirectory),
-        };
 
         var media = Convert.FromBase64String(await BrowserInterop.AutoSaveLoadMediaAsync());
         if (media.Length > 0)
@@ -74,6 +66,4 @@ class BrowserAutoSaveStore : IAutoSaveStore
         _json = json;
         return snapshot;
     }
-
-    static string Migrate(string path) => path.StartsWith(OldRoot + "/") ? Root + path[OldRoot.Length..] : path;
 }

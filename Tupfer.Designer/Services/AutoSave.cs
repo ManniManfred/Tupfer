@@ -26,15 +26,11 @@ public interface IAutoSaveStore
 public class FileAutoSaveStore : IAutoSaveStore
 {
     readonly string _path;
-    readonly string? _oldPath;
     string? _last;
 
     public FileAutoSaveStore(string? path = null)
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _path = path ?? Path.Combine(appData, "TupferDesigner", "autosave.json");
-        // Stand aus der Zeit vor der Umbenennung (TipToy Designer) einmalig übernehmen
-        _oldPath = path == null ? Path.Combine(appData, "TipToyDesigner", "autosave.json") : null;
+        _path = path ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TupferDesigner", "autosave.json");
     }
 
     public async Task SaveAsync(AutoSaveSnapshot snapshot)
@@ -52,10 +48,9 @@ public class FileAutoSaveStore : IAutoSaveStore
 
     public async Task<AutoSaveSnapshot?> LoadAsync()
     {
-        var path = File.Exists(_path) ? _path : _oldPath;
-        if (path == null || !File.Exists(path))
+        if (!File.Exists(_path))
             return null;
-        var json = await File.ReadAllTextAsync(path);
+        var json = await File.ReadAllTextAsync(_path);
         _last = json;
         return JsonSerializer.Deserialize<AutoSaveSnapshot>(json);
     }

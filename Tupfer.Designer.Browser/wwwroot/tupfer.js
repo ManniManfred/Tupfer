@@ -94,8 +94,7 @@ let pendingMedia = null;
 
 function autosaveStore(mode) {
     database ??= new Promise((resolve, reject) => {
-        // Name aus der Zeit vor der Umbenennung: So bleibt der gespeicherte Stand erhalten
-        const request = indexedDB.open('tiptoy', 1);
+        const request = indexedDB.open('tupfer', 1);
         request.onupgradeneeded = () => request.result.createObjectStore('autosave');
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
@@ -243,10 +242,8 @@ function loadScript(url) {
 
 /** Lädt eine Datei, beim ersten Mal aus dem Netz, danach aus dem Cache-Speicher des Browsers. */
 async function fetchCached(url) {
-    // Name aus der Zeit vor der Umbenennung: Bereits geladene Stimmen bleiben erhalten
-    const cache = 'caches' in window ? await caches.open('tiptoy-piper') : null;
-    // Früher von der Version v1.0.0 geladene Stimmen weiterverwenden
-    let response = cache && (await cache.match(url) ?? await cache.match(url.replace('/resolve/main/', '/resolve/v1.0.0/')));
+    const cache = 'caches' in window ? await caches.open('tupfer-piper') : null;
+    let response = cache && await cache.match(url);
     if (!response) {
         try {
             response = await fetch(url);
