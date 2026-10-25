@@ -42,6 +42,7 @@ public class CompilerTests
         }
     }
 
+    /// <summary>Programme/tic-tac-toi.yaml ist das ursprüngliche, von Hand geschriebene tttool-Spiel.</summary>
     [Fact]
     public void TicTacToe_klingt_wie_die_Original_YAML()
     {

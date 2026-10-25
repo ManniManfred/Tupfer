@@ -11,7 +11,6 @@
     <Compile Remove="Programme/**" />
     <None Include="Programme/**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../examples/tic-tac-toi-csharp/TicTacToe.cs" Link="Programme/TicTacToe.cs" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../tic-tac-toi.yaml" Link="Programme/tic-tac-toi.yaml" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../examples/tic-tac-toi/tic-tac-toi.tiptoy.json" Link="Programme/tic-tac-toi.tiptoy.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

@@ -62,8 +62,15 @@ public partial class MainWindowViewModel
         AreaTarget.Product => TestRestart(),
         AreaTarget.Replay => TestReplay(),
         AreaTarget.Stop => StopTask(),
-        _ => RunTest(() => _pen.Tap(area.Script)),
+        _ when area.Script is { } script => RunTest(() => _pen.Tap(script)),
+        _ => NoScript(area),
     };
+
+    Task NoScript(AreaViewModel area)
+    {
+        AddTrace([$"Fläche „{area.Caption}“ ist keinem Skript zugeordnet"]);
+        return Task.CompletedTask;
+    }
 
     Task StopTask()
     {
