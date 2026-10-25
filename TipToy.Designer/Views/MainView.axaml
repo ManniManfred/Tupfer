@@ -250,15 +250,15 @@
                     <TextBox Grid.Column="2" Text="{Binding HeightMm}" />
                   </Grid>
                   <StackPanel IsVisible="{Binding HasLayers}">
-                    <TextBlock Classes="label" Text="Bilder und Texte (oberstes zuerst, am Griff links ziehen zum Umsortieren)" TextWrapping="Wrap" />
+                    <TextBlock Classes="label" Text="Bilder und Texte (oberstes zuerst) – zum Umsortieren ziehen, per Finger am Griff" TextWrapping="Wrap" />
                     <ItemsControl x:Name="LayerList" ItemsSource="{Binding Layers}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:ElementViewModel">
                           <Grid ColumnDefinitions="Auto,*">
-                            <Border Classes="draghandle" ToolTip.Tip="Ziehen: Reihenfolge ändern">
-                              <PathIcon Data="{StaticResource IconDragHandle}" Width="14" Height="14" Foreground="{StaticResource TextSecondary}" />
+                            <Border Classes="draghandle">
+                              <PathIcon Data="{StaticResource IconDragHandle}" Width="16" Height="16" Foreground="{StaticResource TextSecondary}" />
                             </Border>
-                            <Button Grid.Column="1" Classes="layer" Classes.selected="{Binding IsSelected}" ToolTip.Tip="Auswählen (auch wenn es verdeckt ist)"
+                            <Button Grid.Column="1" Classes="layer" Classes.selected="{Binding IsSelected}"
                                     Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectElementCommand}"
                                     CommandParameter="{Binding}">
                               <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />

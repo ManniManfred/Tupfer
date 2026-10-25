@@ -159,14 +159,21 @@
     </Style>
     <Style Selector="Border.draghandle">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Padding" Value="6,0" />
+      <Setter Property="Padding" Value="10,0" />
       <Setter Property="Cursor" Value="SizeNorthSouth" />
     </Style>
-    <Style Selector="ItemsControl.dragging Button.layer.selected">
-      <Setter Property="Opacity" Value="0.7" />
+    <Style Selector="ItemsControl.dragging">
+      <Setter Property="Cursor" Value="SizeNorthSouth" />
     </Style>
     <Style Selector="Button.layer.selected">
       <Setter Property="Background" Value="#F8C9AE" />
+    </Style>
+    <!-- Auch unter dem Mauszeiger und beim Ziehen als gewählt erkennbar (die Vorlage überschreibt sonst den Hintergrund) -->
+    <Style Selector="Button.layer.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#F6B892" />
+    </Style>
+    <Style Selector="ItemsControl.dragging Button.layer.selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#F4A57A" />
     </Style>
 
     <!-- Reiter -->

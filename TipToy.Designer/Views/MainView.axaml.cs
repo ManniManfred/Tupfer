@@ -89,37 +89,64 @@ public partial class MainView : UserControl
         e.Handled = true;
     }
 
-    // ---------- Ebenen-Liste: Umsortieren per Drag & Drop am Griff ----------
+    // ---------- Ebenen-Liste: Umsortieren per Drag & Drop ----------
+
+    /// <summary>Ab dieser Strecke (Pixel) wird aus einem Klick auf einen Eintrag ein Ziehen.</summary>
+    const double LayerDragDistance = 4;
 
     ElementViewModel? _layerDrag;
+    (ElementViewModel Element, Point Start)? _layerPress;
 
     void OnLayerDragStart(object? sender, PointerPressedEventArgs e)
     {
-        if (e.Source is not Visual source
-            || source.GetSelfAndVisualAncestors().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("draghandle")) is not { } handle
-            || handle.DataContext is not ElementViewModel element
-            || DataContext is not MainWindowViewModel vm || vm.Project.SelectedPage is not { } page)
+        if (e.Source is not Visual source || !e.GetCurrentPoint(LayerList).Properties.IsLeftButtonPressed)
+            return;
+        var row = source.GetSelfAndVisualAncestors().OfType<StyledElement>().FirstOrDefault(v => v.DataContext is ElementViewModel);
+        if (row?.DataContext is not ElementViewModel element)
+            return;
+        bool onHandle = source.GetSelfAndVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("draghandle"));
+        if (onHandle)
+        {
+            BeginLayerDrag(element, e.Pointer);
+            e.Handled = true;
+        }
+        else if (e.Pointer.Type != PointerType.Touch)
+        {
+            // Maus und Stift: der ganze Eintrag, sobald er ein Stück gezogen wird (sonst ist es ein Klick).
+            // Per Finger nur am Griff, damit Wischen über die Liste weiter den Bereich scrollt.
+            _layerPress = (element, e.GetPosition(LayerList));
+        }
+    }
+
+    void BeginLayerDrag(ElementViewModel element, IPointer pointer)
+    {
+        if (DataContext is not MainWindowViewModel vm)
             return;
         vm.SelectElementCommand.Execute(element);
         _layerDrag = element;
+        _layerPress = null;
         vm.Project.History.BeginChange();
         // Die Liste selbst fängt den Zeiger: Die Einträge werden beim Umsortieren neu erzeugt
-        e.Pointer.Capture(LayerList);
+        pointer.Capture(LayerList);
         LayerList.Classes.Add("dragging");
-        e.Handled = true;
     }
 
     void OnLayerDragMove(object? sender, PointerEventArgs e)
     {
-        if (_layerDrag == null || DataContext is not MainWindowViewModel { Project.SelectedPage: { } page })
+        var pos = e.GetPosition(LayerList);
+        if (_layerDrag == null && _layerPress is { } press)
+        {
+            if (Math.Abs(pos.Y - press.Start.Y) < LayerDragDistance && Math.Abs(pos.X - press.Start.X) < LayerDragDistance)
+                return;
+            BeginLayerDrag(press.Element, e.Pointer);
+        }
+        if (_layerDrag == null || DataContext is not MainWindowViewModel { Project.SelectedPage: { } page } || page.Layers.Count == 0)
             return;
         e.Handled = true;
-        // Zieleintrag: der, über dessen Mitte der Zeiger zuletzt hinaus ist
-        double y = e.GetPosition(LayerList).Y;
-        int target = 0;
-        for (int i = 0; i < page.Layers.Count; i++)
-            if (LayerList.ContainerFromIndex(i) is { } c && y > c.Bounds.Top + c.Bounds.Height / 2)
-                target = i;
+        // Alle Einträge sind gleich hoch. Nicht die Positionen der Einträge nehmen: Nach dem Verschieben
+        // werden sie neu angelegt und haben bis zum nächsten Layout keine gültige Position.
+        double rowHeight = LayerList.Bounds.Height / page.Layers.Count;
+        int target = Math.Clamp((int)(pos.Y / rowHeight), 0, page.Layers.Count - 1);
         int from = page.Elements.IndexOf(_layerDrag), to = page.Elements.Count - 1 - target;
         if (from >= 0 && from != to)
             page.Elements.Move(from, to);
@@ -127,6 +154,7 @@ public partial class MainView : UserControl
 
     void EndLayerDrag()
     {
+        _layerPress = null;
         if (_layerDrag == null)
             return;
         _layerDrag = null;
