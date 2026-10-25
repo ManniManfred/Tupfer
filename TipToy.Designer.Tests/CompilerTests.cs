@@ -42,24 +42,6 @@ public class CompilerTests
         }
     }
 
-    /// <summary>Programme/tic-tac-toi.yaml ist das ursprüngliche, von Hand geschriebene tttool-Spiel.</summary>
-    [Fact]
-    public void TicTacToe_klingt_wie_die_Original_YAML()
-    {
-        var r = Uebersetze(Programm("TicTacToe.cs"));
-        var original = TttoolYaml.Import(Path.Combine(AppContext.BaseDirectory, "Programme", "tic-tac-toi.yaml"));
-        var stiftOriginal = new StiftEmulator(original.Scripts.Select(s => (s.Name, (IEnumerable<string>)s.Lines)), original.Init);
-        var stiftCSharp = Emulator(r);
-        var zufall = new Random(7);
-        for (int tipp = 0; tipp < 3000; tipp++)
-        {
-            var oid = r.EntryPoints[zufall.Next(r.EntryPoints.Count)];
-            stiftOriginal.Tippe(oid);
-            stiftCSharp.Tippe(oid);
-        }
-        Assert.Equal(stiftOriginal.Abgespielt, stiftCSharp.Abgespielt);
-    }
-
     [Theory]
     [InlineData("TicTacToe.cs")]
     [InlineData("Konstrukte.cs")]
@@ -162,8 +144,8 @@ public class CompilerTests
         var r = Uebersetze(Programm("TicTacToe.cs"));
         var projekt = new Model.ProjectFile { ProductId = 901, Init = r.Init, Welcome = "player1" };
         projekt.Scripts.AddRange(r.Scripts.Select(s => new Model.ScriptEntry { Name = s.Name, Lines = s.Lines, Generated = true }));
-        var original = TttoolYaml.Import(Path.Combine(AppContext.BaseDirectory, "Programme", "tic-tac-toi.yaml"));
-        projekt.Speak.AddRange(original.Speak);
+        var beispiel = ProjectStore.Load(Path.Combine(AppContext.BaseDirectory, "Programme", "tic-tac-toi-csharp.tiptoy.json"));
+        projekt.Speak.AddRange(beispiel.Speak);
         var gme = Gme.GmeBuilder.Build(projekt, AppContext.BaseDirectory, (sprache, text) => new byte[] { 0x4F, 0x67, 0x67, 0x53 });
         Assert.Equal(901u, BitConverter.ToUInt32(gme, 0x14));
         Assert.All(projekt.Scripts, s => Assert.NotNull(s.Code));

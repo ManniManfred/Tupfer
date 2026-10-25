@@ -19,7 +19,7 @@
   Sprachausgabe mit meSpeak in `wwwroot/`) liegen nur dort. Ohne C#-Übersetzer (kein Roslyn):
   `Compiler/ProgramCompiler.cs` wird durch einen Platzhalter ersetzt. Braucht `dotnet workload install wasm-tools`:
   `dotnet publish TipToy.Designer.Browser -c Release -o publish`
-- Tests (u. a. C#-Übersetzer gegen natives C# und Original-YAML): `dotnet test TipToy.Designer.Tests`
+- Tests (u. a. C#-Übersetzer gegen natives C#): `dotnet test TipToy.Designer.Tests`
 - OID-Erzeugung (`TipToy.Designer/Oid/`) und GME-Erstellung (`TipToy.Designer/Gme/`) sind
   Portierungen von tttool (github.com/entropia/tip-toi-reveng, Referenz: Version 1.11).
   Sie müssen pixel- bzw. byteweise mit `tttool oid-code` und `tttool assemble --no-date`

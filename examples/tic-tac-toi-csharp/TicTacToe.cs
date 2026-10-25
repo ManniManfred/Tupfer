@@ -1,5 +1,5 @@
 // Tic-Tac-Toe für den tiptoi-Stift – als C#-Programm für den TipToy Designer.
-// Gleiches Verhalten wie das ursprüngliche tttool-Spiel (TipToy.Designer.Tests/Programme/tic-tac-toi.yaml): zwei Spieler tippen abwechselnd auf die neun Felder.
+// Zwei Spieler tippen abwechselnd auf die neun Felder.
 
 class TicTacToe : TipToi
 {

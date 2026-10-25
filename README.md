@@ -206,8 +206,7 @@ verteilt, die per Sprung (`J`) folgen; der Stift springt erst, wenn die laufende
 
 `examples/tic-tac-toi-csharp/` enthält Tic-Tac-Toe als C#-Programm. Die Datei `TipToi.cs` dort
 liefert IntelliSense in der IDE. Die Tests in `TipToy.Designer.Tests` vergleichen das übersetzte
-Programm mit dem echten C#-Programm und mit dem ursprünglichen tttool-Spiel
-(`Programme/tic-tac-toi.yaml`; `dotnet test TipToy.Designer.Tests`).
+Programm mit dem echten C#-Programm (`dotnet test TipToy.Designer.Tests`).
 
 ## Drucker testen
 
