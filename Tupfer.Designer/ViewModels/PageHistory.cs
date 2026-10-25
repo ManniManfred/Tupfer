@@ -17,7 +17,7 @@ public partial class PageHistory : ObservableObject
 
     static readonly JsonSerializerOptions Options = new() { Converters = { new JsonStringEnumConverter() } };
 
-    record Step(PageViewModel Page, string State, int Area, int Element);
+    record Step(PageViewModel Page, string State, int[] Areas, int[] Elements);
 
     readonly ProjectViewModel _project;
     readonly List<Step> _undo = new();
@@ -55,15 +55,17 @@ public partial class PageHistory : ObservableObject
 
     static string Serialize(PageViewModel page) => JsonSerializer.Serialize(page.ToEntry(null), Options);
 
-    Step Capture(PageViewModel page) =>
-        new(page, _state, page.SelectedArea is { } a ? page.Areas.IndexOf(a) : -1,
-            page.SelectedElement is { } e ? page.Elements.IndexOf(e) : -1);
+    Step Capture(PageViewModel page)
+    {
+        var (areas, elements) = page.SelectionIndices();
+        return new(page, _state, areas, elements);
+    }
 
     void OnChanged(object sender, string? property)
     {
         if (_restoring || _page == null || _batch > 0)
             return;
-        if (property is nameof(PageViewModel.SelectedArea) or nameof(PageViewModel.SelectedElement))
+        if (property is nameof(PageViewModel.SelectedArea) or nameof(PageViewModel.SelectedElement) or nameof(PageViewModel.Selection))
         {
             // Nach einem Wechsel der Auswahl beginnt ein neuer Schritt
             _lastChange = null;
@@ -143,7 +145,7 @@ public partial class PageHistory : ObservableObject
             _restoring = true;
             try
             {
-                step.Page.Restore(JsonSerializer.Deserialize<PageEntry>(step.State, Options)!, null, step.Area, step.Element);
+                step.Page.Restore(JsonSerializer.Deserialize<PageEntry>(step.State, Options)!, null, step.Areas, step.Elements);
             }
             finally
             {

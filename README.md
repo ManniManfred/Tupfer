@@ -93,6 +93,11 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   verschieben und in der Größe ändern – als Rechteck, Kreis/Ellipse oder beliebiges Polygon, dessen
   Kanten sich zu Kreisbögen biegen lassen. Jede Fläche wird einem Skript oder einem Sondercode
   (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.
+- **Mehrere Objekte anordnen:** Mit Strg- oder Umschalt-Klick (auf dem Handy: *Mehrere wählen*)
+  bzw. Strg+A mehrere Flächen, Bilder und Texte wählen. Sie lassen sich gemeinsam verschieben (Ziehen,
+  Pfeiltasten) und löschen, links/rechts/oben/unten bündig oder mittig **ausrichten** und ab drei
+  Objekten mit gleichen Abständen **verteilen** (rechte Spalte oder *Bearbeiten → Ausrichten*).
+  Ein einzelnes Objekt wird an der Seite ausgerichtet, z. B. waagerecht zentriert.
 - **Skripte:** tttool-Skripte bearbeiten, mit Kurzreferenz der Befehle.
 - **Programm (C#):** Spiellogik in C# schreiben statt in der Skriptsprache (siehe unten).
 - **Sprachausgabe:** Texte, die beim Bauen per Text-to-Speech vertont werden, mit Knopf zum Anhören.

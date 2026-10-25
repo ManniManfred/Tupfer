@@ -146,6 +146,38 @@
                       IsEnabled="{Binding Project.SelectedPage.HasSelection, FallbackValue=False}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconDelete}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="_Alles auswählen" InputGesture="Ctrl+A" Command="{Binding SelectAllCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconSelectMultiple}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="A_usrichten" IsEnabled="{Binding Project.SelectedPage.HasSelection, FallbackValue=False}">
+              <MenuItem Header="_Links" Command="{Binding AlignCommand}" CommandParameter="Left">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconAlignLeft}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="_Horizontal zentriert" Command="{Binding AlignCommand}" CommandParameter="CenterX">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconAlignCenterX}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="_Rechts" Command="{Binding AlignCommand}" CommandParameter="Right">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconAlignRight}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="_Oben" Command="{Binding AlignCommand}" CommandParameter="Top">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconAlignTop}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="_Vertikal zentriert" Command="{Binding AlignCommand}" CommandParameter="CenterY">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconAlignCenterY}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="_Unten" Command="{Binding AlignCommand}" CommandParameter="Bottom">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconAlignBottom}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <Separator />
+              <MenuItem Header="Horizontal _verteilen" Command="{Binding DistributeCommand}" CommandParameter="Horizontal"
+                        IsEnabled="{Binding Project.SelectedPage.CanDistribute, FallbackValue=False}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconDistributeX}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="Vertikal v_erteilen" Command="{Binding DistributeCommand}" CommandParameter="Vertical"
+                        IsEnabled="{Binding Project.SelectedPage.CanDistribute, FallbackValue=False}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconDistributeY}" Width="14" Height="14" /></MenuItem.Icon>
+              </MenuItem>
+            </MenuItem>
             <MenuItem Header="_Reihenfolge" IsEnabled="{Binding Project.SelectedPage.SelectedElement, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
               <MenuItem Header="Ganz nach _vorne" InputGesture="Ctrl+Shift+PageUp" Command="{Binding BringToFrontCommand}">
                 <MenuItem.Icon><PathIcon Data="{StaticResource IconToFront}" Width="14" Height="14" /></MenuItem.Icon>
@@ -307,7 +339,7 @@
 
                 <TextBlock Classes="label" Text="Bedienung" />
                 <TextBlock Classes="hint"
-                           Text="• Auf freier Stelle ziehen: neue OID-Fläche (Rechteck oder Kreis, Umschalt = Quadrat/Kreis)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Bild↑/↓: Bild oder Text eine Ebene nach vorne/hinten (mit Umschalt: ganz)&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben&#10;• Pfeilkreuz („Ansicht verschieben“) an: Ziehen verschiebt, zwei Finger zoomen&#10;• Doppelpfeil: Seite in die Breite einpassen&#10;• „Testen“ (F8): Flächen antippen wie mit dem Stift" />
+                           Text="• Auf freier Stelle ziehen: neue OID-Fläche (Rechteck oder Kreis, Umschalt = Quadrat/Kreis)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Strg- oder Umschalt-Klick: mehrere Objekte wählen (Strg+A: alle), dann gemeinsam verschieben, ausrichten und verteilen&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Bild↑/↓: Bild oder Text eine Ebene nach vorne/hinten (mit Umschalt: ganz)&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen&#10;• Mittlere Maustaste ziehen: Ansicht verschieben&#10;• Pfeilkreuz („Ansicht verschieben“) an: Ziehen verschiebt, zwei Finger zoomen&#10;• Doppelpfeil: Seite in die Breite einpassen&#10;• „Testen“ (F8): Flächen antippen wie mit dem Stift" />
               </StackPanel>
             </ScrollViewer>
           </Border>
@@ -326,7 +358,7 @@
                   </Button>
                   <Button Classes="tool" Command="{Binding DeleteSelectionCommand}"
                           IsEnabled="{Binding Project.SelectedPage.HasSelection, FallbackValue=False}"
-                          ToolTip.Tip="Gewählte Fläche, gewähltes Bild oder gewählten Text löschen (Entf)">
+                          ToolTip.Tip="Gewählte Flächen, Bilder und Texte löschen (Entf)">
                     <PathIcon Data="{StaticResource IconDelete}" />
                   </Button>
                   <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
@@ -343,6 +375,10 @@
                   <ToggleButton Classes="tool" IsChecked="{Binding AreasOnly}" Margin="4,0"
                                 ToolTip.Tip="Bilder und Texte sperren, um darauf OID-Flächen zu zeichnen">
                     <StackPanel><PathIcon Data="{StaticResource IconArea}" /><TextBlock Text="Nur OID-Flächen" /></StackPanel>
+                  </ToggleButton>
+                  <ToggleButton Classes="tool" IsChecked="{Binding MultiSelect}"
+                                ToolTip.Tip="Mehrere wählen: Antippen nimmt Objekte in die Auswahl auf oder entfernt sie (wie Strg-Klick)">
+                    <StackPanel><PathIcon Data="{StaticResource IconSelectMultiple}" /><TextBlock Text="Mehrere wählen" /></StackPanel>
                   </ToggleButton>
                   <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
                   <ToggleButton Classes="tool" IsChecked="{Binding RectangleTool}"
@@ -382,7 +418,7 @@
                         BoxShadow="0 4 16 0 #30000000">
                   <views:PageCanvas x:Name="PageView" Page="{Binding Project.SelectedPage}" Zoom="{Binding Zoom}"
                                     AreasOnly="{Binding AreasOnly}" CropMode="{Binding CropMode}"
-                                    AreaTool="{Binding AreaTool}"
+                                    AreaTool="{Binding AreaTool}" MultiSelect="{Binding MultiSelect}"
                                     TestMode="{Binding TestMode}" TestTapCommand="{Binding TestTapCommand}" />
                 </Border>
               </ScrollViewer>
@@ -415,15 +451,17 @@
                                      TextWrapping="Wrap" Text="{Binding TestTrace}" />
               </StackPanel>
               <StackPanel Margin="14,12" IsVisible="{Binding !TestMode}">
-                <StackPanel>
-                  <StackPanel.IsVisible>
-                    <MultiBinding Converter="{x:Static BoolConverters.And}">
-                      <Binding Path="Project.SelectedPage.SelectedArea" Converter="{x:Static ObjectConverters.IsNull}" FallbackValue="True" />
-                      <Binding Path="Project.SelectedPage.SelectedElement" Converter="{x:Static ObjectConverters.IsNull}" FallbackValue="True" />
-                    </MultiBinding>
-                  </StackPanel.IsVisible>
+                <StackPanel IsVisible="{Binding !Project.SelectedPage.HasSelection, FallbackValue=True}">
                   <TextBlock Classes="section" Text="Auswahl" />
-                  <TextBlock Classes="hint" Text="Nichts ausgewählt. Auf der Seite eine OID-Fläche, ein Bild oder einen Text anklicken – oder durch Ziehen auf freier Stelle eine neue OID-Fläche anlegen." />
+                  <TextBlock Classes="hint" Text="Nichts ausgewählt. Auf der Seite eine OID-Fläche, ein Bild oder einen Text anklicken – oder durch Ziehen auf freier Stelle eine neue OID-Fläche anlegen. Mit Strg- oder Umschalt-Klick lassen sich mehrere Objekte wählen." />
+                </StackPanel>
+
+                <!-- Mehrere Objekte -->
+                <StackPanel IsVisible="{Binding Project.SelectedPage.IsMultiSelection, FallbackValue=False}">
+                  <TextBlock Classes="section" Text="Auswahl" />
+                  <TextBlock Classes="hint" Text="{Binding Project.SelectedPage.SelectionCaption, FallbackValue=''}" />
+                  <TextBlock Classes="hint" TextWrapping="Wrap" Margin="0,4,0,0"
+                             Text="Ziehen oder Pfeiltasten verschieben alle gemeinsam. Strg- oder Umschalt-Klick nimmt Objekte hinzu oder heraus." />
                 </StackPanel>
 
                 <!-- Bild oder Text -->
@@ -593,6 +631,54 @@
                     <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
                   </Button>
                 </WrapPanel>
+
+                <!-- Ausrichten und Verteilen (ein Objekt an der Seite, mehrere aneinander) -->
+                <StackPanel IsVisible="{Binding Project.SelectedPage.HasSelection, FallbackValue=False}">
+                  <TextBlock Classes="label" Text="An der Seite ausrichten"
+                             IsVisible="{Binding !Project.SelectedPage.IsMultiSelection, FallbackValue=False}" />
+                  <TextBlock Classes="label" Text="Aneinander ausrichten"
+                             IsVisible="{Binding Project.SelectedPage.IsMultiSelection, FallbackValue=False}" />
+                  <WrapPanel>
+                    <Button Classes="tool" Command="{Binding AlignCommand}" CommandParameter="Left" ToolTip.Tip="Links ausrichten">
+                      <PathIcon Data="{StaticResource IconAlignLeft}" />
+                    </Button>
+                    <Button Classes="tool" Command="{Binding AlignCommand}" CommandParameter="CenterX" ToolTip.Tip="Horizontal zentrieren">
+                      <PathIcon Data="{StaticResource IconAlignCenterX}" />
+                    </Button>
+                    <Button Classes="tool" Command="{Binding AlignCommand}" CommandParameter="Right" ToolTip.Tip="Rechts ausrichten">
+                      <PathIcon Data="{StaticResource IconAlignRight}" />
+                    </Button>
+                    <Button Classes="tool" Command="{Binding AlignCommand}" CommandParameter="Top" ToolTip.Tip="Oben ausrichten">
+                      <PathIcon Data="{StaticResource IconAlignTop}" />
+                    </Button>
+                    <Button Classes="tool" Command="{Binding AlignCommand}" CommandParameter="CenterY" ToolTip.Tip="Vertikal zentrieren">
+                      <PathIcon Data="{StaticResource IconAlignCenterY}" />
+                    </Button>
+                    <Button Classes="tool" Command="{Binding AlignCommand}" CommandParameter="Bottom" ToolTip.Tip="Unten ausrichten">
+                      <PathIcon Data="{StaticResource IconAlignBottom}" />
+                    </Button>
+                  </WrapPanel>
+                  <StackPanel IsVisible="{Binding Project.SelectedPage.IsMultiSelection, FallbackValue=False}">
+                    <TextBlock Classes="label" Text="Verteilen (ab drei Objekten)" />
+                    <WrapPanel>
+                      <Button Classes="tool" Command="{Binding DistributeCommand}" CommandParameter="Horizontal"
+                              IsEnabled="{Binding Project.SelectedPage.CanDistribute, FallbackValue=False}"
+                              ToolTip.Tip="Horizontal verteilen: gleiche Abstände, das linke und das rechte Objekt bleiben stehen">
+                        <PathIcon Data="{StaticResource IconDistributeX}" />
+                      </Button>
+                      <Button Classes="tool" Command="{Binding DistributeCommand}" CommandParameter="Vertical"
+                              IsEnabled="{Binding Project.SelectedPage.CanDistribute, FallbackValue=False}"
+                              ToolTip.Tip="Vertikal verteilen: gleiche Abstände, das obere und das untere Objekt bleiben stehen">
+                        <PathIcon Data="{StaticResource IconDistributeY}" />
+                      </Button>
+                    </WrapPanel>
+                    <WrapPanel Classes="buttons" Margin="0,10,0,0">
+                      <Button Classes="danger" Command="{Binding DeleteSelectionCommand}">
+                        <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Alle löschen" /></StackPanel>
+                      </Button>
+                    </WrapPanel>
+                  </StackPanel>
+                </StackPanel>
               </StackPanel>
               </Panel>
             </ScrollViewer>

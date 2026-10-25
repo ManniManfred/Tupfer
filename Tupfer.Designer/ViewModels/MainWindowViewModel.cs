@@ -70,6 +70,9 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Auf der Seite nur OID-Flächen bearbeiten, Bilder und Texte sind gesperrt.</summary>
     [ObservableProperty] bool _areasOnly;
 
+    /// <summary>Klicken auf der Seite nimmt Objekte in die Auswahl auf bzw. entfernt sie (für Touch).</summary>
+    [ObservableProperty] bool _multiSelect;
+
     /// <summary>Form neuer OID-Flächen.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RectangleTool), nameof(EllipseTool), nameof(PolygonTool))]
@@ -668,14 +671,36 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
-    /// <summary>Löscht die gewählte Fläche bzw. das gewählte Bild oder den Text.</summary>
+    /// <summary>Löscht alle gewählten Flächen, Bilder und Texte.</summary>
     [RelayCommand]
     void DeleteSelection()
     {
-        if (Project.SelectedPage?.SelectedArea != null)
-            DeleteArea();
-        else
-            DeleteElement();
+        if (Project.SelectedPage is { } page)
+            Project.History.Change(page.DeleteSelection);
+    }
+
+    /// <summary>Wählt alle Flächen und – außer im Modus „Nur OID-Flächen“ – alle Bilder und Texte.</summary>
+    [RelayCommand]
+    void SelectAll() => Project.SelectedPage?.SelectAll(!AreasOnly);
+
+    /// <summary>Gewählte Objekte, die sich bearbeiten lassen (im Modus „Nur OID-Flächen“ nur Flächen).</summary>
+    List<object> ArrangeItems() =>
+        Project.SelectedPage?.Selection.Where(i => !AreasOnly || i is AreaViewModel).ToList() ?? [];
+
+    /// <summary>Richtet die gewählten Objekte aneinander aus, ein einzelnes an der Seite.</summary>
+    [RelayCommand]
+    void Align(string mode)
+    {
+        if (Project.SelectedPage is { } page && Enum.TryParse<AlignMode>(mode, out var m))
+            Project.History.Change(() => page.Align(ArrangeItems(), m));
+    }
+
+    /// <summary>Verteilt die gewählten Objekte mit gleichen Abständen („Horizontal“ oder „Vertical“).</summary>
+    [RelayCommand]
+    void Distribute(string direction)
+    {
+        if (Project.SelectedPage is { } page)
+            Project.History.Change(() => page.Distribute(ArrangeItems(), direction == "Horizontal"));
     }
 
     [RelayCommand]

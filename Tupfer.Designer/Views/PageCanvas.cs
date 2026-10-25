@@ -21,6 +21,8 @@ namespace Tupfer.Designer.Views;
 /// Bilder und Texte haben Anfasser zum Skalieren (bzw. Zuschneiden) und einen Drehgriff.
 /// Im Testmodus wird nicht bearbeitet: Antippen einer Fläche führt <see cref="TestTapCommand"/> aus.
 /// Im Modus „Nur OID-Flächen“ sind Bilder und Texte gesperrt.
+/// Strg- bzw. Umschalt-Klick (oder Klick bei <see cref="MultiSelect"/>) nimmt Objekte in die Auswahl auf
+/// oder entfernt sie; mehrere gewählte Objekte werden gemeinsam verschoben.
 /// </summary>
 public class PageCanvas : Control
 {
@@ -46,6 +48,10 @@ public class PageCanvas : Control
     public static readonly StyledProperty<bool> TestModeProperty =
         AvaloniaProperty.Register<PageCanvas, bool>(nameof(TestMode));
 
+    /// <summary>Klicken nimmt Objekte in die Auswahl auf bzw. entfernt sie (wie Strg-Klick, für Touch).</summary>
+    public static readonly StyledProperty<bool> MultiSelectProperty =
+        AvaloniaProperty.Register<PageCanvas, bool>(nameof(MultiSelect));
+
     /// <summary>Wird im Testmodus mit der angetippten Fläche ausgeführt.</summary>
     public static readonly StyledProperty<ICommand?> TestTapCommandProperty =
         AvaloniaProperty.Register<PageCanvas, ICommand?>(nameof(TestTapCommand));
@@ -56,7 +62,7 @@ public class PageCanvas : Control
     const double Grid = 0.5;
     const double MinSizeMm = 3;
 
-    enum DragMode { None, Create, Move, Resize, MoveElement, ScaleElement, RotateElement, MoveVertex, BendEdge }
+    enum DragMode { None, Create, Move, Resize, MoveElement, ScaleElement, RotateElement, MoveVertex, BendEdge, MoveSelection }
 
     /// <summary>Unter dieser Stichhöhe (mm) wird eine gebogene Kante wieder gerade.</summary>
     const double StraightSnapMm = 0.3;
@@ -78,6 +84,16 @@ public class PageCanvas : Control
     Point _startMm;
     AreaEntry? _startRect;
     ElementEntry? _startElement;
+
+    /// <summary>Lage der gewählten Objekte zu Beginn des gemeinsamen Verschiebens.</summary>
+    readonly Dictionary<object, Point> _startPositions = new();
+
+    /// <summary>Beim gemeinsamen Verschieben angeklicktes Objekt und ob es tatsächlich bewegt wurde.</summary>
+    object? _clicked;
+    bool _toggleClicked;
+    bool _moved;
+
+    static readonly IPen GroupPen = new Pen(new SolidColorBrush(Color.FromRgb(220, 110, 0)), 1, new DashStyle(new double[] { 4, 3 }, 0));
 
     /// <summary>Gezogener Anfasser: -1/0/1 je Richtung, (0, -2) = Drehgriff.</summary>
     (int X, int Y) _handle;
@@ -135,6 +151,12 @@ public class PageCanvas : Control
     {
         get => GetValue(TestModeProperty);
         set => SetValue(TestModeProperty, value);
+    }
+
+    public bool MultiSelect
+    {
+        get => GetValue(MultiSelectProperty);
+        set => SetValue(MultiSelectProperty, value);
     }
 
     public ICommand? TestTapCommand
@@ -249,16 +271,32 @@ public class PageCanvas : Control
         }
 
         foreach (var area in page.Areas)
-            DrawArea(ctx, area, area == page.SelectedArea && !TestMode);
+            DrawArea(ctx, area, !TestMode && page.Selection.Contains(area), area == page.SelectedArea && !TestMode);
 
         if (_drawing != null)
             DrawPolygonInProgress(ctx, _drawing);
 
         if (!ElementsLocked && page.SelectedElement is { } sel)
             DrawSelection(ctx, sel);
+
+        if (page.IsMultiSelection && !TestMode)
+            DrawMultiSelection(ctx, page);
     }
 
-    void DrawArea(DrawingContext ctx, AreaViewModel area, bool selected)
+    /// <summary>Mehrere gewählte Objekte: Rahmen der Bilder und Texte und gestrichelt das Rechteck um alle.</summary>
+    void DrawMultiSelection(DrawingContext ctx, PageViewModel page)
+    {
+        var items = page.Selection.Where(i => !ElementsLocked || i is AreaViewModel).ToList();
+        foreach (var e in items.OfType<ElementViewModel>())
+            using (ctx.PushTransform(ImageConverter.RotationAround(ToPx(e.Center), e.Rotation)))
+                ctx.DrawRectangle(ElementPen, LocalRectPx(e));
+        if (items.Count < 2)
+            return;
+        var b = items.Select(PageViewModel.BoundsOf).Aggregate((x, y) => x.Union(y));
+        ctx.DrawRectangle(GroupPen, new Rect(b.X * Scale, b.Y * Scale, b.Width * Scale, b.Height * Scale).Inflate(3));
+    }
+
+    void DrawArea(DrawingContext ctx, AreaViewModel area, bool selected, bool handles)
     {
         var r = ToPx(area);
         var fill = area == _tapped ? TappedFill : selected ? SelectedFill : area.Oid == null ? AreaFillInvalid : AreaFill;
@@ -282,7 +320,7 @@ public class PageCanvas : Control
         ctx.FillRectangle(LabelBackground, new Rect(origin.X - 2, origin.Y - 1, Math.Min(text.Width + 4, r.Width - 2), Math.Min(text.Height + 2, r.Height - 2)));
         ctx.DrawText(text, origin);
 
-        if (!selected)
+        if (!handles)
             return;
         ctx.FillRectangle(Brushes.DarkOrange, AreaHandleRect(r));
         if (area.IsPolygon)
@@ -471,8 +509,22 @@ public class PageCanvas : Control
 
         History?.BeginChange();
         _pointer = e.Pointer;
+        var mods = e.KeyModifiers;
+        bool toggle = MultiSelect || mods.HasFlag(KeyModifiers.Control) || mods.HasFlag(KeyModifiers.Shift) || mods.HasFlag(KeyModifiers.Meta);
+        var hitItem = HitItem(page, _startMm);
 
-        if (page.SelectedArea is { IsPolygon: true } poly && HitPolygonHandle(poly, pos) is { } ph)
+        if (hitItem != null && page.IsMultiSelection && page.Selection.Contains(hitItem))
+        {
+            // Mehrere gewählte Objekte gemeinsam verschieben; ein Klick ohne Ziehen wählt (bzw. entfernt) nur dieses
+            _mode = DragMode.MoveSelection;
+            _clicked = hitItem;
+            _toggleClicked = toggle;
+            _moved = false;
+            _startPositions.Clear();
+            foreach (var item in page.Selection.Where(i => !ElementsLocked || i is AreaViewModel))
+                _startPositions[item] = PageViewModel.BoundsOf(item).TopLeft;
+        }
+        else if (page.SelectedArea is { IsPolygon: true } poly && HitPolygonHandle(poly, pos) is { } ph)
         {
             _vertex = ph.Index;
             if (e.ClickCount == 2)
@@ -498,6 +550,20 @@ public class PageCanvas : Control
         {
             _mode = DragMode.Resize;
             _startRect = sel.ToEntry();
+        }
+        else if (toggle && hitItem != null)
+        {
+            page.ToggleSelection(hitItem);
+            EndDrag();
+            e.Handled = true;
+            return;
+        }
+        else if (MultiSelect)
+        {
+            // Im Auswahlmodus legt Ziehen auf freier Stelle keine Fläche an
+            EndDrag();
+            e.Handled = true;
+            return;
         }
         else if (page.Areas.LastOrDefault(a => a.Contains(_startMm.X, _startMm.Y)) is { } hit)
         {
@@ -536,6 +602,11 @@ public class PageCanvas : Control
         e.Pointer.Capture(this);
         e.Handled = true;
     }
+
+    /// <summary>Oberstes Objekt an der Stelle: Flächen liegen über Bildern und Texten.</summary>
+    object? HitItem(PageViewModel page, Point mm) =>
+        (object?)page.Areas.LastOrDefault(a => a.Contains(mm.X, mm.Y))
+        ?? (ElementsLocked ? null : page.Elements.LastOrDefault(el => el.Contains(mm, 1 / Scale)));
 
     /// <summary>Im Testmodus angetippte Fläche (wird kurz hervorgehoben).</summary>
     AreaViewModel? _tapped;
@@ -699,6 +770,17 @@ public class PageCanvas : Control
                 area.Width = Snap(Math.Max(MinSizeMm, _startRect.Width + pos.X - _startMm.X));
                 area.Height = Snap(Math.Max(MinSizeMm, _startRect.Height + pos.Y - _startMm.Y));
                 break;
+            case DragMode.MoveSelection:
+                var delta = page.ClampMove(_startPositions.Keys,
+                    new Vector(Snap(raw.X - _startMm.X), Snap(raw.Y - _startMm.Y)));
+                if (delta != default)
+                    _moved = true;
+                foreach (var (item, start) in _startPositions)
+                {
+                    var b = PageViewModel.BoundsOf(item);
+                    PageViewModel.MoveBy(item, start.X + delta.X - b.X, start.Y + delta.Y - b.Y);
+                }
+                break;
             case DragMode.MoveElement when _startElement != null && page.SelectedElement is { } el:
                 // Bilder dürfen über den Seitenrand hinausragen
                 el.X = Snap(_startElement.X + raw.X - _startMm.X);
@@ -736,6 +818,8 @@ public class PageCanvas : Control
         if (page.SelectedArea is { } area && AreaHandleRect(ToPx(area)).Inflate(_slop + 1).Contains(px))
             return CornerCursor;
         if (!ElementsLocked && page.SelectedElement is { } sel && sel.Contains(ToMm(px)))
+            return MoveCursor;
+        if (page.IsMultiSelection && HitItem(page, ToMm(px)) is { } item && page.Selection.Contains(item))
             return MoveCursor;
         return Cursor.Default;
     }
@@ -804,6 +888,15 @@ public class PageCanvas : Control
         // Nach dem Skalieren den Rahmen eines Polygons wieder eng an den Umriss legen (Bögen)
         if (_mode == DragMode.Resize && Page?.SelectedArea is { IsPolygon: true } scaled)
             UpdatePoints(scaled, points => points);
+        if (_mode == DragMode.MoveSelection && !_moved && _clicked != null && Page is { } p)
+        {
+            if (_toggleClicked)
+                p.ToggleSelection(_clicked);
+            else
+                p.Select([_clicked]);
+        }
+        _startPositions.Clear();
+        _clicked = null;
         _startRect = null;
         _startElement = null;
         EndDrag();
@@ -847,8 +940,40 @@ public class PageCanvas : Control
             return;
         }
 
+        if (e.Key == Key.A && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)))
+        {
+            page.SelectAll(!ElementsLocked);
+            e.Handled = true;
+            return;
+        }
+
         double step = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 5 : 0.5;
-        if (page.SelectedArea is { } area)
+        if (page.IsMultiSelection)
+        {
+            var items = page.Selection.Where(i => !ElementsLocked || i is AreaViewModel).ToList();
+            Vector? move = e.Key switch
+            {
+                Key.Left => new Vector(-step, 0),
+                Key.Right => new Vector(step, 0),
+                Key.Up => new Vector(0, -step),
+                Key.Down => new Vector(0, step),
+                _ => null,
+            };
+            switch (e.Key)
+            {
+                case Key.Delete:
+                case Key.Back:
+                    History?.Change(page.DeleteSelection);
+                    break;
+                case Key.Escape: page.Select([]); break;
+                case var _ when move is { } m:
+                    var d = page.ClampMove(items, m);
+                    History?.Change(() => items.ForEach(i => PageViewModel.MoveBy(i, d.X, d.Y)));
+                    break;
+                default: return;
+            }
+        }
+        else if (page.SelectedArea is { } area)
         {
             switch (e.Key)
             {

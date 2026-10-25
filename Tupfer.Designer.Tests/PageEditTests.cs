@@ -196,4 +196,135 @@ public class PageEditTests
         page.SelectedArea = new AreaViewModel(page.Project);
         Assert.False(b.IsSelected);
     }
+
+    static AreaViewModel AddArea(PageViewModel page, double x, double y, double w, double h)
+    {
+        var a = new AreaViewModel(page.Project) { X = x, Y = y, Width = w, Height = h };
+        page.Areas.Add(a);
+        return a;
+    }
+
+    [Fact]
+    public void MehrfachauswahlUndEinzelauswahl()
+    {
+        var (_, page) = NewProject();
+        var text = AddText(page);
+        var area = AddArea(page, 10, 10, 20, 20);
+
+        page.SelectedElement = text;
+        Assert.Equal([text], page.Selection);
+        Assert.True(text.IsSelected);
+
+        // Hinzunehmen: keine Einzelauswahl mehr
+        page.ToggleSelection(area);
+        Assert.True(page.IsMultiSelection);
+        Assert.Null(page.SelectedElement);
+        Assert.Null(page.SelectedArea);
+        Assert.True(text.IsSelected);
+
+        // Herausnehmen: das übrige ist wieder einzeln gewählt
+        page.ToggleSelection(text);
+        Assert.Same(area, page.SelectedArea);
+        Assert.False(text.IsSelected);
+
+        // Eine normale Auswahl ersetzt die Mehrfachauswahl
+        page.ToggleSelection(text);
+        page.SelectedElement = text;
+        Assert.Equal([text], page.Selection);
+
+        // Entfernte Objekte fallen aus der Auswahl
+        page.SelectAll(true);
+        Assert.Equal(2, page.Selection.Count);
+        page.Elements.Remove(text);
+        Assert.Same(area, page.SelectedArea);
+
+        page.SelectAll(true);
+        page.DeleteSelection();
+        Assert.Empty(page.Areas);
+        Assert.False(page.HasSelection);
+    }
+
+    [Fact]
+    public void AusrichtenAneinanderUndAnDerSeite()
+    {
+        var (project, page) = NewProject();
+        var a = AddArea(page, 30, 10, 20, 10);
+        var b = AddArea(page, 50, 40, 40, 20);
+        var t = AddText(page);
+        t.X = 70;
+        t.Y = 100;
+        page.Select([a, b, t]);
+
+        project.History.Change(() => page.Align(page.Selection, AlignMode.Left));
+        Assert.Equal([30.0, 30, 30], [a.X, b.X, t.X]);
+        project.History.Change(() => page.Align(page.Selection, AlignMode.Right));
+        Assert.Equal([50.0, 30, 30], [a.X, b.X, t.X]);
+        project.History.Change(() => page.Align(page.Selection, AlignMode.CenterY));
+        // Umschließend 10 … 110, Mitte 60
+        Assert.Equal([55.0, 50, 55], [a.Y, b.Y, t.Y]);
+
+        // Rückgängig stellt Lage und Auswahl wieder her (mit neu aufgebauten Objekten)
+        project.History.Undo();
+        (a, b, t) = (page.Areas[0], page.Areas[1], page.Elements[0]);
+        Assert.Equal([10.0, 40, 100], [a.Y, b.Y, t.Y]);
+        Assert.Equal([a, b, t], page.Selection.OrderBy(i => i is ElementViewModel));
+        project.History.Undo();
+        (a, b, t) = (page.Areas[0], page.Areas[1], page.Elements[0]);
+        Assert.Equal([30.0, 30, 30], [a.X, b.X, t.X]);
+
+        // Ein einzelnes Objekt richtet sich an der Seite aus (A4)
+        page.SelectedArea = b;
+        page.Align(page.Selection, AlignMode.CenterX);
+        page.Align(page.Selection, AlignMode.Bottom);
+        Assert.Equal(85, b.X);
+        Assert.Equal(277, b.Y);
+    }
+
+    [Fact]
+    public void AusrichtenNutztDenUmrissGedrehterElemente()
+    {
+        var (_, page) = NewProject();
+        var area = AddArea(page, 10, 10, 20, 20);
+        var t = AddText(page);
+        t.X = 50;
+        t.Y = 50;
+        t.Rotation = 90;
+        // Gedreht ist der Text 10 breit und 40 hoch, mit der Mitte bei (70, 55): links bei 65
+        page.Select([area, t]);
+        page.Align(page.Selection, AlignMode.Left);
+        Assert.Equal(10, t.Bounds().Left, 6);
+        Assert.Equal(-5, t.X, 6);
+    }
+
+    [Fact]
+    public void VerteilenMitGleichenAbstaenden()
+    {
+        var (_, page) = NewProject();
+        var a = AddArea(page, 10, 0, 10, 10);
+        var b = AddArea(page, 25, 0, 30, 10);
+        var c = AddArea(page, 100, 0, 20, 10);
+        var d = AddArea(page, 60, 0, 10, 10);
+        page.Select([c, a, d, b]);
+        page.Distribute(page.Selection, horizontal: true);
+        // Spanne 10 … 120, Breiten zusammen 70: drei Lücken zu je 40/3
+        Assert.Equal(10, a.X);
+        Assert.Equal(Math.Round(20 + 40.0 / 3, 2), b.X);
+        Assert.Equal(Math.Round(50 + 80.0 / 3, 2), d.X);
+        Assert.Equal(100, c.X);
+
+        // Zwei Objekte bleiben stehen
+        page.Select([a, b]);
+        page.Distribute(page.Selection, horizontal: false);
+        Assert.Equal(0, b.Y);
+    }
+
+    [Fact]
+    public void GemeinsamVerschiebenBleibtAufDerSeite()
+    {
+        var (_, page) = NewProject();
+        var a = AddArea(page, 5, 10, 20, 20);
+        var t = AddText(page);
+        var d = page.ClampMove([a, t], new Avalonia.Vector(-20, 3));
+        Assert.Equal(new Avalonia.Vector(-5, 3), d);
+    }
 }

@@ -44,23 +44,19 @@ public partial class PageViewModel : ObservableObject
     /// </summary>
     public event Action<object, string?>? Changed;
 
-    // Es kann immer nur eine Fläche oder ein Element gewählt sein
+    // Als Einzelauswahl kann immer nur eine Fläche oder ein Element gewählt sein (mehrere: siehe Selection)
     partial void OnSelectedAreaChanged(AreaViewModel? value)
     {
         if (value != null)
             SelectedElement = null;
-        OnPropertyChanged(nameof(HasSelection));
+        OnSingleSelectionChanged(value);
     }
 
-    partial void OnSelectedElementChanged(ElementViewModel? oldValue, ElementViewModel? newValue)
+    partial void OnSelectedElementChanged(ElementViewModel? value)
     {
-        if (newValue != null)
+        if (value != null)
             SelectedArea = null;
-        if (oldValue != null)
-            oldValue.IsSelected = false;
-        if (newValue != null)
-            newValue.IsSelected = true;
-        OnPropertyChanged(nameof(HasSelection));
+        OnSingleSelectionChanged(value);
     }
 
     /// <summary>Gleicht die Ebenen-Liste ab, ohne sie neu aufzubauen.</summary>
@@ -109,8 +105,8 @@ public partial class PageViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>Eine Fläche oder ein Element ist gewählt (kann gelöscht werden).</summary>
-    public bool HasSelection => SelectedArea != null || SelectedElement != null;
+    /// <summary>Mindestens eine Fläche oder ein Element ist gewählt (kann gelöscht werden).</summary>
+    public bool HasSelection => _selection.Count > 0;
 
     void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -118,6 +114,9 @@ public partial class PageViewModel : ObservableObject
             item.PropertyChanged -= OnItemChanged;
         foreach (INotifyPropertyChanged item in e.NewItems ?? Array.Empty<object>())
             item.PropertyChanged += OnItemChanged;
+        // Entfernte Objekte aus der Auswahl nehmen
+        if (_selection.Any(i => !Areas.Contains(i) && !Elements.Contains(i)))
+            SetSelection(_selection.Where(i => Areas.Contains(i) || Elements.Contains(i)).ToList());
         Changed?.Invoke(this, null);
     }
 
@@ -191,7 +190,7 @@ public partial class PageViewModel : ObservableObject
     }
 
     /// <summary>Übernimmt den Inhalt eines gespeicherten Zustands (für Rückgängig/Wiederholen).</summary>
-    public void Restore(PageEntry e, string? baseDir, int selectedArea = -1, int selectedElement = -1)
+    public void Restore(PageEntry e, string? baseDir, IReadOnlyList<int>? selectedAreas = null, IReadOnlyList<int>? selectedElements = null)
     {
         Name = e.Name;
         WidthMm = e.WidthMm;
@@ -205,7 +204,7 @@ public partial class PageViewModel : ObservableObject
             Areas.Add(AreaViewModel.FromEntry(Project, a));
         foreach (var el in e.Elements)
             Elements.Add(ElementViewModel.FromEntry(Project, el, baseDir));
-        SelectedArea = selectedArea >= 0 && selectedArea < Areas.Count ? Areas[selectedArea] : null;
-        SelectedElement = selectedElement >= 0 && selectedElement < Elements.Count ? Elements[selectedElement] : null;
+        Select((selectedAreas ?? []).Where(i => i >= 0 && i < Areas.Count).Select(i => (object)Areas[i])
+            .Concat((selectedElements ?? []).Where(i => i >= 0 && i < Elements.Count).Select(i => Elements[i])));
     }
 }
