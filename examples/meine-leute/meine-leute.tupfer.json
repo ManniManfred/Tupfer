@@ -1,0 +1,300 @@
+{
+  "Version": 1,
+  "ProductId": 901,
+  "Comment": "Meine Leute – Familienseite für die Kleinsten",
+  "Language": "de",
+  "GmeLang": "",
+  "Init": "",
+  "Welcome": "willkommen",
+  "MediaPath": "",
+  "ExtraYaml": "",
+  "Dpi": 1200,
+  "PixelSize": 2,
+  "Scripts": [
+    {
+      "Name": "mama",
+      "Lines": [
+        "P(mama)"
+      ]
+    },
+    {
+      "Name": "papa",
+      "Lines": [
+        "P(papa)"
+      ]
+    },
+    {
+      "Name": "oma",
+      "Lines": [
+        "P(oma)"
+      ]
+    },
+    {
+      "Name": "opa",
+      "Lines": [
+        "P(opa)"
+      ]
+    },
+    {
+      "Name": "geschwister",
+      "Lines": [
+        "P(geschwister)"
+      ]
+    },
+    {
+      "Name": "ich",
+      "Lines": [
+        "P(ich)"
+      ]
+    }
+  ],
+  "Speak": [
+    {
+      "Name": "willkommen",
+      "Text": "Hallo! Hier sind deine Leute. Tipp auf ein Bild!"
+    },
+    {
+      "Name": "mama",
+      "Text": "Hallo! Ich bin die Mama."
+    },
+    {
+      "Name": "papa",
+      "Text": "Hallo! Ich bin der Papa."
+    },
+    {
+      "Name": "oma",
+      "Text": "Hallo! Ich bin die Oma."
+    },
+    {
+      "Name": "opa",
+      "Text": "Hallo! Ich bin der Opa."
+    },
+    {
+      "Name": "geschwister",
+      "Text": "Hallo, kleiner Bruder! Ich hab dich lieb."
+    },
+    {
+      "Name": "ich",
+      "Text": "Das bist du! Hallo, mein Schatz!"
+    }
+  ],
+  "Pages": [
+    {
+      "Name": "Meine Leute",
+      "WidthMm": 210,
+      "HeightMm": 297,
+      "Elements": [
+        {
+          "Kind": "Text",
+          "X": 40,
+          "Y": 10,
+          "Width": 155,
+          "Height": 18,
+          "Text": "Meine Leute",
+          "FontSize": 40,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 15,
+          "Y": 15,
+          "Width": 20,
+          "Height": 8,
+          "Text": "Start",
+          "FontSize": 14,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 27,
+          "Y": 36,
+          "Width": 68,
+          "Height": 68,
+          "ImagePath": "foto-mama.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 27,
+          "Y": 105,
+          "Width": 68,
+          "Height": 10,
+          "Text": "Mama",
+          "FontSize": 24,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 115,
+          "Y": 36,
+          "Width": 68,
+          "Height": 68,
+          "ImagePath": "foto-papa.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 115,
+          "Y": 105,
+          "Width": 68,
+          "Height": 10,
+          "Text": "Papa",
+          "FontSize": 24,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 27,
+          "Y": 120,
+          "Width": 68,
+          "Height": 68,
+          "ImagePath": "foto-oma.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 27,
+          "Y": 189,
+          "Width": 68,
+          "Height": 10,
+          "Text": "Oma",
+          "FontSize": 24,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 115,
+          "Y": 120,
+          "Width": 68,
+          "Height": 68,
+          "ImagePath": "foto-opa.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 115,
+          "Y": 189,
+          "Width": 68,
+          "Height": 10,
+          "Text": "Opa",
+          "FontSize": 24,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 27,
+          "Y": 204,
+          "Width": 68,
+          "Height": 68,
+          "ImagePath": "foto-geschwister.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 27,
+          "Y": 273,
+          "Width": 68,
+          "Height": 10,
+          "Text": "Geschwister",
+          "FontSize": 24,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 115,
+          "Y": 204,
+          "Width": 68,
+          "Height": 68,
+          "ImagePath": "foto-ich.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 115,
+          "Y": 273,
+          "Width": 68,
+          "Height": 10,
+          "Text": "Das bin ich",
+          "FontSize": 24,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        }
+      ],
+      "Areas": [
+        {
+          "Label": "Start",
+          "X": 15,
+          "Y": 9,
+          "Width": 20,
+          "Height": 20,
+          "Shape": "Ellipse",
+          "Target": "Product",
+          "Script": ""
+        },
+        {
+          "Label": "Mama",
+          "X": 27,
+          "Y": 36,
+          "Width": 68,
+          "Height": 79,
+          "Target": "Script",
+          "Script": "mama"
+        },
+        {
+          "Label": "Papa",
+          "X": 115,
+          "Y": 36,
+          "Width": 68,
+          "Height": 79,
+          "Target": "Script",
+          "Script": "papa"
+        },
+        {
+          "Label": "Oma",
+          "X": 27,
+          "Y": 120,
+          "Width": 68,
+          "Height": 79,
+          "Target": "Script",
+          "Script": "oma"
+        },
+        {
+          "Label": "Opa",
+          "X": 115,
+          "Y": 120,
+          "Width": 68,
+          "Height": 79,
+          "Target": "Script",
+          "Script": "opa"
+        },
+        {
+          "Label": "Geschwister",
+          "X": 27,
+          "Y": 204,
+          "Width": 68,
+          "Height": 79,
+          "Target": "Script",
+          "Script": "geschwister"
+        },
+        {
+          "Label": "Das bin ich",
+          "X": 115,
+          "Y": 204,
+          "Width": 68,
+          "Height": 79,
+          "Target": "Script",
+          "Script": "ich"
+        }
+      ]
+    }
+  ]
+}

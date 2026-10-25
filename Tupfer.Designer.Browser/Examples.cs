@@ -12,6 +12,8 @@ static class Examples
     static readonly (string Id, string Title, string Main, string[] Files)[] List =
     [
         ("tic-tac-toi", "Tic-Tac-Toe", "tic-tac-toi/tic-tac-toi.tupfer.json", ["tic-tac-toi/tic-tac-toi.png"]),
+        ("meine-leute", "Meine Leute (für die Kleinsten)", "meine-leute/meine-leute.tupfer.json",
+            [.. new[] { "mama", "papa", "oma", "opa", "geschwister", "ich" }.Select(p => $"meine-leute/foto-{p}.png")]),
     ];
 
     public static IReadOnlyList<ExampleProject> Create(Uri baseUri)

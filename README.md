@@ -16,6 +16,7 @@ Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 | `Tupfer.Designer.Browser/` | Dieselbe Anwendung als Web-App (WebAssembly, siehe „Tupfer Designer im Browser“) |
 | `Tupfer.Designer.Tests/` | Tests (OID/GME, Stift-Simulation, C#-Übersetzer, Bearbeiten) |
 | `examples/tic-tac-toi/` | Beispiel: Tic-Tac-Toe als Designer-Projekt mit Spielfeld-Grafik (auch in der Web-App) |
+| `examples/meine-leute/` | Vorlage „Meine Leute“: Familienseite für die Kleinsten mit eigenen Fotos und Stimmen (auch in der Web-App) |
 | `examples/tic-tac-toi-csharp/` | Dasselbe Spiel als C#-Programm (siehe „Programmieren in C#“) |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
 | `deploy/`, `captain-definition` | Web-App im Container mit nginx (z. B. für CapRover) |
@@ -32,6 +33,25 @@ und *Seiten drucken*. Zum Starten auf dem Stift zuerst *Start* (Produkt-Code `90
 
 **Druckhinweis:** OID-Codes mit 1200 dpi und ohne Skalierung („Tatsächliche Größe“) drucken,
 sonst erkennt der Stift sie nicht zuverlässig (siehe „Drucker testen“).
+
+## Vorlage: Meine Leute
+
+Eine Seite für die Kleinsten (ab etwa 2 Jahren): sechs große Fotos – Mama, Papa, Oma, Opa,
+Geschwister und das Kind selbst. Tippt man ein Bild an, sagt die Person „Hallo!“. Keine Spielregeln,
+große Flächen, damit jeder Tipper etwas auslöst. Vorschau: `examples/meine-leute/vorschau.png`.
+
+So wird sie zu eurer Seite:
+
+1. `examples/meine-leute/meine-leute.tupfer.json` öffnen (in der Web-App unter *Datei → Beispiele*)
+   und unter neuem Namen speichern.
+2. Platzhalterbild auswählen, löschen und das eigene Foto an derselben Stelle einfügen – am besten
+   quadratisch zuschneiden. Namen unter den Bildern anpassen (z. B. den Vornamen statt „Geschwister“).
+3. Unter *Sprachausgabe* zu jedem Text eine **eigene Aufnahme** machen – die echte Stimme von Mama,
+   Oma oder dem großen Geschwisterkind ist das Schönste daran. Die Texte lassen sich nach Belieben ändern.
+4. Mit *Testen* (F8) ausprobieren, dann *Auf den Stift speichern* und die Seite drucken.
+
+Auf dem Stift zuerst *Start* antippen (Produkt-Code `901`, verträgt sich also mit dem Tic-Tac-Toe-Beispiel).
+Für kleine Hände lohnt dickes Papier; ob eine Laminierfolie die Erkennung stört, vorher testen.
 
 ## Starten (Desktop)
 
@@ -108,7 +128,7 @@ dotnet run --project Tupfer.Designer.Browser
 dotnet publish Tupfer.Designer.Browser -c Release -o publish   # Ergebnis: publish/wwwroot
 ```
 
-Unter *Datei → Beispiele* lässt sich das Tic-Tac-Toe-Beispiel aus `examples/` direkt öffnen. Per
+Unter *Datei → Beispiele* lassen sich die Beispiele aus `examples/` (Tic-Tac-Toe, Meine Leute) direkt öffnen. Per
 Adresse geht es auch gleich beim Start: `…/index.html?beispiel=tic-tac-toi`. Weitere Beispiele werden in
 `Tupfer.Designer.Browser/Examples.cs` und der `.csproj` eingetragen.
 

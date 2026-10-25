@@ -13,6 +13,7 @@
     <None Include="../examples/tic-tac-toi-csharp/TicTacToe.cs" Link="Programme/TicTacToe.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../examples/tic-tac-toi-csharp/tic-tac-toi-csharp.tupfer.json" Link="Programme/tic-tac-toi-csharp.tupfer.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../examples/tic-tac-toi/tic-tac-toi.tupfer.json" Link="Programme/tic-tac-toi.tupfer.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../examples/meine-leute/meine-leute.tupfer.json" Link="Programme/meine-leute.tupfer.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -133,4 +133,19 @@ public class PenSimulatorTests
         var gme = GmeBuilder.Build(file, AppContext.BaseDirectory, (_, _) => Audio.Wav(new short[100]));
         Assert.NotEmpty(gme);
     }
+
+    [Fact]
+    public void MeineLeuteSagtBeimAntippenHallo()
+    {
+        var file = ProjectStore.Load(Path.Combine(AppContext.BaseDirectory, "Programme", "meine-leute.tupfer.json"));
+        var pen = new PenSimulator();
+        pen.Load(file);
+        Assert.Equal(["willkommen"], pen.Start().Media);
+        foreach (var person in new[] { "mama", "papa", "oma", "opa", "geschwister", "ich" })
+        {
+            Assert.Equal([person], pen.Tap(person).Media);
+            Assert.Equal([person], pen.Tap(person).Media);
+        }
+        Assert.NotEmpty(GmeBuilder.Build(file, AppContext.BaseDirectory, (_, _) => Audio.Wav(new short[100])));
+    }
 }
