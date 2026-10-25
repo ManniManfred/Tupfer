@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Input.GestureRecognizers;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using TipToy.Designer.ViewModels;
 
 namespace TipToy.Designer.Views;
@@ -38,6 +39,11 @@ public partial class MainView : UserControl
         PageScroll.AddHandler(PointerReleasedEvent, OnPanEnd, RoutingStrategies.Tunnel);
         PageScroll.AddHandler(PointerCaptureLostEvent, (_, e) => RemoveTouch(e.Pointer));
         PageScroll.TemplateApplied += (_, _) => Dispatcher.UIThread.Post(DisableTouchScrolling);
+        // Tunnel: vor dem Scrollen per Touch im Seiten-Bereich
+        LayerList.AddHandler(PointerPressedEvent, OnLayerDragStart, RoutingStrategies.Tunnel);
+        LayerList.AddHandler(PointerMovedEvent, OnLayerDragMove, RoutingStrategies.Tunnel);
+        LayerList.AddHandler(PointerReleasedEvent, (_, _) => EndLayerDrag(), RoutingStrategies.Tunnel);
+        LayerList.AddHandler(PointerCaptureLostEvent, (_, _) => EndLayerDrag());
 
         FitButton.Click += (_, _) => FitPage();
         ShowCanvas.Click += (_, _) => ShowPagesPanel(CanvasPanel);
@@ -56,6 +62,52 @@ public partial class MainView : UserControl
     {
         base.OnSizeChanged(e);
         SetCompact(e.NewSize.Width < CompactWidth);
+    }
+
+    // ---------- Ebenen-Liste: Umsortieren per Drag & Drop am Griff ----------
+
+    ElementViewModel? _layerDrag;
+
+    void OnLayerDragStart(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source is not Visual source
+            || source.GetSelfAndVisualAncestors().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("draghandle")) is not { } handle
+            || handle.DataContext is not ElementViewModel element
+            || DataContext is not MainWindowViewModel vm || vm.Project.SelectedPage is not { } page)
+            return;
+        vm.SelectElementCommand.Execute(element);
+        _layerDrag = element;
+        vm.Project.History.BeginChange();
+        // Die Liste selbst fängt den Zeiger: Die Einträge werden beim Umsortieren neu erzeugt
+        e.Pointer.Capture(LayerList);
+        LayerList.Classes.Add("dragging");
+        e.Handled = true;
+    }
+
+    void OnLayerDragMove(object? sender, PointerEventArgs e)
+    {
+        if (_layerDrag == null || DataContext is not MainWindowViewModel { Project.SelectedPage: { } page })
+            return;
+        e.Handled = true;
+        // Zieleintrag: der, über dessen Mitte der Zeiger zuletzt hinaus ist
+        double y = e.GetPosition(LayerList).Y;
+        int target = 0;
+        for (int i = 0; i < page.Layers.Count; i++)
+            if (LayerList.ContainerFromIndex(i) is { } c && y > c.Bounds.Top + c.Bounds.Height / 2)
+                target = i;
+        int from = page.Elements.IndexOf(_layerDrag), to = page.Elements.Count - 1 - target;
+        if (from >= 0 && from != to)
+            page.Elements.Move(from, to);
+    }
+
+    void EndLayerDrag()
+    {
+        if (_layerDrag == null)
+            return;
+        _layerDrag = null;
+        LayerList.Classes.Remove("dragging");
+        if (DataContext is MainWindowViewModel vm)
+            vm.Project.History.EndChange();
     }
 
     /// <summary>

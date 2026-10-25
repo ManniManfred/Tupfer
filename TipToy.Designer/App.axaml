@@ -19,6 +19,7 @@
     <StreamGeometry x:Key="IconTap">M10,9A1,1 0 0,1 11,8A1,1 0 0,1 12,9V13.47L13.21,13.6L18.15,15.79C18.68,16.03 19,16.56 19,17.14V21.5C18.97,22.32 18.32,22.97 17.5,23H11C10.62,23 10.26,22.85 10,22.57L5.1,18.37L5.84,17.6C6.03,17.39 6.3,17.28 6.58,17.28H6.8L10,19V9M11,5A4,4 0 0,1 15,9C15,10.5 14.2,11.77 13,12.46V11.24C13.61,10.69 14,9.89 14,9A3,3 0 0,0 11,6A3,3 0 0,0 8,9C8,9.89 8.39,10.69 9,11.24V12.46C7.8,11.77 7,10.5 7,9A4,4 0 0,1 11,5Z</StreamGeometry>
     <StreamGeometry x:Key="IconPlay">M8,5.14V19.14L19,12.14L8,5.14Z</StreamGeometry>
     <StreamGeometry x:Key="IconCode">M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z</StreamGeometry>
+    <StreamGeometry x:Key="IconDragHandle">M21,11H3V9H21V11M21,13H3V15H21V13Z</StreamGeometry>
     <StreamGeometry x:Key="IconToFront">M2,2H11V6H9V4H4V9H6V11H2V2M22,13V22H13V18H15V20H20V15H18V13H22M8,8H16V16H8V8Z</StreamGeometry>
     <StreamGeometry x:Key="IconForward">M2,2H16V16H2V2M22,8V22H8V18H10V20H20V10H18V8H22Z</StreamGeometry>
     <StreamGeometry x:Key="IconBackward">M2,2H16V16H2V2M22,8V22H8V18H18V8H22M4,4V14H14V4H4Z</StreamGeometry>
@@ -155,6 +156,14 @@
       <Setter Property="HorizontalContentAlignment" Value="Left" />
       <Setter Property="Padding" Value="8,5" />
       <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Border.draghandle">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="6,0" />
+      <Setter Property="Cursor" Value="SizeNorthSouth" />
+    </Style>
+    <Style Selector="ItemsControl.dragging Button.layer.selected">
+      <Setter Property="Opacity" Value="0.7" />
     </Style>
     <Style Selector="Button.layer.selected">
       <Setter Property="Background" Value="#F8C9AE" />

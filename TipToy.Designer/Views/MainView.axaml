@@ -255,15 +255,20 @@
                     <TextBox Grid.Column="2" Text="{Binding HeightMm}" />
                   </Grid>
                   <StackPanel IsVisible="{Binding HasLayers}">
-                    <TextBlock Classes="label" Text="Bilder und Texte (oberstes zuerst)" />
-                    <ItemsControl ItemsSource="{Binding Layers}">
+                    <TextBlock Classes="label" Text="Bilder und Texte (oberstes zuerst, am Griff links ziehen zum Umsortieren)" TextWrapping="Wrap" />
+                    <ItemsControl x:Name="LayerList" ItemsSource="{Binding Layers}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:ElementViewModel">
-                          <Button Classes="layer" Classes.selected="{Binding IsSelected}" ToolTip.Tip="Auswählen (auch wenn es verdeckt ist)"
-                                  Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectElementCommand}"
-                                  CommandParameter="{Binding}">
-                            <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />
-                          </Button>
+                          <Grid ColumnDefinitions="Auto,*">
+                            <Border Classes="draghandle" ToolTip.Tip="Ziehen: Reihenfolge ändern">
+                              <PathIcon Data="{StaticResource IconDragHandle}" Width="14" Height="14" Foreground="{StaticResource TextSecondary}" />
+                            </Border>
+                            <Button Grid.Column="1" Classes="layer" Classes.selected="{Binding IsSelected}" ToolTip.Tip="Auswählen (auch wenn es verdeckt ist)"
+                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectElementCommand}"
+                                    CommandParameter="{Binding}">
+                              <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />
+                            </Button>
+                          </Grid>
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
