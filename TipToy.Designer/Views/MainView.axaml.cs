@@ -39,6 +39,10 @@ public partial class MainView : UserControl
         PageScroll.AddHandler(PointerReleasedEvent, OnPanEnd, RoutingStrategies.Tunnel);
         PageScroll.AddHandler(PointerCaptureLostEvent, (_, e) => RemoveTouch(e.Pointer));
         PageScroll.TemplateApplied += (_, _) => Dispatcher.UIThread.Post(DisableTouchScrolling);
+        // Strg+Z/Y für die Seiten am Fenster abfangen: Nach Touch-Bedienung hat oft kein Element den Fokus,
+        // dann kommen Tastendrücke nur dort an
+        AttachedToVisualTree += (_, _) => TopLevel.GetTopLevel(this)?.AddHandler(KeyDownEvent, OnUndoKey);
+        DetachedFromVisualTree += (_, _) => TopLevel.GetTopLevel(this)?.RemoveHandler(KeyDownEvent, OnUndoKey);
         // Tunnel: vor dem Scrollen per Touch im Seiten-Bereich
         LayerList.AddHandler(PointerPressedEvent, OnLayerDragStart, RoutingStrategies.Tunnel);
         LayerList.AddHandler(PointerMovedEvent, OnLayerDragMove, RoutingStrategies.Tunnel);
@@ -62,6 +66,27 @@ public partial class MainView : UserControl
     {
         base.OnSizeChanged(e);
         SetCompact(e.NewSize.Width < CompactWidth);
+    }
+
+    /// <summary>
+    /// Rückgängig/Wiederholen der Seiten (Strg+Z, Strg+Y, Strg+Umschalt+Z; macOS auch mit Cmd), nur im Tab
+    /// „Seiten“. Textfelder behandeln die Tasten selbst (dann ist das Ereignis schon erledigt).
+    /// </summary>
+    void OnUndoKey(object? sender, KeyEventArgs e)
+    {
+        if (e.Handled || DataContext is not MainWindowViewModel { SelectedTab: 0 } vm)
+            return;
+        var mods = e.KeyModifiers & ~KeyModifiers.Shift;
+        if (mods != KeyModifiers.Control && mods != KeyModifiers.Meta)
+            return;
+        bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        if (e.Key == Key.Z && !shift)
+            vm.UndoCommand.Execute(null);
+        else if (e.Key == Key.Y && !shift || e.Key == Key.Z && shift)
+            vm.RedoCommand.Execute(null);
+        else
+            return;
+        e.Handled = true;
     }
 
     // ---------- Ebenen-Liste: Umsortieren per Drag & Drop am Griff ----------

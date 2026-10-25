@@ -219,11 +219,6 @@
           <ToggleButton x:Name="ShowProperties" Content="Auswahl" />
         </StackPanel>
         <Grid x:Name="PagesGrid" ColumnDefinitions="265,12,*,12,290">
-          <Grid.KeyBindings>
-            <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
-            <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}" />
-            <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
-          </Grid.KeyBindings>
           <Border x:Name="PagesPanel" Grid.Column="0" Classes="card" Padding="0">
             <ScrollViewer>
               <StackPanel Margin="14,12">
