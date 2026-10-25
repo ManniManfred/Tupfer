@@ -56,8 +56,36 @@
     <Style Selector="ComboBox.speakvoice, TextBlock.speakvoice">
       <Setter Property="Width" Value="210" />
     </Style>
-    <Style Selector=".compact ComboBox.speakvoice, .compact TextBlock.speakvoice">
-      <Setter Property="Width" Value="120" />
+    <!-- Spalte nur per Stil (ein lokaler Wert ließe sich auf dem Handy nicht überschreiben) -->
+    <Style Selector="Grid.speakrow > TextBox.speaktext, Grid.speakrow > Border.speaktext">
+      <Setter Property="Grid.Column" Value="1" />
+    </Style>
+    <!-- Handy: Sprachausgabe zweizeilig – Name | Stimme, darunter Text | Knöpfe -->
+    <Style Selector=".compact Grid.speakheader, .compact TextBlock.desktoponly">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector=".compact ComboBox.voice">
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector=".compact Grid.speakrow > TextBox.speakname">
+      <Setter Property="Width" Value="NaN" />
+      <Setter Property="Grid.ColumnSpan" Value="2" />
+    </Style>
+    <Style Selector=".compact Grid.speakrow > ComboBox.speakvoice">
+      <Setter Property="Width" Value="NaN" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Grid.ColumnSpan" Value="2" />
+    </Style>
+    <Style Selector=".compact Grid.speakrow > TextBox.speaktext, .compact Grid.speakrow > Border.speaktext">
+      <Setter Property="Grid.Row" Value="1" />
+      <Setter Property="Grid.Column" Value="0" />
+      <Setter Property="Grid.ColumnSpan" Value="3" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+    <Style Selector=".compact Grid.speakrow > StackPanel.speakbuttons">
+      <Setter Property="Grid.Row" Value="1" />
+      <Setter Property="Margin" Value="4,6,0,0" />
     </Style>
   </UserControl.Styles>
 
@@ -684,6 +712,7 @@
             <StackPanel DockPanel.Dock="Top">
               <TextBlock Classes="section" Text="Texte für die Sprachausgabe" />
               <TextBlock Classes="hint" Margin="0,0,0,6"
+                         Classes.desktoponly="True"
                          Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet (Wiedergabeknopf = anhören). Statt der Sprachausgabe kann jeder Text eine eigene Aufnahme bekommen: Der Mikrofonknopf nimmt auf (noch einmal klicken beendet), der Ordnerknopf übernimmt eine Audiodatei (.wav, .ogg, .mp3). Aufnahmen liegen im Projektordner unter aufnahmen/." />
               <StackPanel IsVisible="{x:Static vm:MainWindowViewModel.HasVoices}" Margin="0,2,0,4">
                 <TextBlock Classes="label" Text="Stimme des Projekts" />
@@ -694,7 +723,7 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
                 <TextBlock Classes="hint" Margin="0,4,0,0"
-                           Text="Jeder Text kann rechts eine eigene Stimme bekommen, z. B. für verschiedene Figuren. Jede Stimme wird beim ersten Gebrauch geladen (20–110 MB) und danach im Browser gespeichert." />
+                           Text="Jeder Text kann eine eigene Stimme bekommen, z. B. für verschiedene Figuren. Jede Stimme wird beim ersten Gebrauch geladen (20–110 MB) und danach im Browser gespeichert." />
               </StackPanel>
               <WrapPanel Classes="buttons">
                 <Button Command="{Binding AddSpeakCommand}">
@@ -704,7 +733,7 @@
                   <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
                 </Button>
               </WrapPanel>
-              <Grid ColumnDefinitions="Auto,*,Auto" Margin="10,6,10,2">
+              <Grid Classes="speakheader" ColumnDefinitions="Auto,*,Auto" Margin="10,6,10,2">
                 <TextBlock Classes="label speakname" Text="Name" Margin="0" />
                 <TextBlock Classes="label" Grid.Column="1" Text="Text bzw. Aufnahme" Margin="8,0,0,0" />
                 <TextBlock Classes="label speakvoice" Grid.Column="2" Text="Stimme" Margin="4,0,118,0"
@@ -714,10 +743,11 @@
             <ListBox ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding Project.SelectedSpeak}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:SpeakViewModel">
-                  <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                  <!-- Breit: eine Zeile; auf dem Handy oben Name und Stimme, darunter Text und Knöpfe (Stile oben) -->
+                  <Grid Classes="speakrow" ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto">
                     <TextBox Classes="speakname" Text="{Binding Name}" Margin="0,0,8,0" />
-                    <TextBox Grid.Column="1" Text="{Binding Text}" IsVisible="{Binding !HasRecording}" />
-                    <Border Grid.Column="1" IsVisible="{Binding HasRecording}" Background="#E8F5E9" CornerRadius="4"
+                    <TextBox Classes="speaktext" Text="{Binding Text}" IsVisible="{Binding !HasRecording}" />
+                    <Border Classes="speaktext" IsVisible="{Binding HasRecording}" Background="#E8F5E9" CornerRadius="4"
                             Padding="8,0" ToolTip.Tip="{Binding Recording}">
                       <DockPanel VerticalAlignment="Center">
                         <Button DockPanel.Dock="Right" Classes="tool" Padding="4" Margin="4,0,-6,0"
@@ -740,7 +770,7 @@
                         <DataTemplate x:DataType="gme:VoiceOption"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
                       </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0,0,0">
+                    <StackPanel Grid.Column="3" Classes="speakbuttons" Orientation="Horizontal" Margin="4,0,0,0">
                       <Button Classes="tool" ToolTip.Tip="Anhören"
                               Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
                               CommandParameter="{Binding}">
