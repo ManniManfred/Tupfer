@@ -31,6 +31,7 @@
     <Content Include="../examples/tic-tac-toi/tic-tac-toi.tupfer.json" Link="wwwroot/examples/tic-tac-toi/tic-tac-toi.tupfer.json" />
     <Content Include="../examples/tic-tac-toi/tic-tac-toi.png" Link="wwwroot/examples/tic-tac-toi/tic-tac-toi.png" />
     <Content Include="../examples/meine-leute/meine-leute.tupfer.json;../examples/meine-leute/foto-*.png" Link="wwwroot/examples/meine-leute/%(Filename)%(Extension)" />
+    <Content Include="../examples/wo-ist/*.tupfer.json;../examples/wo-ist/*.png" Exclude="../examples/wo-ist/vorschau.png" Link="wwwroot/examples/wo-ist/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

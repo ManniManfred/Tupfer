@@ -17,6 +17,7 @@ Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 | `Tupfer.Designer.Tests/` | Tests (OID/GME, Stift-Simulation, C#-Übersetzer, Bearbeiten) |
 | `examples/tic-tac-toi/` | Beispiel: Tic-Tac-Toe als Designer-Projekt mit Spielfeld-Grafik (auch in der Web-App) |
 | `examples/meine-leute/` | Vorlage „Meine Leute“: Familienseite für die Kleinsten mit eigenen Fotos und Stimmen (auch in der Web-App) |
+| `examples/wo-ist/` | Suchspiel „Wo ist …?“ mit acht Tieren für Vorschulkinder (auch in der Web-App) |
 | `examples/tic-tac-toi-csharp/` | Dasselbe Spiel als C#-Programm (siehe „Programmieren in C#“) |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
 | `deploy/`, `captain-definition` | Web-App im Container mit nginx (z. B. für CapRover) |
@@ -52,6 +53,22 @@ So wird sie zu eurer Seite:
 
 Auf dem Stift zuerst *Start* antippen (Produkt-Code `901`, verträgt sich also mit dem Tic-Tac-Toe-Beispiel).
 Für kleine Hände lohnt dickes Papier; ob eine Laminierfolie die Erkennung stört, vorher testen.
+
+## Beispiel: Wo ist …?
+
+Ein Suchspiel für Kinder ab etwa 4 Jahren mit acht Tieren (Katze, Hund, Kuh, Ente, Pferd, Schwein,
+Schaf, Huhn). Vorschau: `examples/wo-ist/vorschau.png`.
+
+- **Frei antippen:** Jedes Tier sagt, wer es ist („Das ist die Katze. Miau!“).
+- **Suchspiel (Lupe in der Mitte):** Der Stift fragt „Wo ist die Kuh?“. Richtig → ein Lob und die
+  nächste Frage; ein anderes Tier → „Das ist der Hund. Wau wau!“ und die Frage noch einmal – ohne
+  „Falsch!“. Nach acht Tieren gibt es ein „Hurra!“. Die Reihenfolge wechselt von Runde zu Runde,
+  damit sie sich nicht auswendig lernen lässt.
+- **Nochmal fragen** wiederholt die aktuelle Frage.
+
+Auf dem Stift zuerst *Start* antippen (Produkt-Code `902`). Die Texte lassen sich durch eigene
+Aufnahmen ersetzen, zum Beispiel echte Tiergeräusche. Die Tierbilder stammen aus
+[Twemoji](https://github.com/jdecked/twemoji) (CC-BY 4.0, siehe `THIRD-PARTY-NOTICES.md`).
 
 ## Starten (Desktop)
 
@@ -128,7 +145,7 @@ dotnet run --project Tupfer.Designer.Browser
 dotnet publish Tupfer.Designer.Browser -c Release -o publish   # Ergebnis: publish/wwwroot
 ```
 
-Unter *Datei → Beispiele* lassen sich die Beispiele aus `examples/` (Tic-Tac-Toe, Meine Leute) direkt öffnen. Per
+Unter *Datei → Beispiele* lassen sich die Beispiele aus `examples/` (Tic-Tac-Toe, Meine Leute, Wo ist …?) direkt öffnen. Per
 Adresse geht es auch gleich beim Start: `…/index.html?beispiel=tic-tac-toi`. Weitere Beispiele werden in
 `Tupfer.Designer.Browser/Examples.cs` und der `.csproj` eingetragen.
 

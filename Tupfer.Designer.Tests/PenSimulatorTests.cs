@@ -148,4 +148,33 @@ public class PenSimulatorTests
         }
         Assert.NotEmpty(GmeBuilder.Build(file, AppContext.BaseDirectory, (_, _) => Audio.Wav(new short[100])));
     }
+
+    [Fact]
+    public void WoIstFragtNachTierenUndWechseltDieReihenfolge()
+    {
+        var file = ProjectStore.Load(Path.Combine(AppContext.BaseDirectory, "Programme", "wo-ist.tupfer.json"));
+        var pen = new PenSimulator();
+        pen.Load(file);
+        pen.Start();
+        // Ohne Spiel sagt jedes Tier, wer es ist
+        Assert.Equal(["das_ist_katze"], pen.Tap("katze").Media);
+        Assert.Equal(["lupe_tippen"], pen.Tap("nochmal").Media);
+
+        Assert.Equal(["los", "wo_kuh"], pen.Tap("suchspiel").Media);
+        Assert.Equal(["das_ist_hund", "wo_kuh"], pen.Tap("hund").Media);
+        Assert.Equal(["wo_kuh"], pen.Tap("nochmal").Media);
+        string[] runde1 = ["kuh", "katze", "huhn", "hund", "schaf", "ente", "schwein", "pferd"];
+        for (var i = 0; i < runde1.Length; i++)
+        {
+            var media = pen.Tap(runde1[i]).Media;
+            Assert.Equal(2, media.Count);
+            Assert.StartsWith("richtig", media[0]);
+            Assert.Equal(i + 1 < runde1.Length ? $"wo_{runde1[i + 1]}" : "geschafft", media[1]);
+        }
+        Assert.Equal(["das_ist_kuh"], pen.Tap("kuh").Media);
+
+        // Die nächste Runde fragt in anderer Reihenfolge
+        Assert.Equal(["los", "wo_ente"], pen.Tap("suchspiel").Media);
+        Assert.NotEmpty(GmeBuilder.Build(file, AppContext.BaseDirectory, (_, _) => Audio.Wav(new short[100])));
+    }
 }

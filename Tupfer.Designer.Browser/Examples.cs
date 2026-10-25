@@ -14,6 +14,8 @@ static class Examples
         ("tic-tac-toi", "Tic-Tac-Toe", "tic-tac-toi/tic-tac-toi.tupfer.json", ["tic-tac-toi/tic-tac-toi.png"]),
         ("meine-leute", "Meine Leute (für die Kleinsten)", "meine-leute/meine-leute.tupfer.json",
             [.. new[] { "mama", "papa", "oma", "opa", "geschwister", "ich" }.Select(p => $"meine-leute/foto-{p}.png")]),
+        ("wo-ist", "Wo ist …? (Suchspiel)", "wo-ist/wo-ist.tupfer.json",
+            [.. new[] { "katze", "hund", "kuh", "ente", "pferd", "schwein", "schaf", "huhn", "lupe", "ohr" }.Select(p => $"wo-ist/{p}.png")]),
     ];
 
     public static IReadOnlyList<ExampleProject> Create(Uri baseUri)

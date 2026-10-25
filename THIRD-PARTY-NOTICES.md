@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 | Bestandteil | Ort | Lizenz |
 |---|---|---|
 | [meSpeak](https://www.masswerk.at/mespeak/) 2.0.2 (Norbert Landsteiner) mit eSpeak (Jonathan Duddington) über [speak.js](https://github.com/kripken/speak.js) | `Tupfer.Designer.Browser/wwwroot/mespeak/` | GNU GPL 3, Text in [`COPYING`](Tupfer.Designer.Browser/wwwroot/mespeak/COPYING); Quelltext: npm-Paket [`mespeak`](https://www.npmjs.com/package/mespeak) |
+| Tierbilder, Lupe und Ohr aus [Twemoji](https://github.com/jdecked/twemoji) 15.0 (Copyright Twitter, Inc. und weitere Mitwirkende) | `examples/wo-ist/*.png` | [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/); verändert: als PNG gerastert, farbiger Hintergrund |
 
 Die meSpeak-Dateien sind unverändert und werden von der Browser-Version nur geladen (eigene
 Dateien, Aufruf über JavaScript). Sie behalten ihre GPL-Lizenz.

@@ -1,0 +1,550 @@
+{
+  "Version": 1,
+  "ProductId": 902,
+  "Comment": "Wo ist …? – Suchspiel mit Tieren",
+  "Language": "de",
+  "GmeLang": "",
+  "Init": "",
+  "Welcome": "willkommen",
+  "MediaPath": "",
+  "ExtraYaml": "",
+  "Dpi": 1200,
+  "PixelSize": 2,
+  "Scripts": [
+    {
+      "Name": "suchspiel",
+      "Lines": [
+        "$frage := 1 P(los) J(frage)"
+      ]
+    },
+    {
+      "Name": "nochmal",
+      "Lines": [
+        "$ziel == 0? P(lupe_tippen)",
+        "J(frage)"
+      ]
+    },
+    {
+      "Name": "frage",
+      "Lines": [
+        "$runde == 0? $frage == 1? $ziel := 3 P(wo_kuh)",
+        "$runde == 0? $frage == 2? $ziel := 1 P(wo_katze)",
+        "$runde == 0? $frage == 3? $ziel := 8 P(wo_huhn)",
+        "$runde == 0? $frage == 4? $ziel := 2 P(wo_hund)",
+        "$runde == 0? $frage == 5? $ziel := 7 P(wo_schaf)",
+        "$runde == 0? $frage == 6? $ziel := 4 P(wo_ente)",
+        "$runde == 0? $frage == 7? $ziel := 6 P(wo_schwein)",
+        "$runde == 0? $frage == 8? $ziel := 5 P(wo_pferd)",
+        "$runde == 1? $frage == 1? $ziel := 4 P(wo_ente)",
+        "$runde == 1? $frage == 2? $ziel := 5 P(wo_pferd)",
+        "$runde == 1? $frage == 3? $ziel := 1 P(wo_katze)",
+        "$runde == 1? $frage == 4? $ziel := 7 P(wo_schaf)",
+        "$runde == 1? $frage == 5? $ziel := 2 P(wo_hund)",
+        "$runde == 1? $frage == 6? $ziel := 6 P(wo_schwein)",
+        "$runde == 1? $frage == 7? $ziel := 3 P(wo_kuh)",
+        "$runde == 1? $frage == 8? $ziel := 8 P(wo_huhn)"
+      ]
+    },
+    {
+      "Name": "weiter",
+      "Lines": [
+        "$frage == 9? $runde == 0? $ziel := 0 $runde := 1 P(geschafft)",
+        "$frage == 9? $ziel := 0 $runde := 0 P(geschafft)",
+        "J(frage)"
+      ]
+    },
+    {
+      "Name": "katze",
+      "Lines": [
+        "$ziel == 0? P(das_ist_katze)",
+        "$ziel == 1? $frage += 1 P(richtig1, richtig2, richtig3) J(weiter)",
+        "P(das_ist_katze) J(frage)"
+      ]
+    },
+    {
+      "Name": "hund",
+      "Lines": [
+        "$ziel == 0? P(das_ist_hund)",
+        "$ziel == 2? $frage += 1 P(richtig1, richtig2, richtig3) J(weiter)",
+        "P(das_ist_hund) J(frage)"
+      ]
+    },
+    {
+      "Name": "kuh",
+      "Lines": [
+        "$ziel == 0? P(das_ist_kuh)",
+        "$ziel == 3? $frage += 1 P(richtig1, richtig2, richtig3) J(weiter)",
+        "P(das_ist_kuh) J(frage)"
+      ]
+    },
+    {
+      "Name": "ente",
+      "Lines": [
+        "$ziel == 0? P(das_ist_ente)",
+        "$ziel == 4? $frage += 1 P(richtig1, richtig2, richtig3) J(weiter)",
+        "P(das_ist_ente) J(frage)"
+      ]
+    },
+    {
+      "Name": "pferd",
+      "Lines": [
+        "$ziel == 0? P(das_ist_pferd)",
+        "$ziel == 5? $frage += 1 P(richtig1, richtig2, richtig3) J(weiter)",
+        "P(das_ist_pferd) J(frage)"
+      ]
+    },
+    {
+      "Name": "schwein",
+      "Lines": [
+        "$ziel == 0? P(das_ist_schwein)",
+        "$ziel == 6? $frage += 1 P(richtig1, richtig2, richtig3) J(weiter)",
+        "P(das_ist_schwein) J(frage)"
+      ]
+    },
+    {
+      "Name": "schaf",
+      "Lines": [
+        "$ziel == 0? P(das_ist_schaf)",
+        "$ziel == 7? $frage += 1 P(richtig1, richtig2, richtig3) J(weiter)",
+        "P(das_ist_schaf) J(frage)"
+      ]
+    },
+    {
+      "Name": "huhn",
+      "Lines": [
+        "$ziel == 0? P(das_ist_huhn)",
+        "$ziel == 8? $frage += 1 P(richtig1, richtig2, richtig3) J(weiter)",
+        "P(das_ist_huhn) J(frage)"
+      ]
+    }
+  ],
+  "Speak": [
+    {
+      "Name": "willkommen",
+      "Text": "Hallo! Tipp auf ein Tier, dann sagt es dir, wer es ist. Oder tipp auf die Lupe, dann spielen wir Suchen!"
+    },
+    {
+      "Name": "los",
+      "Text": "Super, wir spielen Suchen!"
+    },
+    {
+      "Name": "lupe_tippen",
+      "Text": "Tipp auf die Lupe, dann spielen wir Suchen!"
+    },
+    {
+      "Name": "richtig1",
+      "Text": "Richtig!"
+    },
+    {
+      "Name": "richtig2",
+      "Text": "Super, gefunden!"
+    },
+    {
+      "Name": "richtig3",
+      "Text": "Toll gemacht!"
+    },
+    {
+      "Name": "geschafft",
+      "Text": "Hurra! Du hast alle Tiere gefunden. Tipp auf die Lupe, dann spielen wir nochmal!"
+    },
+    {
+      "Name": "das_ist_katze",
+      "Text": "Das ist die Katze. Miau!"
+    },
+    {
+      "Name": "wo_katze",
+      "Text": "Wo ist die Katze?"
+    },
+    {
+      "Name": "das_ist_hund",
+      "Text": "Das ist der Hund. Wau wau!"
+    },
+    {
+      "Name": "wo_hund",
+      "Text": "Wo ist der Hund?"
+    },
+    {
+      "Name": "das_ist_kuh",
+      "Text": "Das ist die Kuh. Muuh!"
+    },
+    {
+      "Name": "wo_kuh",
+      "Text": "Wo ist die Kuh?"
+    },
+    {
+      "Name": "das_ist_ente",
+      "Text": "Das ist die Ente. Quak quak!"
+    },
+    {
+      "Name": "wo_ente",
+      "Text": "Wo ist die Ente?"
+    },
+    {
+      "Name": "das_ist_pferd",
+      "Text": "Das ist das Pferd. Wieher!"
+    },
+    {
+      "Name": "wo_pferd",
+      "Text": "Wo ist das Pferd?"
+    },
+    {
+      "Name": "das_ist_schwein",
+      "Text": "Das ist das Schwein. Grunz grunz!"
+    },
+    {
+      "Name": "wo_schwein",
+      "Text": "Wo ist das Schwein?"
+    },
+    {
+      "Name": "das_ist_schaf",
+      "Text": "Das ist das Schaf. Mäh!"
+    },
+    {
+      "Name": "wo_schaf",
+      "Text": "Wo ist das Schaf?"
+    },
+    {
+      "Name": "das_ist_huhn",
+      "Text": "Das ist das Huhn. Gack gack!"
+    },
+    {
+      "Name": "wo_huhn",
+      "Text": "Wo ist das Huhn?"
+    }
+  ],
+  "Pages": [
+    {
+      "Name": "Wo ist …?",
+      "WidthMm": 210,
+      "HeightMm": 297,
+      "Elements": [
+        {
+          "Kind": "Text",
+          "X": 40,
+          "Y": 10,
+          "Width": 155,
+          "Height": 18,
+          "Text": "Wo ist …?",
+          "FontSize": 40,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 15,
+          "Y": 15,
+          "Width": 20,
+          "Height": 8,
+          "Text": "Start",
+          "FontSize": 14,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 15,
+          "Y": 38,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "katze.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 15,
+          "Y": 87,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Katze",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 77,
+          "Y": 38,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "hund.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 77,
+          "Y": 87,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Hund",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 139,
+          "Y": 38,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "kuh.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 139,
+          "Y": 87,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Kuh",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 15,
+          "Y": 106,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "ente.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 15,
+          "Y": 155,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Ente",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 77,
+          "Y": 106,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "lupe.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 77,
+          "Y": 155,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Suchspiel",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 139,
+          "Y": 106,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "pferd.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 139,
+          "Y": 155,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Pferd",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 15,
+          "Y": 174,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "schwein.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 15,
+          "Y": 223,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Schwein",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 77,
+          "Y": 174,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "schaf.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 77,
+          "Y": 223,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Schaf",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 139,
+          "Y": 174,
+          "Width": 56,
+          "Height": 48,
+          "ImagePath": "huhn.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 139,
+          "Y": 223,
+          "Width": 56,
+          "Height": 9,
+          "Text": "Huhn",
+          "FontSize": 20,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Image",
+          "X": 46,
+          "Y": 244,
+          "Width": 35,
+          "Height": 30,
+          "ImagePath": "ohr.png"
+        },
+        {
+          "Kind": "Text",
+          "X": 84,
+          "Y": 252,
+          "Width": 80,
+          "Height": 14,
+          "Text": "Nochmal fragen",
+          "FontSize": 22,
+          "Color": "#333333",
+          "Bold": true,
+          "Align": "Left"
+        }
+      ],
+      "Areas": [
+        {
+          "Label": "Start",
+          "X": 15,
+          "Y": 9,
+          "Width": 20,
+          "Height": 20,
+          "Shape": "Ellipse",
+          "Target": "Product",
+          "Script": ""
+        },
+        {
+          "Label": "Katze",
+          "X": 15,
+          "Y": 38,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "katze"
+        },
+        {
+          "Label": "Hund",
+          "X": 77,
+          "Y": 38,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "hund"
+        },
+        {
+          "Label": "Kuh",
+          "X": 139,
+          "Y": 38,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "kuh"
+        },
+        {
+          "Label": "Ente",
+          "X": 15,
+          "Y": 106,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "ente"
+        },
+        {
+          "Label": "Suchspiel",
+          "X": 77,
+          "Y": 106,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "suchspiel"
+        },
+        {
+          "Label": "Pferd",
+          "X": 139,
+          "Y": 106,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "pferd"
+        },
+        {
+          "Label": "Schwein",
+          "X": 15,
+          "Y": 174,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "schwein"
+        },
+        {
+          "Label": "Schaf",
+          "X": 77,
+          "Y": 174,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "schaf"
+        },
+        {
+          "Label": "Huhn",
+          "X": 139,
+          "Y": 174,
+          "Width": 56,
+          "Height": 58,
+          "Target": "Script",
+          "Script": "huhn"
+        },
+        {
+          "Label": "Nochmal fragen",
+          "X": 46,
+          "Y": 244,
+          "Width": 122,
+          "Height": 30,
+          "Target": "Script",
+          "Script": "nochmal"
+        }
+      ]
+    }
+  ]
+}
