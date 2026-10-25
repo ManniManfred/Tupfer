@@ -23,14 +23,14 @@ public class TextToSpeech
     public static Func<string, Task>? LoadAsync { get; set; }
 
     /// <summary>
-    /// Natürlich klingende Sprachausgabe (Sprache, Text → WAV-Daten), asynchron. Wird in
-    /// <see cref="PrepareAsync"/> vorab für alle Texte benutzt; wirft sie (z. B. kein Netz oder
-    /// keine Stimme für die Sprache), spricht <see cref="Synthesizer"/>.
+    /// Natürlich klingende Sprachausgabe (Stimme aus <see cref="Voices"/>, Text → WAV-Daten), asynchron.
+    /// Wird in <see cref="PrepareAsync"/> vorab für alle Texte benutzt; wirft sie (z. B. kein Netz),
+    /// spricht <see cref="Synthesizer"/>.
     /// </summary>
     public static Func<string, string, Task<byte[]>>? NaturalSynthesizer { get; set; }
 
-    /// <summary>Sprachen, für die die natürliche Stimme in dieser Sitzung nicht ging (Grund).</summary>
-    static readonly Dictionary<string, string> NaturalFailed = new();
+    /// <summary>Stimmen, die in dieser Sitzung nicht gingen, und schon geladene Stimmen.</summary>
+    static readonly HashSet<string> NaturalFailed = new();
     static readonly HashSet<string> NaturalLoaded = new();
 
     readonly string _cacheDir;
@@ -46,57 +46,63 @@ public class TextToSpeech
         _notice = notice ?? log;
     }
 
-    string CachePath(string language, string text, string suffix)
+    /// <summary>Datei im Cache; <paramref name="speechKey"/> wie <see cref="Voices.SpeechKey(string?, string?, string?)"/>.</summary>
+    string CachePath(string speechKey, string text, string suffix)
     {
-        var key = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(language + "\n" + text)))[..16].ToLowerInvariant();
-        return Path.Combine(_cacheDir, $"tts-{key}-{language}{suffix}");
+        var key = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(speechKey + "\n" + text)))[..16].ToLowerInvariant();
+        return Path.Combine(_cacheDir, $"tts-{key}-{Voices.Parse(speechKey).Language}{suffix}");
     }
 
     /// <summary>
     /// Vor <see cref="Speak"/> aufrufen: lädt die eingebaute Sprachausgabe und spricht die Texte, wenn
-    /// möglich, mit der natürlichen Stimme vor (Ergebnisse landen im Cache).
+    /// möglich, mit der natürlichen Stimme vor (Ergebnisse landen im Cache). Einträge: Schlüssel wie
+    /// <see cref="Voices.SpeechKey(string?, string?, string?)"/> und Text.
     /// </summary>
-    public async Task PrepareAsync(string language, IEnumerable<string> texts)
+    public async Task PrepareAsync(IEnumerable<(string SpeechKey, string Text)> items)
     {
-        var todo = texts.Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().ToList();
-        if (todo.Count == 0)
-            return;
+        var todo = items.Where(t => !string.IsNullOrWhiteSpace(t.Text)).Distinct().ToList();
         if (LoadAsync is { } load)
-            await load(language);
-        if (NaturalSynthesizer is not { } natural || NaturalFailed.ContainsKey(language))
+            foreach (var language in todo.Select(t => Voices.Parse(t.SpeechKey).Language).Distinct())
+                await load(language);
+        if (NaturalSynthesizer is not { } natural)
             return;
         Directory.CreateDirectory(_cacheDir);
-        foreach (var text in todo)
+        foreach (var (speechKey, text) in todo)
         {
-            var path = CachePath(language, text, "-natural.wav");
+            var (language, chosen) = Voices.Parse(speechKey);
+            if ((chosen ?? Voices.Default(language)?.Id) is not { } voice || NaturalFailed.Contains(voice))
+                continue;
+            var path = CachePath(speechKey, text, "-natural.wav");
             if (File.Exists(path))
                 continue;
-            if (NaturalLoaded.Add(language))
-                _notice("Lade die natürliche Stimme – beim ersten Mal etwa 90 MB, das kann etwas dauern …");
+            if (NaturalLoaded.Add(voice))
+                _notice($"Lade die Stimme „{Voices.All.FirstOrDefault(v => v.Id == voice)?.Name ?? voice}“ – beim ersten Mal 20–110 MB, das kann etwas dauern …");
             try
             {
                 _log($"Spreche „{text}“");
-                await File.WriteAllBytesAsync(path, await natural(language, text));
+                await File.WriteAllBytesAsync(path, await natural(voice, text));
             }
             catch (Exception ex)
             {
-                NaturalLoaded.Remove(language);
-                NaturalFailed[language] = ex.Message;
+                NaturalLoaded.Remove(voice);
+                NaturalFailed.Add(voice);
                 _notice($"Natürliche Stimme nicht verfügbar ({ex.Message}) – es spricht die einfache Stimme.");
-                return;
             }
         }
     }
 
-    public byte[] Speak(string language, string text)
+    /// <param name="speechKey">Sprache, ggf. mit Stimme (<see cref="Voices.SpeechKey(string?, string?, string?)"/>).</param>
+    public byte[] Speak(string speechKey, string text)
     {
+        var natural = CachePath(speechKey, text, "-natural.wav");
+        if (File.Exists(natural))
+            return File.ReadAllBytes(natural);
+        // Ohne natürliche Stimme zählt nur die Sprache
+        var language = Voices.Parse(speechKey).Language;
         Directory.CreateDirectory(_cacheDir);
         var key = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(language + "\n" + text)))[..16].ToLowerInvariant();
         var ogg = Path.Combine(_cacheDir, $"tts-{key}-{language}.ogg");
         var wav = Path.Combine(_cacheDir, $"tts-{key}-{language}.wav");
-        var natural = CachePath(language, text, "-natural.wav");
-        if (File.Exists(natural))
-            return File.ReadAllBytes(natural);
         if (Synthesizer is { } synthesize)
         {
             if (File.Exists(wav))

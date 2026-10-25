@@ -54,6 +54,9 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>false in Browsern ohne Speichern-Dialog (z. B. auf dem Handy): Dort gibt es „Auf den Stift speichern“ nicht.</summary>
     public static bool CanSaveToPen { get; set; } = true;
 
+    /// <summary>Stimmen lassen sich wählen (nur mit der natürlichen Sprachausgabe im Browser).</summary>
+    public static bool HasVoices => TextToSpeech.NaturalSynthesizer != null;
+
     [ObservableProperty] ProjectViewModel _project;
 
     [ObservableProperty]
@@ -439,8 +442,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         Log($"Baue {Path.GetFileName(gmePath)} …");
         var tts = new TextToSpeech(Path.Combine(baseDir, "tts-cache"), LogFromAnyThread, Notice);
-        await tts.PrepareAsync(string.IsNullOrWhiteSpace(file.Language) ? "en" : file.Language,
-            file.Speak.Where(s => string.IsNullOrEmpty(s.Recording)).Select(s => s.Text));
+        await tts.PrepareAsync(file.Speak.Where(s => string.IsNullOrEmpty(s.Recording)).Select(s => (Voices.SpeechKey(file, s), s.Text)));
         var bytes = await Task.Run(() => GmeBuilder.Build(file, baseDir, tts.Speak, warn: m => LogFromAnyThread("Warnung: " + m)));
         await File.WriteAllBytesAsync(gmePath, bytes);
         Log($"{bytes.Length / 1024.0:0.#} KB, {file.Scripts.Count} Skripte.");
@@ -779,7 +781,8 @@ public partial class MainWindowViewModel : ObservableObject
     // ---------- Anhören und Aufnehmen ----------
 
     /// <summary>Spielt die Aufnahme bzw. die Sprachausgabe eines Textes ab.</summary>
-    [RelayCommand]
+    // Auch während ein anderer Text noch geladen wird; die neue Wiedergabe beendet die alte
+    [RelayCommand(AllowConcurrentExecutions = true)]
     Task PlaySpeak(SpeakViewModel speak) => Guard("Wiedergabe", async () =>
     {
         byte[] data;
@@ -796,10 +799,10 @@ public partial class MainWindowViewModel : ObservableObject
                 Notice($"„{speak.Name}“ hat noch keinen Text.");
                 return;
             }
-            var language = string.IsNullOrWhiteSpace(Project.Language) ? "en" : Project.Language;
+            var key = Voices.SpeechKey(Project.Language, Project.Voice, speak.Voice);
             var tts = new TextToSpeech(TtsCacheDir, LogFromAnyThread, Notice);
-            await tts.PrepareAsync(language, [speak.Text]);
-            data = await Task.Run(() => tts.Speak(language, speak.Text));
+            await tts.PrepareAsync([(key, speak.Text)]);
+            data = await Task.Run(() => tts.Speak(key, speak.Text));
             extension = Audio.ExtensionOf(data);
         }
         // Nicht auf das Ende warten (der Knopf bliebe so lange gesperrt), nur sofortige Fehler melden

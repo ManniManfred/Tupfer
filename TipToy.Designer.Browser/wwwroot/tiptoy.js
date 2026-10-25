@@ -223,17 +223,11 @@ export function speak(language, text) {
 
 const PIPER_ORT = 'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/';
 const PIPER_PHONEMIZE = 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize';
-const PIPER_VOICES = 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/';
+const PIPER_VOICES = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/';
 
-/** Stimme je Sprache (Pfad in piper-voices ohne Endung); andere Sprachen sprechen weiter mit meSpeak. */
-const PIPER_VOICE = {
-    de: 'de/de_DE/thorsten/medium/de_DE-thorsten-medium',
-    en: 'en/en_US/lessac/medium/en_US-lessac-medium',
-    fr: 'fr/fr_FR/siwis/medium/fr_FR-siwis-medium',
-    es: 'es/es_ES/davefx/medium/es_ES-davefx-medium',
-};
-
-const piperVoices = {};
+/** Geladene Stimmen (Modell → Promise mit Konfiguration und Sitzung), zuletzt benutzte am Ende. */
+const piperVoices = new Map();
+const PIPER_MAX_VOICES = 3;
 let piperPhonemizer = null;
 
 function loadScript(url) {
@@ -249,7 +243,8 @@ function loadScript(url) {
 /** Lädt eine Datei, beim ersten Mal aus dem Netz, danach aus dem Cache-Speicher des Browsers. */
 async function fetchCached(url) {
     const cache = 'caches' in window ? await caches.open('tiptoy-piper') : null;
-    let response = cache && await cache.match(url);
+    // Früher von der Version v1.0.0 geladene Stimmen weiterverwenden
+    let response = cache && (await cache.match(url) ?? await cache.match(url.replace('/resolve/main/', '/resolve/v1.0.0/')));
     if (!response) {
         try {
             response = await fetch(url);
@@ -265,19 +260,26 @@ async function fetchCached(url) {
 }
 
 /** Wandelt Text in Lautschrift-IDs (espeak-ng); eine Instanz wird wiederverwendet, solange sie läuft. */
-let phonemizeOut = null, phonemizeErr = null;
+let phonemizeOut = null, phonemizeErr = null, phonemizeScript = null, ortReady = null;
 async function phonemize(espeakVoice, text) {
-    if (!window.createPiperPhonemize)
-        await loadScript(PIPER_PHONEMIZE + '.js');
+    // Nur einmal laden, auch wenn mehrere Texte gleichzeitig gesprochen werden
+    await (phonemizeScript ??= loadScript(PIPER_PHONEMIZE + '.js').catch(e => { phonemizeScript = null; throw e; }));
     for (let attempt = 0; ; attempt++) {
-        piperPhonemizer ??= await window.createPiperPhonemize({
+        piperPhonemizer ??= window.createPiperPhonemize({
             print: line => { phonemizeOut = line; },
             printErr: line => { phonemizeErr = line; },
             locateFile: file => file.endsWith('.wasm') ? PIPER_PHONEMIZE + '.wasm' : file.endsWith('.data') ? PIPER_PHONEMIZE + '.data' : file,
         });
+        let instance;
+        try {
+            instance = await piperPhonemizer;
+        } catch (e) {
+            piperPhonemizer = null;
+            throw e;
+        }
         phonemizeOut = phonemizeErr = null;
         try {
-            piperPhonemizer.callMain(['-l', espeakVoice, '--input', JSON.stringify([{ text }]), '--espeak_data', '/espeak-ng-data']);
+            instance.callMain(['-l', espeakVoice, '--input', JSON.stringify([{ text }]), '--espeak_data', '/espeak-ng-data']);
         } catch (e) {
             phonemizeErr ??= String(e);
         }
@@ -289,39 +291,55 @@ async function phonemize(espeakVoice, text) {
     }
 }
 
-async function loadPiperVoice(language) {
-    const path = PIPER_VOICE[language];
-    if (!path)
-        throw new Error(`Für die Sprache „${language}“ gibt es keine natürliche Stimme.`);
-    if (!window.ort) {
-        await loadScript(PIPER_ORT + 'ort.min.js');
+/** Pfad in piper-voices ohne Endung, z. B. de_DE-kerstin-low → de/de_DE/kerstin/low/de_DE-kerstin-low. */
+function voicePath(model) {
+    const [locale, name, quality] = model.split('-');
+    if (!locale || !name || !quality)
+        throw new Error(`Unbekannte Stimme „${model}“.`);
+    return `${locale.split('_')[0]}/${locale}/${name}/${quality}/${model}`;
+}
+
+async function loadPiperVoice(model) {
+    const path = voicePath(model);
+    await (ortReady ??= loadScript(PIPER_ORT + 'ort.min.js').then(() => {
         ort.env.wasm.wasmPaths = PIPER_ORT;
         // Mehrere Threads gehen nur auf Seiten mit Cross-Origin-Isolation
         ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
-    }
-    const [config, model] = await Promise.all([
+    }, e => { ortReady = null; throw e; }));
+    const [config, data] = await Promise.all([
         fetchCached(PIPER_VOICES + path + '.onnx.json').then(r => r.json()),
         fetchCached(PIPER_VOICES + path + '.onnx').then(r => r.arrayBuffer()),
     ]);
-    const session = await ort.InferenceSession.create(model);
+    const session = await ort.InferenceSession.create(data);
     return { config, session };
 }
 
-/** Lädt die natürliche Stimme für die Sprache (beim ersten Mal aus dem Netz). Wirft, wenn es keine gibt. */
-export async function loadNaturalVoice(language) {
-    piperVoices[language] ??= loadPiperVoice(language);
+/** Lädt eine Stimme (beim ersten Mal aus dem Netz); behält nur die zuletzt benutzten im Speicher. */
+async function useVoice(model) {
+    let voice = piperVoices.get(model);
+    piperVoices.delete(model);
+    voice ??= loadPiperVoice(model);
+    piperVoices.set(model, voice);
+    while (piperVoices.size > PIPER_MAX_VOICES) {
+        const [oldest, old] = piperVoices.entries().next().value;
+        piperVoices.delete(oldest);
+        old.then(v => v.session.release()).catch(() => { });
+    }
     try {
-        await piperVoices[language];
+        return await voice;
     } catch (e) {
-        delete piperVoices[language];
+        piperVoices.delete(model);
         throw e;
     }
 }
 
-/** Spricht den Text mit der natürlichen Stimme, liefert WAV (mono, 16 Bit) Base64-kodiert. */
-export async function speakNatural(language, text) {
-    await loadNaturalVoice(language);
-    const { config, session } = await piperVoices[language];
+/**
+ * Spricht den Text mit einer natürlichen Stimme, liefert WAV (mono, 16 Bit) Base64-kodiert.
+ * Stimme wie in piper-voices, z. B. „de_DE-kerstin-low“; bei mehreren Sprechern „…#sprecher“.
+ */
+export async function speakNatural(voiceId, text) {
+    const [model, speaker] = voiceId.split('#');
+    const { config, session } = await useVoice(model);
     const ids = await phonemize(config.espeak.voice, text.trim());
     const inference = config.inference ?? {};
     const feeds = {
@@ -330,7 +348,7 @@ export async function speakNatural(language, text) {
         scales: new ort.Tensor('float32', Float32Array.from([inference.noise_scale ?? 0.667, inference.length_scale ?? 1, inference.noise_w ?? 0.8]), [3]),
     };
     if (config.num_speakers > 1)
-        feeds.sid = new ort.Tensor('int64', BigInt64Array.from([0n]), [1]);
+        feeds.sid = new ort.Tensor('int64', BigInt64Array.from([BigInt(config.speaker_id_map?.[speaker] ?? 0)]), [1]);
     const samples = (await session.run(feeds)).output.data;
     return btoa(toBinary(wavFromSamples(samples, config.audio.sample_rate)));
 }

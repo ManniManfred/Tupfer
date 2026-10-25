@@ -3,6 +3,7 @@
              xmlns:vm="using:TipToy.Designer.ViewModels"
              xmlns:views="using:TipToy.Designer.Views"
              xmlns:compiler="using:TipToy.Designer.Compiler"
+             xmlns:gme="using:TipToy.Designer.Gme"
              x:Class="TipToy.Designer.Views.MainView"
              x:DataType="vm:MainWindowViewModel"
              Background="{StaticResource AppBackground}">
@@ -51,6 +52,12 @@
     </Style>
     <Style Selector=".compact TextBox.speakname, .compact TextBlock.speakname">
       <Setter Property="Width" Value="110" />
+    </Style>
+    <Style Selector="ComboBox.speakvoice, TextBlock.speakvoice">
+      <Setter Property="Width" Value="210" />
+    </Style>
+    <Style Selector=".compact ComboBox.speakvoice, .compact TextBlock.speakvoice">
+      <Setter Property="Width" Value="120" />
     </Style>
   </UserControl.Styles>
 
@@ -678,6 +685,17 @@
               <TextBlock Classes="section" Text="Texte für die Sprachausgabe" />
               <TextBlock Classes="hint" Margin="0,0,0,6"
                          Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet (Wiedergabeknopf = anhören). Statt der Sprachausgabe kann jeder Text eine eigene Aufnahme bekommen: Der Mikrofonknopf nimmt auf (noch einmal klicken beendet), der Ordnerknopf übernimmt eine Audiodatei (.wav, .ogg, .mp3). Aufnahmen liegen im Projektordner unter aufnahmen/." />
+              <StackPanel IsVisible="{x:Static vm:MainWindowViewModel.HasVoices}" Margin="0,2,0,4">
+                <TextBlock Classes="label" Text="Stimme des Projekts" />
+                <ComboBox Classes="voice" MinWidth="320" ItemsSource="{Binding Project.VoiceOptions}"
+                          SelectedValueBinding="{ReflectionBinding Id}" SelectedValue="{Binding Project.Voice}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="gme:VoiceOption"><TextBlock Text="{Binding Name}" /></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Classes="hint" Margin="0,4,0,0"
+                           Text="Jeder Text kann rechts eine eigene Stimme bekommen, z. B. für verschiedene Figuren. Jede Stimme wird beim ersten Gebrauch geladen (20–110 MB) und danach im Browser gespeichert." />
+              </StackPanel>
               <WrapPanel Classes="buttons">
                 <Button Command="{Binding AddSpeakCommand}">
                   <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Neuer Text" /></StackPanel>
@@ -686,15 +704,17 @@
                   <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
                 </Button>
               </WrapPanel>
-              <Grid ColumnDefinitions="Auto,*" Margin="10,6,10,2">
+              <Grid ColumnDefinitions="Auto,*,Auto" Margin="10,6,10,2">
                 <TextBlock Classes="label speakname" Text="Name" Margin="0" />
                 <TextBlock Classes="label" Grid.Column="1" Text="Text bzw. Aufnahme" Margin="8,0,0,0" />
+                <TextBlock Classes="label speakvoice" Grid.Column="2" Text="Stimme" Margin="4,0,118,0"
+                           IsVisible="{x:Static vm:MainWindowViewModel.HasVoices}" />
               </Grid>
             </StackPanel>
             <ListBox ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding Project.SelectedSpeak}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:SpeakViewModel">
-                  <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                     <TextBox Classes="speakname" Text="{Binding Name}" Margin="0,0,8,0" />
                     <TextBox Grid.Column="1" Text="{Binding Text}" IsVisible="{Binding !HasRecording}" />
                     <Border Grid.Column="1" IsVisible="{Binding HasRecording}" Background="#E8F5E9" CornerRadius="4"
@@ -712,7 +732,15 @@
                                    VerticalAlignment="Center" />
                       </DockPanel>
                     </Border>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="4,0,0,0">
+                    <ComboBox Grid.Column="2" Classes="speakvoice" Margin="4,0,0,0"
+                              IsVisible="{x:Static vm:MainWindowViewModel.HasVoices}" IsEnabled="{Binding !HasRecording}"
+                              ItemsSource="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).Project.SpeakVoiceOptions}"
+                              SelectedValueBinding="{ReflectionBinding Id}" SelectedValue="{Binding Voice}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="gme:VoiceOption"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0,0,0">
                       <Button Classes="tool" ToolTip.Tip="Anhören"
                               Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
                               CommandParameter="{Binding}">

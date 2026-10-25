@@ -43,6 +43,9 @@ public partial class SpeakViewModel : ObservableObject
     [ObservableProperty] string _name = "";
     [ObservableProperty] string _text = "";
 
+    /// <summary>Eigene Stimme (Id aus Gme.Voices); leer = Stimme des Projekts.</summary>
+    [ObservableProperty] string _voice = "";
+
     /// <summary>Eigene Aufnahme (absoluter Pfad); ersetzt beim Bauen die Sprachausgabe.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasRecording), nameof(RecordingName))]

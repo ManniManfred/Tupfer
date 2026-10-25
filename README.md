@@ -134,12 +134,16 @@ Unterschiede zur Desktop-Version:
   Audiodateien wird als `.zip` heruntergeladen; zum Öffnen das ZIP wählen – oder die
   `.tiptoy.json` zusammen mit ihren Bildern (Mehrfachauswahl).
 - **Sprachausgabe:** natürlich klingende Stimmen mit [Piper](https://github.com/rhasspy/piper)
-  (neuronale Sprachausgabe, läuft im Browser; Deutsch „Thorsten“, außerdem Englisch, Französisch,
-  Spanisch). Beim ersten Vorlesen werden Laufzeit und Stimme geladen – etwa 90 MB von cdnjs,
-  jsDelivr und Hugging Face –, danach kommen sie aus dem Browser-Cache. Die Texte bleiben dabei im
-  Browser. Ist das Laden nicht möglich (oder für Italienisch und Niederländisch), spricht
+  (neuronale Sprachausgabe, läuft im Browser). Im Tab *Sprachausgabe* wählt man die Stimme des
+  Projekts und bei Bedarf für jeden Text eine eigene, z. B. für verschiedene Figuren: Deutsch mit
+  mehreren weiblichen und männlichen Stimmen und „Thorsten“ in verschiedenen Stimmungen (fröhlich,
+  flüsternd, wütend …), außerdem Englisch, Französisch, Spanisch, Italienisch und Niederländisch.
+  Beim ersten Gebrauch werden Laufzeit und Lautschrift (etwa 30 MB) und jede Stimme (20–110 MB) von
+  cdnjs, jsDelivr und Hugging Face geladen, danach kommen sie aus dem Browser-Cache. Die Texte
+  bleiben dabei im Browser. Ist das Laden nicht möglich, spricht
   [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als JavaScript, klingt deutlich künstlicher).
-  Die Texte werden als WAV eingebettet.
+  Die Texte werden als WAV eingebettet. In der Desktop-Version gibt es die Auswahl nicht; dort
+  spricht die Sprachausgabe des Systems.
 - **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
   fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als WAV (mono, 22 kHz).
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.

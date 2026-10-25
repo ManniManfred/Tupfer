@@ -9,6 +9,10 @@ public class ProjectFile
     public uint ProductId { get; set; } = 900;
     public string Comment { get; set; } = "";
     public string Language { get; set; } = "de";
+
+    /// <summary>Stimme der natürlichen Sprachausgabe (siehe Gme.Voices); null = Standard der Sprache.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Voice { get; set; }
     public string GmeLang { get; set; } = "";
     public string Init { get; set; } = "";
     public string Welcome { get; set; } = "";
@@ -49,6 +53,10 @@ public class SpeakEntry
 {
     public string Name { get; set; } = "";
     public string Text { get; set; } = "";
+
+    /// <summary>Eigene Stimme für diesen Text; null = Stimme des Projekts.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Voice { get; set; }
 
     /// <summary>Eigene Aufnahme (Audiodatei relativ zum Projekt); wird statt der Sprachausgabe verwendet.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

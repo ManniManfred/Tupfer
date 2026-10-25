@@ -1,3 +1,4 @@
+using TipToy.Designer.Gme;
 using System.Collections.ObjectModel;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -18,7 +19,19 @@ public partial class ProjectViewModel : ObservableObject
 
     [ObservableProperty] uint _productId = 900;
     [ObservableProperty] string _comment = "";
-    [ObservableProperty] string _language = "de";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VoiceOptions), nameof(SpeakVoiceOptions))]
+    string _language = "de";
+
+    /// <summary>Stimme der natürlichen Sprachausgabe (Id aus Gme.Voices); leer = Standard der Sprache.</summary>
+    [ObservableProperty] string _voice = "";
+
+    /// <summary>Auswahl für die Projektstimme: Standard und die Stimmen der Sprache.</summary>
+    public IReadOnlyList<VoiceOption> VoiceOptions =>
+        [new("", Voices.Default(Language) is { } d ? $"Standard ({d.Name})" : "Standard"), .. Voices.For(Language)];
+
+    /// <summary>Auswahl für die Stimme eines Textes: wie das Projekt oder eine Stimme der Sprache.</summary>
+    public IReadOnlyList<VoiceOption> SpeakVoiceOptions => [new("", "Projektstimme"), .. Voices.For(Language)];
     [ObservableProperty] string _gmeLang = "";
     [ObservableProperty] string _init = "";
     [ObservableProperty] string _welcome = "";
@@ -191,6 +204,7 @@ public partial class ProjectViewModel : ObservableObject
         ProductId = ProductId,
         Comment = Comment,
         Language = Language,
+        Voice = string.IsNullOrEmpty(Voice) ? null : Voice,
         GmeLang = GmeLang,
         Init = Init,
         Welcome = Welcome,
@@ -208,6 +222,7 @@ public partial class ProjectViewModel : ObservableObject
         {
             Name = s.Name,
             Text = s.Text,
+            Voice = string.IsNullOrEmpty(s.Voice) ? null : s.Voice,
             Recording = s.HasRecording ? Path.GetRelativePath(baseDir, s.Recording!).Replace('\\', '/') : null,
         }).ToList(),
         Pages = Pages.Select(p => p.ToEntry(baseDir)).ToList(),
@@ -220,6 +235,7 @@ public partial class ProjectViewModel : ObservableObject
             ProductId = f.ProductId,
             Comment = f.Comment,
             Language = f.Language,
+            Voice = f.Voice ?? "",
             GmeLang = f.GmeLang,
             Init = f.Init,
             Welcome = f.Welcome,
@@ -244,6 +260,7 @@ public partial class ProjectViewModel : ObservableObject
             {
                 Name = s.Name,
                 Text = s.Text,
+                Voice = s.Voice ?? "",
                 Recording = string.IsNullOrEmpty(s.Recording) ? null : Path.GetFullPath(s.Recording, baseDir),
             });
         foreach (var p in f.Pages)

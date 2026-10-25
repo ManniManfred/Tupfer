@@ -190,7 +190,7 @@ public static class GmeBuilder
                 : throw new GmeBuildException($"Die Aufnahme für „{name}“ fehlt: {file}");
         }
         if (text != null)
-            return speak(string.IsNullOrWhiteSpace(project.Language) ? "en" : project.Language, text.Text);
+            return speak(Voices.SpeechKey(project, text), text.Text);
 
         var pattern = string.IsNullOrWhiteSpace(project.MediaPath) ? "%s" : project.MediaPath;
         var basePath = Path.Combine(baseDir, pattern.Replace("%s", name));

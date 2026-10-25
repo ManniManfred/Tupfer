@@ -121,9 +121,8 @@ public partial class MainWindowViewModel
         StopTestAudio();
         int id = _testPlayId;
         var file = Project.ToFile(BaseDir);
-        var language = string.IsNullOrWhiteSpace(Project.Language) ? "en" : Project.Language;
         var tts = new TextToSpeech(TtsCacheDir, LogFromAnyThread, Notice);
-        await tts.PrepareAsync(language, file.Speak.Where(s => names.Contains(s.Name) && string.IsNullOrEmpty(s.Recording)).Select(s => s.Text));
+        await tts.PrepareAsync(file.Speak.Where(s => names.Contains(s.Name) && string.IsNullOrEmpty(s.Recording)).Select(s => (Voices.SpeechKey(file, s), s.Text)));
         foreach (var name in names)
         {
             byte[] data;

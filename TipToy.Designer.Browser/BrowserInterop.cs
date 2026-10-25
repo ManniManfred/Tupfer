@@ -81,11 +81,11 @@ static partial class BrowserInterop
     public static partial Task<string> StopRecordingAsync(int sampleRate);
 
     /// <summary>
-    /// Spricht den Text mit einer natürlichen Stimme (Piper, lädt beim ersten Mal etwa 90 MB),
-    /// liefert WAV-Daten Base64-kodiert. Wirft, wenn es für die Sprache keine gibt oder das Laden scheitert.
+    /// Spricht den Text mit einer natürlichen Stimme (Piper, Id wie in Gme.Voices; lädt sie beim ersten
+    /// Mal, 20–110 MB), liefert WAV-Daten Base64-kodiert. Wirft, wenn das Laden scheitert.
     /// </summary>
     [JSImport("speakNatural", "tiptoy")]
-    public static partial Task<string> SpeakNaturalAsync(string language, string text);
+    public static partial Task<string> SpeakNaturalAsync(string voice, string text);
 
     /// <summary>Spricht den Text, liefert WAV-Daten. Vorher muss <see cref="LoadSpeechAsync"/> aufgerufen worden sein.</summary>
     [JSImport("speak", "tiptoy")]
