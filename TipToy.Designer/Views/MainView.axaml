@@ -708,8 +708,10 @@
       <!-- ================= Sprachausgabe ================= -->
       <TabItem Header="Sprachausgabe">
         <Border Classes="card">
-          <DockPanel>
-            <StackPanel DockPanel.Dock="Top">
+          <!-- Die ganze Seite scrollt, nicht nur die Liste (auf dem Handy bleibt sonst kaum Platz) -->
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <StackPanel>
               <TextBlock Classes="section" Text="Texte für die Sprachausgabe" />
               <TextBlock Classes="hint" Margin="0,0,0,6"
                          Classes.desktoponly="True"
@@ -740,7 +742,8 @@
                            IsVisible="{x:Static vm:MainWindowViewModel.HasVoices}" />
               </Grid>
             </StackPanel>
-            <ListBox ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding Project.SelectedSpeak}">
+            <ListBox ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding Project.SelectedSpeak}"
+                     ScrollViewer.VerticalScrollBarVisibility="Disabled">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:SpeakViewModel">
                   <!-- Breit: eine Zeile; auf dem Handy oben Name und Stimme, darunter Text und Knöpfe (Stile oben) -->
@@ -794,7 +797,8 @@
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
-          </DockPanel>
+          </StackPanel>
+          </ScrollViewer>
         </Border>
       </TabItem>
 
