@@ -56,6 +56,19 @@ public partial class MainView : UserControl
         LayerList.AddHandler(PointerCaptureLostEvent, (_, _) => EndLayerDrag());
 
         FitButton.Click += (_, _) => FitPage();
+        // Zoomfeld: Eingabetaste übernimmt, Esc verwirft; beim Betreten alles markieren
+        ZoomBox.KeyDown += (_, e) =>
+        {
+            if (DataContext is not MainWindowViewModel vm || e.Key is not (Key.Enter or Key.Escape))
+                return;
+            if (e.Key == Key.Enter)
+                vm.ZoomText = ZoomBox.Text ?? "";
+            else
+                ZoomBox.Text = vm.ZoomText;
+            ZoomBox.SelectAll();
+            e.Handled = true;
+        };
+        ZoomBox.GotFocus += (_, _) => Dispatcher.UIThread.Post(ZoomBox.SelectAll);
         ShowCanvas.Click += (_, _) => ShowPagesPanel(CanvasPanel);
         ShowPages.Click += (_, _) => ShowPagesPanel(PagesPanel);
         ShowProperties.Click += (_, _) => ShowPagesPanel(PropertiesPanel);
@@ -186,7 +199,6 @@ public partial class MainView : UserControl
         HeaderFileButtons.IsVisible = !compact;
         GmeLabel.IsVisible = !compact;
         PenLabel.IsVisible = !compact;
-        ZoomSlider.IsVisible = !compact;
         CompactBar.IsVisible = compact;
         UpdateLogRow(compact ? 80 : 140);
 
@@ -250,7 +262,7 @@ public partial class MainView : UserControl
             return;
         double available = PageScroll.Bounds.Width - 48 - 8; // Rand um die Seite und Bildlaufleiste
         if (available > 0)
-            vm.Zoom = Math.Clamp(available / (page.WidthMm * 96 / 25.4), 0.2, 4);
+            vm.Zoom = Math.Clamp(available / (page.WidthMm * 96 / 25.4), MainWindowViewModel.MinZoom, MainWindowViewModel.MaxZoom);
     }
 
     // ---------- Ansicht verschieben und zoomen ----------
@@ -365,7 +377,7 @@ public partial class MainView : UserControl
             return;
         var (a, b) = TwoTouches();
         var mid = (a + b) / 2;
-        vm.Zoom = Math.Clamp(pinch.Zoom * Distance(a, b) / pinch.Distance, 0.2, 4);
+        vm.Zoom = Math.Clamp(pinch.Zoom * Distance(a, b) / pinch.Distance, MainWindowViewModel.MinZoom, MainWindowViewModel.MaxZoom);
         // Der Seitenpunkt unter der Fingermitte bleibt unter der Fingermitte
         PageScroll.UpdateLayout();
         if (PageScroll.Content is Visual content && PageView.TranslatePoint(PageOriginPoint, content) is { } origin)
@@ -385,7 +397,7 @@ public partial class MainView : UserControl
         e.Handled = true;
 
         double oldZoom = vm.Zoom;
-        double zoom = Math.Clamp(oldZoom * Math.Pow(1.25, e.Delta.Y), 0.2, 4);
+        double zoom = Math.Clamp(oldZoom * Math.Pow(1.25, e.Delta.Y), MainWindowViewModel.MinZoom, MainWindowViewModel.MaxZoom);
         if (zoom == oldZoom)
             return;
         var onPage = e.GetPosition(PageView) - PageView.PageOrigin;

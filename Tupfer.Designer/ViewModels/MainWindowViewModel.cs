@@ -69,7 +69,35 @@ public partial class MainWindowViewModel : ObservableObject
     string? _filePath;
 
     [ObservableProperty] string _logText = "";
-    [ObservableProperty] double _zoom = 1.0;
+    /// <summary>Kleinster und größter Zoom (20 % … 1000 %).</summary>
+    public const double MinZoom = 0.2, MaxZoom = 10;
+
+    double _zoom = 1.0;
+    /// <summary>Zoom der Seitenansicht, begrenzt auf <see cref="MinZoom"/> … <see cref="MaxZoom"/>.</summary>
+    public double Zoom
+    {
+        get => _zoom;
+        set
+        {
+            if (SetProperty(ref _zoom, Math.Clamp(value, MinZoom, MaxZoom)))
+                OnPropertyChanged(nameof(ZoomText));
+        }
+    }
+
+    /// <summary>Zoom als bearbeitbarer Text in Prozent, z. B. „150 %“. Ungültige Eingaben werden verworfen.</summary>
+    public string ZoomText
+    {
+        get => $"{Math.Round(Zoom * 100)} %";
+        set
+        {
+            var text = (value ?? "").Replace("%", "").Trim().Replace(',', '.');
+            if (double.TryParse(text, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var percent) && percent > 0)
+                Zoom = percent / 100;
+            // Text immer neu anzeigen (auch nach ungültiger oder begrenzter Eingabe)
+            OnPropertyChanged();
+        }
+    }
     [ObservableProperty] bool _printElements = true;
 
     /// <summary>Auf der Seite nur OID-Flächen bearbeiten, Bilder und Texte sind gesperrt.</summary>
@@ -881,8 +909,8 @@ public partial class MainWindowViewModel : ObservableObject
         SelectedTab = 1;
     }
 
-    [RelayCommand] void ZoomIn() => Zoom = Math.Min(4, Zoom * 1.25);
-    [RelayCommand] void ZoomOut() => Zoom = Math.Max(0.2, Zoom / 1.25);
+    [RelayCommand] void ZoomIn() => Zoom *= 1.25;
+    [RelayCommand] void ZoomOut() => Zoom /= 1.25;
 
     // ---------- Skripte & Texte ----------
 
