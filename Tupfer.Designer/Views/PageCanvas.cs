@@ -16,7 +16,7 @@ namespace Tupfer.Designer.Views;
 /// <summary>
 /// Zeichenfläche einer Seite: zeigt Bilder, Texte und OID-Flächen.
 /// Ziehen auf freier Fläche legt eine neue OID-Fläche an (Rechteck oder Ellipse, je nach
-/// <see cref="AreaTool"/>); Polygone werden Punkt für Punkt geklickt. Ziehen eines Objekts verschiebt es.
+/// <see cref="AreaTool"/>; ohne Werkzeug hebt es nur die Auswahl auf); Polygone werden Punkt für Punkt geklickt. Ziehen eines Objekts verschiebt es.
 /// Bei einem gewählten Polygon lassen sich Ecken verschieben und Kanten zu Kreisbögen ziehen.
 /// Bilder und Texte haben Anfasser zum Skalieren (bzw. Zuschneiden) und einen Drehgriff.
 /// Im Testmodus wird nicht bearbeitet: Antippen einer Fläche führt <see cref="TestTapCommand"/> aus.
@@ -41,8 +41,8 @@ public class PageCanvas : Control
         AvaloniaProperty.Register<PageCanvas, bool>(nameof(CropMode));
 
     /// <summary>Form neuer OID-Flächen.</summary>
-    public static readonly StyledProperty<AreaShape> AreaToolProperty =
-        AvaloniaProperty.Register<PageCanvas, AreaShape>(nameof(AreaTool));
+    public static readonly StyledProperty<AreaShape?> AreaToolProperty =
+        AvaloniaProperty.Register<PageCanvas, AreaShape?>(nameof(AreaTool));
 
     /// <summary>Testmodus: Antippen führt die Fläche aus, statt zu bearbeiten.</summary>
     public static readonly StyledProperty<bool> TestModeProperty =
@@ -189,7 +189,7 @@ public class PageCanvas : Control
         set => SetValue(CropModeProperty, value);
     }
 
-    public AreaShape AreaTool
+    public AreaShape? AreaTool
     {
         get => GetValue(AreaToolProperty);
         set => SetValue(AreaToolProperty, value);
@@ -577,7 +577,16 @@ public class PageCanvas : Control
             _mode = DragMode.MoveElement;
             _startElement = hitElement.ToEntry(null);
         }
-        else if (AreaTool == AreaShape.Polygon)
+        else if (AreaTool is not { } tool)
+        {
+            // Kein Flächenwerkzeug: Klick auf freie Stelle hebt nur die Auswahl auf
+            EndDrag();
+            page.SelectedArea = null;
+            page.SelectedElement = null;
+            e.Handled = true;
+            return;
+        }
+        else if (tool == AreaShape.Polygon)
         {
             // Erste Ecke eines neuen Polygons; die Fläche entsteht erst beim Abschließen
             EndDrag();
@@ -592,7 +601,7 @@ public class PageCanvas : Control
         else
         {
             var area = NewArea(page.Project);
-            area.Shape = AreaTool;
+            area.Shape = tool;
             area.X = Snap(_startMm.X);
             area.Y = Snap(_startMm.Y);
             page.Areas.Add(area);

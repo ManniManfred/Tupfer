@@ -78,15 +78,23 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Klicken auf der Seite nimmt Objekte in die Auswahl auf bzw. entfernt sie (für Touch).</summary>
     [ObservableProperty] bool _multiSelect;
 
-    /// <summary>Form neuer OID-Flächen.</summary>
+    /// <summary>Form neuer OID-Flächen; <c>null</c>: kein Werkzeug, Ziehen auf freier Stelle legt keine Fläche an.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RectangleTool), nameof(EllipseTool), nameof(PolygonTool))]
-    AreaShape _areaTool;
+    AreaShape? _areaTool = AreaShape.Rectangle;
 
-    // Für die Werkzeugknöpfe: Einschalten wählt die Form, Ausschalten wird ignoriert
-    public bool RectangleTool { get => AreaTool == AreaShape.Rectangle; set { if (value) AreaTool = AreaShape.Rectangle; else OnPropertyChanged(); } }
-    public bool EllipseTool { get => AreaTool == AreaShape.Ellipse; set { if (value) AreaTool = AreaShape.Ellipse; else OnPropertyChanged(); } }
-    public bool PolygonTool { get => AreaTool == AreaShape.Polygon; set { if (value) AreaTool = AreaShape.Polygon; else OnPropertyChanged(); } }
+    // Für die Werkzeugknöpfe: Einschalten wählt die Form, Ausschalten schaltet das Werkzeug ab
+    public bool RectangleTool { get => AreaTool == AreaShape.Rectangle; set => SetTool(AreaShape.Rectangle, value); }
+    public bool EllipseTool { get => AreaTool == AreaShape.Ellipse; set => SetTool(AreaShape.Ellipse, value); }
+    public bool PolygonTool { get => AreaTool == AreaShape.Polygon; set => SetTool(AreaShape.Polygon, value); }
+
+    void SetTool(AreaShape shape, bool on)
+    {
+        if (on)
+            AreaTool = shape;
+        else if (AreaTool == shape)
+            AreaTool = null;
+    }
 
     /// <summary>Die Anfasser eines Bilds schneiden zu statt zu skalieren.</summary>
     [ObservableProperty] bool _cropMode;
