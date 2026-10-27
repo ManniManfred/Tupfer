@@ -6,6 +6,9 @@ GME-Datei für den Stift bauen und die Seiten mit OID-Codes drucken. Er läuft a
 (Windows, Linux, macOS) und im Browser. OID-Codes und GME-Dateien entsprechen
 [tttool](https://github.com/entropia/tip-toi-reveng), das selbst aber nicht benötigt wird.
 
+- **Im Browser ausprobieren:** https://mannimanfred.github.io/Tupfer/
+- **Herunterladen (Windows, Linux, macOS):** https://mannimanfred.github.io/Tupfer/download.html
+
 Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 
 ## Inhalt
@@ -73,8 +76,9 @@ Aufnahmen ersetzen, zum Beispiel echte Tiergeräusche. Die Tierbilder stammen au
 
 ## Herunterladen
 
-Fertige Setups gibt es auf der Download-Seite der Web-App (`download.html`, in der Web-App unter
-*Datei → Desktop-Version herunterladen*) und unter [Releases](https://github.com/ManniManfred/Tupfer/releases):
+Fertige Setups gibt es auf der [Download-Seite](https://mannimanfred.github.io/Tupfer/download.html)
+(in der Web-App unter *Datei → Desktop-Version herunterladen*) und unter
+[Releases](https://github.com/ManniManfred/Tupfer/releases):
 
 | System | Datei |
 | --- | --- |
@@ -173,8 +177,8 @@ Adresse geht es auch gleich beim Start: `…/index.html?beispiel=tic-tac-toi`. W
 `Tupfer.Designer.Browser/Examples.cs` und der `.csproj` eingetragen.
 
 Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem Push auf `master` und
-veröffentlicht sie auf GitHub Pages (einmalig unter *Settings → Pages → Source* „GitHub Actions“
-wählen).
+veröffentlicht sie auf GitHub Pages unter https://mannimanfred.github.io/Tupfer/ (einmalig unter
+*Settings → Pages → Source* „GitHub Actions“ wählen).
 
 **Auf eigenem Server (z. B. CapRover):** `captain-definition` und `deploy/Dockerfile` bauen die
 Web-Version in einem Container (.NET-SDK mit `wasm-tools`) und liefern sie mit nginx aus. In
