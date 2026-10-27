@@ -134,6 +134,12 @@ public class ElementEntry
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<AreaPoint>? Points { get; set; }
 
+    /// <summary>Breite des Rands der Farbfläche (mm), 0 = kein Rand.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double StrokeWidth { get; set; }
+
+    public string StrokeColor { get; set; } = "#000000";
+
     /// <summary>Nur zum Lesen von Projekten aus Version 1.18: Ellipse statt Rechteck.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Ellipse { get; set; }

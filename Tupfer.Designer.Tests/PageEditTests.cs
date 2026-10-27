@@ -77,6 +77,33 @@ public class PageEditTests
     }
 
     [Fact]
+    public void FarbflaecheMitRand()
+    {
+        var (project, page) = NewProject();
+        var shape = page.AddShape();
+        Assert.Null(shape.StrokePen(1));
+        shape.StrokeWidth = 1.5;
+        shape.StrokeColor = "#1976D2";
+        Assert.Equal(1.5 * 4, shape.StrokePen(4)!.Thickness);
+
+        var copy = ElementViewModel.FromEntry(project, shape.ToEntry(null), null);
+        Assert.Equal(1.5, copy.StrokeWidth);
+        Assert.Equal("#1976D2", copy.StrokeColor);
+
+        shape.ClearFillCommand.Execute(null);
+        Assert.Equal(0, Avalonia.Media.Color.Parse(shape.Color).A);
+
+        // Rückgängig stellt die Seite neu her (neue Objekte)
+        project.History.Undo();
+        Assert.NotEqual(0, Avalonia.Media.Color.Parse(page.Elements[0].Color).A);
+        Assert.Equal(1.5, page.Elements[0].StrokeWidth);
+
+        // Negative Breite gibt es nicht
+        page.Elements[0].StrokeWidth = -1;
+        Assert.Equal(0, page.Elements[0].StrokeWidth);
+    }
+
+    [Fact]
     public void GedrehtesFarbpolygon()
     {
         var (_, page) = NewProject();

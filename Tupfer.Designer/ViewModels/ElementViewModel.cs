@@ -53,15 +53,50 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     /// <summary>Farbe der zuletzt geänderten Farbfläche; neue Farbflächen übernehmen sie.</summary>
     public static string LastShapeColor { get; private set; } = "#FBC02D";
 
+    /// <summary>Rand der zuletzt geänderten Farbfläche; neue Farbflächen übernehmen ihn.</summary>
+    public static double LastStrokeWidth { get; private set; }
+    public static string LastStrokeColor { get; private set; } = "#000000";
+
     /// <summary>Neue Farbfläche (noch ohne Lage und Größe).</summary>
     public static ElementViewModel NewShape(ProjectViewModel project, AreaShape shape) =>
-        new(project, ElementKind.Shape) { Color = LastShapeColor, Shape = shape };
+        new(project, ElementKind.Shape)
+        {
+            Color = LastShapeColor, Shape = shape, StrokeWidth = LastStrokeWidth, StrokeColor = LastStrokeColor,
+        };
 
     partial void OnColorChanged(string value)
     {
         if (IsShape && Avalonia.Media.Color.TryParse(value, out _))
             LastShapeColor = value;
     }
+
+    /// <summary>Breite des Rands (mm), 0 = kein Rand.</summary>
+    [ObservableProperty] double _strokeWidth;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StrokeBrush))]
+    string _strokeColor = "#000000";
+
+    public IBrush StrokeBrush => Avalonia.Media.Color.TryParse(StrokeColor, out var c) ? new SolidColorBrush(c) : Brushes.Black;
+
+    partial void OnStrokeWidthChanged(double value)
+    {
+        if (value < 0)
+            StrokeWidth = 0;
+        else if (IsShape)
+            LastStrokeWidth = value;
+    }
+
+    partial void OnStrokeColorChanged(string value)
+    {
+        if (IsShape && Avalonia.Media.Color.TryParse(value, out _))
+            LastStrokeColor = value;
+    }
+
+    /// <summary>Stift für den Rand bei <paramref name="scale"/> Pixeln pro mm, null = kein Rand.</summary>
+    public IPen? StrokePen(double scale) => IsShape && StrokeWidth > 0
+        ? new Pen(StrokeBrush, StrokeWidth * scale, lineJoin: Shape == AreaShape.Rectangle ? PenLineJoin.Miter : PenLineJoin.Round)
+        : null;
 
     public ElementViewModel(ProjectViewModel project, ElementKind kind)
     {
@@ -308,6 +343,18 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     void SetColor(string color) => Color = color;
 
     [RelayCommand]
+    void SetStrokeColor(string color) => StrokeColor = color;
+
+    /// <summary>Durchsichtige Füllung: nur der Rand bleibt sichtbar.</summary>
+    [RelayCommand]
+    void ClearFill() => Project.History.Change(() =>
+    {
+        Color = "#00FFFFFF";
+        if (StrokeWidth <= 0)
+            StrokeWidth = 0.5;
+    });
+
+    [RelayCommand]
     void Rotate(string degrees) => Rotation = Math.Round(Rotation + double.Parse(degrees, CultureInfo.InvariantCulture), 1);
 
     /// <summary>Zeigt wieder das ganze Bild im gleichen Maßstab, die Mitte bleibt erhalten.</summary>
@@ -338,7 +385,7 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
         ImagePath = baseDir == null || string.IsNullOrEmpty(ImagePath) ? ImagePath : Path.GetRelativePath(baseDir, ImagePath),
         CropX = CropX, CropY = CropY, CropWidth = CropWidth, CropHeight = CropHeight,
         Text = Text, FontSize = FontSize, FontFamily = FontFamily, Color = Color, Bold = Bold, Italic = Italic, Align = Align,
-        Shape = Shape, Points = IsPolygon ? Points.ToList() : null,
+        Shape = Shape, Points = IsPolygon ? Points.ToList() : null, StrokeWidth = StrokeWidth, StrokeColor = StrokeColor,
     };
 
     public static ElementViewModel FromEntry(ProjectViewModel project, ElementEntry e, string? baseDir) => new(project, e.Kind)
@@ -350,5 +397,6 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
         // Projekte aus 1.18 kennen nur „Ellipse“
         Shape = e.Ellipse && e.Shape == AreaShape.Rectangle ? AreaShape.Ellipse : e.Shape,
         Points = e.Points ?? [],
+        StrokeWidth = e.StrokeWidth, StrokeColor = e.StrokeColor,
     };
 }

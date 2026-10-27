@@ -29,10 +29,11 @@ public static class ImageConverter
             }
             else if (e.IsShape)
             {
+                var pen = e.StrokePen(scale);
                 if (e.Shape == AreaShape.Rectangle)
-                    ctx.FillRectangle(e.ColorBrush, rect);
+                    ctx.DrawRectangle(e.ColorBrush, pen, rect);
                 else
-                    ctx.DrawGeometry(e.ColorBrush, null,
+                    ctx.DrawGeometry(e.ColorBrush, pen,
                         new PolylineGeometry(e.Outline().Select(p => new Point(p.X * scale, p.Y * scale)), true));
             }
         }
