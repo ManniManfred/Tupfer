@@ -2,6 +2,6 @@
   <PropertyGroup>
     <!-- Version des Tupfer Designers (Desktop und Browser), wird im Titel angezeigt.
          Bei jeder Änderung hochzählen: Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle. -->
-    <Version>1.15.1</Version>
+    <Version>1.15.2</Version>
   </PropertyGroup>
 </Project>

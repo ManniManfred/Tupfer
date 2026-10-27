@@ -6,6 +6,9 @@ GME-Datei für den Stift bauen und die Seiten mit OID-Codes drucken. Er läuft a
 (Windows, Linux, macOS) und im Browser. OID-Codes und GME-Dateien entsprechen
 [tttool](https://github.com/entropia/tip-toi-reveng), das selbst aber nicht benötigt wird.
 
+Ideal, um **tiptoi selber zu machen**: eigene tiptoi-Bücher, Spielpläne, Fotoseiten und Lernspiele
+für Kinder – kostenlos und quelloffen (MIT-Lizenz).
+
 - **Im Browser ausprobieren:** https://mannimanfred.github.io/Tupfer/
 - **Herunterladen (Windows, Linux, macOS):** https://mannimanfred.github.io/Tupfer/download.html
 
