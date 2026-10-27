@@ -39,6 +39,12 @@ public partial class MainView : UserControl
         PageScroll.AddHandler(PointerReleasedEvent, OnPanEnd, RoutingStrategies.Tunnel);
         PageScroll.AddHandler(PointerCaptureLostEvent, (_, e) => RemoveTouch(e.Pointer));
         PageScroll.TemplateApplied += (_, _) => Dispatcher.UIThread.Post(DisableTouchScrolling);
+        // Wächst die Zeichenfläche nach links oder oben (Objekt über den Rand gezogen), Ansicht nachführen
+        PageView.PageOriginShifted += shift => Dispatcher.UIThread.Post(() =>
+        {
+            PageScroll.UpdateLayout();
+            PageScroll.Offset += shift;
+        });
         // Strg+Z/Y für die Seiten am Fenster abfangen: Nach Touch-Bedienung hat oft kein Element den Fokus,
         // dann kommen Tastendrücke nur dort an
         AttachedToVisualTree += (_, _) => TopLevel.GetTopLevel(this)?.AddHandler(KeyDownEvent, OnUndoKey);
@@ -346,8 +352,9 @@ public partial class MainView : UserControl
             return;
         var (a, b) = TwoTouches();
         var mid = (a + b) / 2;
-        if (PageScroll.TranslatePoint(mid, PageView) is not { } onPage)
+        if (PageScroll.TranslatePoint(mid, PageView) is not { } inCanvas)
             return;
+        var onPage = inCanvas - PageView.PageOrigin;
         _panStart = null;
         _pinch = (Math.Max(1, Distance(a, b)), vm.Zoom, onPage / vm.Zoom);
     }
@@ -361,9 +368,12 @@ public partial class MainView : UserControl
         vm.Zoom = Math.Clamp(pinch.Zoom * Distance(a, b) / pinch.Distance, 0.2, 4);
         // Der Seitenpunkt unter der Fingermitte bleibt unter der Fingermitte
         PageScroll.UpdateLayout();
-        if (PageScroll.Content is Visual content && PageView.TranslatePoint(default, content) is { } origin)
+        if (PageScroll.Content is Visual content && PageView.TranslatePoint(PageOriginPoint, content) is { } origin)
             PageScroll.Offset = new Vector(origin.X + pinch.PageAt1.X * vm.Zoom - mid.X, origin.Y + pinch.PageAt1.Y * vm.Zoom - mid.Y);
     }
+
+    /// <summary>Obere linke Ecke der Seite in der Zeichenfläche (ragen Objekte hinaus, liegt sie nicht bei 0).</summary>
+    Point PageOriginPoint => new(PageView.PageOrigin.X, PageView.PageOrigin.Y);
 
     static double Distance(Point a, Point b) => Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
 
@@ -378,12 +388,12 @@ public partial class MainView : UserControl
         double zoom = Math.Clamp(oldZoom * Math.Pow(1.25, e.Delta.Y), 0.2, 4);
         if (zoom == oldZoom)
             return;
-        var onPage = e.GetPosition(PageView);
+        var onPage = e.GetPosition(PageView) - PageView.PageOrigin;
         var inView = e.GetPosition(PageScroll);
         vm.Zoom = zoom;
 
         PageScroll.UpdateLayout();
-        if (PageScroll.Content is Visual content && PageView.TranslatePoint(default, content) is { } origin)
+        if (PageScroll.Content is Visual content && PageView.TranslatePoint(PageOriginPoint, content) is { } origin)
             PageScroll.Offset = new Vector(
                 origin.X + onPage.X * zoom / oldZoom - inView.X,
                 origin.Y + onPage.Y * zoom / oldZoom - inView.Y);

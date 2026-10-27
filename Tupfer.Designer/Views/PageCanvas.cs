@@ -21,6 +21,8 @@ namespace Tupfer.Designer.Views;
 /// Bilder und Texte haben Anfasser zum Skalieren (bzw. Zuschneiden) und einen Drehgriff.
 /// Im Testmodus wird nicht bearbeitet: Antippen einer Fläche führt <see cref="TestTapCommand"/> aus.
 /// Im Modus „Nur OID-Flächen“ sind Bilder und Texte gesperrt.
+/// Objekte dürfen über den Seitenrand hinausragen; die Zeichenfläche wächst mit, Bilder und Texte
+/// außerhalb der Seite werden blass gezeigt (gedruckt wird nur die Seite).
 /// Strg- bzw. Umschalt-Klick (oder Klick bei <see cref="MultiSelect"/>) nimmt Objekte in die Auswahl auf
 /// oder entfernt sie; mehrere gewählte Objekte werden gemeinsam verschoben.
 /// </summary>
@@ -94,6 +96,22 @@ public class PageCanvas : Control
     bool _moved;
 
     static readonly IPen GroupPen = new Pen(new SolidColorBrush(Color.FromRgb(220, 110, 0)), 1, new DashStyle(new double[] { 4, 3 }, 0));
+
+    /// <summary>
+    /// Lage der Seite in der Zeichenfläche (px). Ragen Objekte über den Seitenrand hinaus, wird die
+    /// Zeichenfläche entsprechend größer, damit sie sichtbar und anfassbar bleiben.
+    /// </summary>
+    Vector _origin;
+    double _originScale;
+    PageViewModel? _originPage;
+
+    /// <summary>Lage der Seite in der Zeichenfläche (px).</summary>
+    public Vector PageOrigin => _origin;
+
+    /// <summary>Die Seite ist in der Zeichenfläche verrutscht (bei gleichem Zoom), z. B. weil ein Objekt über den Rand gezogen wurde.</summary>
+    public event Action<Vector>? PageOriginShifted;
+
+    static readonly BoxShadows PageShadow = BoxShadows.Parse("0 4 16 0 #30000000");
 
     /// <summary>Gezogener Anfasser: -1/0/1 je Richtung, (0, -2) = Drehgriff.</summary>
     (int X, int Y) _handle;
@@ -221,17 +239,57 @@ public class PageCanvas : Control
 
     void OnPageChanged(object sender, string? property)
     {
-        if (sender == _subscribed && property is nameof(PageViewModel.WidthMm) or nameof(PageViewModel.HeightMm))
-            InvalidateMeasure();
+        // Größe der Seite oder Lage der Objekte (Überstand) geändert
+        InvalidateMeasure();
         // Neu gewähltes Bild oder neuen Text ins Bild holen (z. B. nach dem Einfügen)
         if (sender == _subscribed && property == nameof(PageViewModel.SelectedElement)
             && _mode == DragMode.None && _subscribed.SelectedElement is { } e)
-            this.BringIntoView(LocalRectPx(e).Inflate(RotateHandleDistance + HandleSize));
+            this.BringIntoView(LocalRectPx(e).Inflate(RotateHandleDistance + HandleSize).Translate(_origin));
         InvalidateVisual();
     }
 
-    protected override Size MeasureOverride(Size availableSize) =>
-        Page is { } p ? new Size(p.WidthMm * Scale + 1, p.HeightMm * Scale + 1) : default;
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (Page is not { } p)
+            return default;
+        // Beim Ziehen bleibt die Zeichenfläche stehen, sonst liefe die Seite unter dem Mauszeiger weg
+        var mm = _pointer != null ? _extentMm : Extent(p);
+        _extentMm = mm;
+        double margin = RotateHandleDistance + HandleSize;
+        double w = p.WidthMm * Scale, h = p.HeightMm * Scale;
+        double left = mm.X < 0 ? -mm.X * Scale + margin : 0;
+        double top = mm.Y < 0 ? -mm.Y * Scale + margin : 0;
+        double right = mm.Right > p.WidthMm ? (mm.Right - p.WidthMm) * Scale + margin : 0;
+        double bottom = mm.Bottom > p.HeightMm ? (mm.Bottom - p.HeightMm) * Scale + margin : 0;
+
+        var origin = new Vector(left, top);
+        if (origin != _origin)
+        {
+            var shift = origin - _origin;
+            bool sameView = p == _originPage && Scale == _originScale;
+            _origin = origin;
+            InvalidateVisual();
+            if (sameView)
+                PageOriginShifted?.Invoke(shift);
+        }
+        _originPage = p;
+        _originScale = Scale;
+        return new Size(left + w + right + 1, top + h + bottom + 1);
+    }
+
+    Rect _extentMm;
+
+    /// <summary>Seite und alle Objekte darauf (mm).</summary>
+    static Rect Extent(PageViewModel page)
+    {
+        var r = new Rect(0, 0, page.WidthMm, page.HeightMm);
+        foreach (var item in page.Areas.Cast<object>().Concat(page.Elements))
+            r = r.Union(PageViewModel.BoundsOf(item));
+        return r;
+    }
+
+    /// <summary>Mausposition in Seitenkoordinaten (px ab der oberen linken Ecke der Seite).</summary>
+    Point PosPx(PointerEventArgs e) => e.GetPosition(this) - _origin;
 
     Rect ToPx(AreaViewModel a) => new(a.X * Scale, a.Y * Scale, a.Width * Scale, a.Height * Scale);
 
@@ -244,8 +302,17 @@ public class PageCanvas : Control
         if (Page is not { } page)
             return;
 
+        // Durchsichtig füllen, damit auch neben der Seite Mausereignisse ankommen
+        ctx.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
+        using var shift = ctx.PushTransform(Matrix.CreateTranslation(_origin));
+
+        // Bilder und Texte außerhalb der Seite blass (sie werden nicht gedruckt)
+        using (ctx.PushOpacity(0.4))
+            foreach (var element in page.Elements)
+                ImageConverter.DrawElement(ctx, element, Scale);
+
         var pageRect = new Rect(0, 0, page.WidthMm * Scale, page.HeightMm * Scale);
-        ctx.FillRectangle(Brushes.White, pageRect);
+        ctx.DrawRectangle(Brushes.White, null, new RoundedRect(pageRect), PageShadow);
         using (ctx.PushClip(pageRect))
         {
             foreach (var element in page.Elements)
@@ -439,7 +506,7 @@ public class PageCanvas : Control
         e.Handled = true;
         if (Page is not { } page || e.DataTransfer.TryGetFiles() is not { } files)
             return;
-        var pos = ToMm(e.GetPosition(this));
+        var pos = ToMm(e.GetPosition(this) - _origin);
         var paths = new List<string>();
         // Ohne lokalen Pfad (Browser) wird das Bild ins Arbeitsverzeichnis kopiert
         foreach (var file in files.Where(IsImageFile).Cast<IStorageFile>())
@@ -477,7 +544,7 @@ public class PageCanvas : Control
 
         if (TestMode)
         {
-            TestTap(page, ToMm(e.GetPosition(this)));
+            TestTap(page, ToMm(PosPx(e)));
             e.Handled = true;
             return;
         }
@@ -497,7 +564,7 @@ public class PageCanvas : Control
 
         Focus();
         _slop = e.Pointer.Type == PointerType.Touch ? 12 : 2;
-        var pos = e.GetPosition(this);
+        var pos = PosPx(e);
         _startMm = ToMm(pos);
 
         if (_drawing != null)
@@ -715,7 +782,7 @@ public class PageCanvas : Control
         if (Page is not { } page || (_pointer != null && e.Pointer != _pointer))
             return;
 
-        var px = e.GetPosition(this);
+        var px = PosPx(e);
         // OID-Flächen dürfen wie Bilder über den Seitenrand hinausragen (im PDF wird abgeschnitten)
         var pos = ToMm(px);
         bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
@@ -922,6 +989,7 @@ public class PageCanvas : Control
         _pointer = null;
         _mode = DragMode.None;
         History?.EndChange();
+        InvalidateMeasure();
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

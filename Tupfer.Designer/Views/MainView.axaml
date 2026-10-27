@@ -417,8 +417,7 @@
               </Border>
               <ScrollViewer x:Name="PageScroll" Background="{StaticResource CanvasBackground}"
                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                <Border Margin="24" HorizontalAlignment="Center" VerticalAlignment="Top"
-                        BoxShadow="0 4 16 0 #30000000">
+                <Border Margin="24" HorizontalAlignment="Center" VerticalAlignment="Top">
                   <views:PageCanvas x:Name="PageView" Page="{Binding Project.SelectedPage}" Zoom="{Binding Zoom}"
                                     AreasOnly="{Binding AreasOnly}" CropMode="{Binding CropMode}"
                                     AreaTool="{Binding AreaTool}" MultiSelect="{Binding MultiSelect}"
