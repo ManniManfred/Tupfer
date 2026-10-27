@@ -89,7 +89,7 @@ jobs:
             Setups des Tupfer Designers ${{ env.VERSION }}:
 
             - **Windows:** `Tupfer-Designer-Setup-Windows-x64.exe`
-            - **Linux:** `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.tar.gz`
+            - **Linux:** `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.AppImage` (alle Distributionen, ohne Installation)
             - **macOS:** `Tupfer-Designer-macOS-arm64.dmg` (Apple-Chip M1 und neuer) oder `Tupfer-Designer-macOS-x64.dmg` (Intel)
 
             Die Setups sind nicht signiert: Windows fragt beim ersten Start nach („Weitere Informationen → Trotzdem ausführen“),

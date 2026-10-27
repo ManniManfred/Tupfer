@@ -21,7 +21,7 @@ Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 | `examples/tic-tac-toi-csharp/` | Dasselbe Spiel als C#-Programm (siehe „Programmieren in C#“) |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
 | `deploy/`, `captain-definition` | Web-App im Container mit nginx (z. B. für CapRover) |
-| `deploy/setup/` | Setups für Windows (Inno Setup), Linux (.deb, .tar.gz) und macOS (.dmg) |
+| `deploy/setup/` | Setups für Windows (Inno Setup), Linux (.deb, AppImage) und macOS (.dmg) |
 
 ## Beispiel: Tic-Tac-Toe
 
@@ -79,7 +79,7 @@ Fertige Setups gibt es auf der Download-Seite der Web-App (`download.html`, in d
 | System | Datei |
 | --- | --- |
 | Windows 10/11 | `Tupfer-Designer-Setup-Windows-x64.exe` |
-| Linux | `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.tar.gz` |
+| Linux | `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.AppImage` (alle Distributionen, ohne Installation) |
 | macOS (Apple-Chip / Intel) | `Tupfer-Designer-macOS-arm64.dmg` / `Tupfer-Designer-macOS-x64.dmg` |
 
 Die Setups baut der Workflow `.github/workflows/setups.yml`, sobald sich die Versionsnummer in

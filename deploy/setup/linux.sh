@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Linux-Pakete für den Tupfer Designer: .deb (Debian, Ubuntu, Mint …) und .tar.gz (alle anderen).
+# Linux-Pakete für den Tupfer Designer: .deb (Debian, Ubuntu, Mint …) und AppImage (alle anderen).
+# Das AppImage baut appimagetool (Umgebungsvariable APPIMAGETOOL, aus PATH oder es wird geladen).
 # Aufruf aus dem Hauptverzeichnis nach „dotnet publish … -r linux-x64 -o publish/linux-x64“:
 #   deploy/setup/linux.sh 1.2.3 publish/linux-x64 setups
 set -euo pipefail
@@ -43,10 +44,27 @@ Description: Eigene Seiten für den tiptoi-Stift gestalten
 CONTROL
 dpkg-deb --root-owner-group --build "$pkg" "$output/Tupfer-Designer-Linux-x64.deb"
 
-# .tar.gz: zum Entpacken und Starten von Tupfer.Designer
-mkdir -p "$work/tar/tupfer-designer"
-cp -r "$source"/. "$work/tar/tupfer-designer/"
-chmod 755 "$work/tar/tupfer-designer/Tupfer.Designer"
-tar -czf "$output/Tupfer-Designer-Linux-x64.tar.gz" -C "$work/tar" tupfer-designer
+# AppImage: eine Datei, die ohne Installation auf fast allen Distributionen läuft
+appdir=$work/AppDir
+mkdir -p "$appdir/usr/lib/tupfer-designer"
+cp -r "$source"/. "$appdir/usr/lib/tupfer-designer/"
+chmod 755 "$appdir/usr/lib/tupfer-designer/Tupfer.Designer"
+cat > "$appdir/AppRun" <<'APPRUN'
+#!/bin/sh
+here="$(dirname "$(readlink -f "$0")")"
+exec "$here/usr/lib/tupfer-designer/Tupfer.Designer" "$@"
+APPRUN
+chmod 755 "$appdir/AppRun"
+cp Tupfer.Designer/Assets/Tupfer.png "$appdir/tupfer-designer.png"
+sed 's|^Exec=.*|Exec=Tupfer.Designer %f|' "$pkg/usr/share/applications/tupfer-designer.desktop" > "$appdir/tupfer-designer.desktop"
+
+tool=${APPIMAGETOOL:-$(command -v appimagetool || true)}
+if [ -z "$tool" ]; then
+    tool=$work/appimagetool
+    curl -sSfL -o "$tool" https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+    chmod 755 "$tool"
+fi
+# Ohne FUSE (z. B. in CI oder Containern) entpackt sich appimagetool selbst
+ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$tool" --no-appstream "$appdir" "$output/Tupfer-Designer-Linux-x64.AppImage"
 
 rm -rf "$work"
