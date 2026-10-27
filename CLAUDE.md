@@ -6,6 +6,11 @@
 - Änderungen auf `master` committen und mit `git push origin master` pushen.
 - Gilt auch, wenn die Sitzung einen anderen Arbeits-Branch vorgibt: vorher
   `git fetch origin master && git checkout -B master origin/master`.
+- **Vor jedem Push lokal bauen und testen:** `dotnet build Tupfer.Designer` und
+  `dotnet test Tupfer.Designer.Tests` müssen fehlerfrei durchlaufen; bei Änderungen an verlinkten
+  Quellen oder am Browser-Projekt zusätzlich `dotnet publish Tupfer.Designer.Browser -c Release -o <tmp>`.
+  Fehlt das SDK: `apt-get install -y dotnet-sdk-10.0` (und für den Browser
+  `dotnet workload install wasm-tools`). Nie ungebaut pushen.
 
 ## Projekt
 
