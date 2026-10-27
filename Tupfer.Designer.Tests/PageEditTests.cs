@@ -81,6 +81,8 @@ public class PageEditTests
     {
         var (project, page) = NewProject();
         var shape = page.AddShape();
+        // Neue Farbflächen übernehmen den zuletzt gewählten Rand (auch aus anderen Tests)
+        shape.StrokeWidth = 0;
         Assert.Null(shape.StrokePen(1));
         shape.StrokeWidth = 1.5;
         shape.StrokeColor = "#1976D2";

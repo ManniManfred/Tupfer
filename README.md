@@ -151,6 +151,10 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
   - Seiten als druckfertige PDF (Bilder und Texte + OID-Muster in den Flächen)
   - OID-Tabelle aller Codes als PDF, einzelne Flächen als PNG
   - tttool-YAML inkl. `*.codes.yaml`, Import vorhandener YAML-Dateien
+  - SVG: Seite als SVG exportieren (Bilder eingebettet, Texte, Farbflächen; OID-Flächen auf einer
+    ausgeblendeten Ebene) und SVG-Grafiken importieren – Formen, Pfade (auch Kurven und Bögen),
+    Linien, Texte und Bilder werden zu bearbeitbaren Farbflächen, Texten und Bildern, die OID-Ebene
+    wieder zu OID-Flächen. Verläufe werden zur ersten Farbe, Löcher in Pfaden werden mitgefüllt.
   - GME-Datei bauen (Taste F5) – eingebaut, optional über das externe tttool
   - **Auf den Stift speichern (Umschalt+F5):** baut die GME und speichert sie direkt auf den Stift.
     Auf dem Desktop wird das Laufwerk „tiptoi“ automatisch gefunden (sonst Speichern-Dialog). Im

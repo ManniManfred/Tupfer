@@ -507,6 +507,93 @@ public partial class MainWindowViewModel : ObservableObject
         return problems;
     }
 
+    // Im Browser kehrt die Dateiauswahl nach Abbrechen teils nie zurück: Befehl trotzdem freigeben
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    Task ImportSvg() => Guard("SVG-Import", async () =>
+    {
+        if (Project.SelectedPage is not { } page) return;
+        var path = await Dialogs!.OpenAsync("SVG importieren", "SVG-Grafik", "*.svg");
+        if (path == null) return;
+        var result = SvgImporter.Import(await File.ReadAllTextAsync(path), Path.GetDirectoryName(path), BaseDir);
+        // Eine leere Seite übernimmt die Größe der Zeichnung
+        bool resize = page.Elements.Count == 0 && page.Areas.Count == 0
+            && result.WidthMm is double w && w > 0 && result.HeightMm is double h && h > 0;
+        Project.History.Change(() =>
+        {
+            if (resize)
+            {
+                page.WidthMm = Math.Round(result.WidthMm!.Value, 2);
+                page.HeightMm = Math.Round(result.HeightMm!.Value, 2);
+            }
+            foreach (var entry in result.Elements)
+            {
+                var element = ElementViewModel.FromEntry(Project, entry, null);
+                page.Elements.Add(element);
+                if (element.IsText)
+                    FitText(element);
+            }
+            foreach (var entry in result.Areas)
+            {
+                if (entry.Target == AreaTarget.Script && entry.Script.Length == 0)
+                    entry.Script = Project.SelectedScript?.Name ?? Project.Scripts.FirstOrDefault()?.Name ?? "";
+                page.Areas.Add(AreaViewModel.FromEntry(Project, entry));
+            }
+        });
+        if (result.Elements.Count > 0)
+            AreasOnly = false;
+        Log($"SVG importiert: {result.Elements.Count} Bilder, Texte und Farbflächen, {result.Areas.Count} OID-Flächen"
+            + (resize ? $", Seitengröße {page.WidthMm} × {page.HeightMm} mm übernommen." : "."));
+        foreach (var warning in result.Warnings.Distinct())
+            Notice("Hinweis: " + warning);
+    });
+
+    /// <summary>
+    /// Passt den Rahmen eines importierten Texts an die gemessene Größe an; die Grundlinie am Ankerpunkt
+    /// (links, Mitte bzw. rechts je nach Ausrichtung) bleibt dabei stehen.
+    /// </summary>
+    static void FitText(ElementViewModel e)
+    {
+        const double scale = 10; // Pixel pro mm zum Messen
+        var old = e.ToEntry(null);
+        double f = e.Align switch { TextAlign.Center => 0.5, TextAlign.Right => 1, _ => 0 };
+        double sizeMm = e.FontSize * 25.4 / 72;
+        var anchor = ElementViewModel.ToPage(old, new Avalonia.Point(f * old.Width, SvgImporter.AscentFactor * sizeMm));
+        try
+        {
+            e.Width = 10000;
+            var text = e.CreateText(scale);
+            double width = Math.Ceiling(text.Width / scale * 10) / 10 + 0.5, height = text.Height / scale, baseline = text.Baseline / scale;
+            // Vom Anker zur Mitte des neuen Rahmens, gedreht wie das Element
+            double vx = width / 2 - f * width, vy = height / 2 - baseline;
+            double r = e.Rotation * Math.PI / 180, cos = Math.Cos(r), sin = Math.Sin(r);
+            e.Width = Math.Round(width, 2);
+            e.Height = Math.Round(height, 2);
+            e.X = Math.Round(anchor.X + vx * cos - vy * sin - width / 2, 2);
+            e.Y = Math.Round(anchor.Y + vx * sin + vy * cos - height / 2, 2);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or NullReferenceException or ArgumentException)
+        {
+            // Ohne Schriftsystem bleibt die Schätzung des Imports
+            e.Width = old.Width;
+        }
+    }
+
+    [RelayCommand]
+    Task ExportSvg() => Guard("SVG-Export", async () =>
+    {
+        if (Project.SelectedPage is not { } page) return;
+        var name = (FilePath != null ? ProjectStore.BaseName(FilePath) + "-" : "") + page.Name;
+        name = string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        var path = await Dialogs!.SaveAsync("Seite als SVG exportieren", name + ".svg", "SVG-Grafik", ".svg");
+        if (path == null) return;
+        var warnings = new List<string>();
+        await File.WriteAllTextAsync(path, SvgExporter.Export(page, warnings));
+        await Dialogs.SavedAsync(path);
+        Log($"SVG geschrieben: {path} (OID-Flächen auf einer ausgeblendeten Ebene).");
+        foreach (var warning in warnings)
+            Notice("Hinweis: " + warning);
+    });
+
     [RelayCommand]
     Task ExportPdf() => Guard("PDF-Export", async () =>
     {

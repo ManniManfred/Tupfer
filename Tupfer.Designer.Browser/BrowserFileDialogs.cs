@@ -173,6 +173,7 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
     {
         ".pdf" => "application/pdf",
         ".png" => "image/png",
+        ".svg" => "image/svg+xml",
         ".yaml" or ".yml" => "application/yaml",
         ".json" => "application/json",
         _ => "application/octet-stream",
