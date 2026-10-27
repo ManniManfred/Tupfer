@@ -787,16 +787,16 @@ public class PageCanvas : Control
                 break;
             case DragMode.MoveElement when _startElement != null && page.SelectedElement is { } el:
                 // Bilder dürfen über den Seitenrand hinausragen
-                el.X = Snap(_startElement.X + raw.X - _startMm.X);
-                el.Y = Snap(_startElement.Y + raw.Y - _startMm.Y);
+                el.X = Snap(_startElement.X + pos.X - _startMm.X);
+                el.Y = Snap(_startElement.Y + pos.Y - _startMm.Y);
                 break;
             case DragMode.ScaleElement when _startElement != null && page.SelectedElement is { } el:
                 // Bilder an den Ecken proportional skalieren, Texte frei; Umschalt kehrt das um
-                ResizeElement(el, raw, Cropping(el), keepAspect: el.IsImage != shift);
+                ResizeElement(el, pos, Cropping(el), keepAspect: el.IsImage != shift);
                 break;
             case DragMode.RotateElement when _startElement != null && page.SelectedElement is { } el:
                 var c = el.Center;
-                double angle = Math.Atan2(raw.Y - c.Y, raw.X - c.X) * 180 / Math.PI + 90;
+                double angle = Math.Atan2(pos.Y - c.Y, pos.X - c.X) * 180 / Math.PI + 90;
                 el.Rotation = shift ? Math.Round(angle / 15) * 15 : Math.Round(angle);
                 break;
             case DragMode.None:

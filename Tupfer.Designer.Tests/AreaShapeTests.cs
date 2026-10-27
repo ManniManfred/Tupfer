@@ -237,4 +237,47 @@ public class AreaShapeTests
             File.Delete(circleFile);
         }
     }
+
+    [Fact]
+    public void PdfSchneidetFlächenAmSeitenrandAb()
+    {
+        var file = Path.GetTempFileName();
+        try
+        {
+            var page = new PdfPageSpec { WidthMm = 100, HeightMm = 100 };
+            page.Areas.Add(new OidArea(90, 10, 20, 20, 1000));   // ragt rechts hinaus
+            page.Areas.Add(new OidArea(150, 10, 20, 20, 1001));  // ganz außerhalb
+            PdfWriter.Write(file, [page], 600, 2);
+
+            // Inhaltsströme entpacken (der Seiteninhalt ist der mit „re f“)
+            var bytes = File.ReadAllBytes(file);
+            var text = System.Text.Encoding.Latin1.GetString(bytes);
+            string? content = null;
+            for (int pos = text.IndexOf("stream\n"); pos >= 0; pos = text.IndexOf("stream\n", pos + 1))
+            {
+                if (pos >= 3 && text.Substring(pos - 3, 3) == "end")
+                    continue;
+                int start = pos + 7, end = text.IndexOf("\nendstream", start);
+                try
+                {
+                    var raw = new MemoryStream();
+                    using (var z = new ZLibStream(new MemoryStream(bytes, start, end - start), CompressionMode.Decompress))
+                        z.CopyTo(raw);
+                    var s = System.Text.Encoding.Latin1.GetString(raw.ToArray());
+                    if (s.Contains(" re f"))
+                        content = s;
+                }
+                catch (InvalidDataException) { }
+            }
+
+            Assert.NotNull(content);
+            // Abschneiden an der Seite (100 mm = 283,4646 pt), nur eine Fläche gezeichnet
+            Assert.Contains("q 0 0 283.4646 283.4646 re W n", content);
+            Assert.Single(content!.Split(" re f").Skip(1));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
 }
