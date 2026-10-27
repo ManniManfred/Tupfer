@@ -160,8 +160,13 @@ public class PdfWriter
                 content.AppendLine($"q {F(pw)} 0 0 {F(ph)} 0 0 cm /Bg Do Q");
             }
 
+            // Flächen dürfen über den Seitenrand hinausragen: am Seitenrand abschneiden,
+            // ganz außerhalb liegende gar nicht erst schreiben
+            content.AppendLine($"q 0 0 {F(pw)} {F(ph)} re W n");
             foreach (var a in spec.Areas)
             {
+                if (a.X >= spec.WidthMm || a.Y >= spec.HeightMm || a.X + a.Width <= 0 || a.Y + a.Height <= 0)
+                    continue;
                 int p = PatternFor(a.Oid, a.Dpi ?? _dpi, a.PixelSize ?? _pixelSize, ph);
                 if (usedPatterns.Add(p))
                     patterns.Append($" /P{p} {p} 0 R");
@@ -177,6 +182,7 @@ public class PdfWriter
                     content.AppendLine($"/Pattern cs /P{p} scn {F(a.X * PtPerMm)} {F(ph - (a.Y + a.Height) * PtPerMm)} {F(a.Width * PtPerMm)} {F(a.Height * PtPerMm)} re f");
                 }
             }
+            content.AppendLine("Q");
 
             foreach (var (x, y, w, h) in spec.Frames)
                 content.AppendLine($"q 0.6 G 0.5 w {F(x * PtPerMm)} {F(ph - (y + h) * PtPerMm)} {F(w * PtPerMm)} {F(h * PtPerMm)} re S Q");

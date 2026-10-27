@@ -652,7 +652,7 @@ public class PageCanvas : Control
     void ContinuePolygon(PageViewModel page, int clickCount)
     {
         var points = _drawing!;
-        var p = SnapPoint(ClampToPage(page, _startMm));
+        var p = SnapPoint(_startMm);
         // Doppelklick oder Klick auf die erste Ecke schließt ab
         if (clickCount >= 2 || (points.Count >= 3 && NearPx(ToPx(points[0]), ToPx(_startMm))))
         {
@@ -676,9 +676,6 @@ public class PageCanvas : Control
         page.Areas.Add(area);
         page.SelectedArea = area;
     }
-
-    static Point ClampToPage(PageViewModel page, Point mm) =>
-        new(Math.Clamp(mm.X, 0, page.WidthMm), Math.Clamp(mm.Y, 0, page.HeightMm));
 
     /// <summary>Ersetzt eine Ecke des Polygons (Seitenkoordinaten).</summary>
     static void UpdatePoints(AreaViewModel area, Func<List<AreaPoint>, List<AreaPoint>> change) =>
@@ -719,14 +716,13 @@ public class PageCanvas : Control
             return;
 
         var px = e.GetPosition(this);
-        var raw = ToMm(px);
-        double maxX = page.WidthMm, maxY = page.HeightMm;
-        var pos = new Point(Math.Clamp(raw.X, 0, maxX), Math.Clamp(raw.Y, 0, maxY));
+        // OID-Flächen dürfen wie Bilder über den Seitenrand hinausragen (im PDF wird abgeschnitten)
+        var pos = ToMm(px);
         bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
 
         if (TestMode)
         {
-            Cursor = page.Areas.Any(a => a.Contains(raw.X, raw.Y)) ? HandCursor : null;
+            Cursor = page.Areas.Any(a => a.Contains(pos.X, pos.Y)) ? HandCursor : null;
             return;
         }
 
@@ -763,7 +759,7 @@ public class PageCanvas : Control
                 {
                     var p = points[_vertex];
                     var q = points[(_vertex + 1) % points.Count];
-                    double bulge = AreaGeometry.BulgeThrough(p.X, p.Y, q.X, q.Y, raw.X, raw.Y);
+                    double bulge = AreaGeometry.BulgeThrough(p.X, p.Y, q.X, q.Y, pos.X, pos.Y);
                     double chord = Math.Sqrt((q.X - p.X) * (q.X - p.X) + (q.Y - p.Y) * (q.Y - p.Y));
                     if (Math.Abs(bulge * chord / 2) < StraightSnapMm)
                         bulge = 0;
@@ -772,16 +768,15 @@ public class PageCanvas : Control
                 });
                 break;
             case DragMode.Move when _startRect != null && page.SelectedArea is { } area:
-                area.X = Snap(Math.Clamp(_startRect.X + pos.X - _startMm.X, 0, maxX - area.Width));
-                area.Y = Snap(Math.Clamp(_startRect.Y + pos.Y - _startMm.Y, 0, maxY - area.Height));
+                area.X = Snap(_startRect.X + pos.X - _startMm.X);
+                area.Y = Snap(_startRect.Y + pos.Y - _startMm.Y);
                 break;
             case DragMode.Resize when _startRect != null && page.SelectedArea is { } area:
                 area.Width = Snap(Math.Max(MinSizeMm, _startRect.Width + pos.X - _startMm.X));
                 area.Height = Snap(Math.Max(MinSizeMm, _startRect.Height + pos.Y - _startMm.Y));
                 break;
             case DragMode.MoveSelection:
-                var delta = page.ClampMove(_startPositions.Keys,
-                    new Vector(Snap(raw.X - _startMm.X), Snap(raw.Y - _startMm.Y)));
+                var delta = new Vector(Snap(pos.X - _startMm.X), Snap(pos.Y - _startMm.Y));
                 if (delta != default)
                     _moved = true;
                 foreach (var (item, start) in _startPositions)
@@ -976,8 +971,7 @@ public class PageCanvas : Control
                     break;
                 case Key.Escape: page.Select([]); break;
                 case var _ when move is { } m:
-                    var d = page.ClampMove(items, m);
-                    History?.Change(() => items.ForEach(i => PageViewModel.MoveBy(i, d.X, d.Y)));
+                    History?.Change(() => items.ForEach(i => PageViewModel.MoveBy(i, m.X, m.Y)));
                     break;
                 default: return;
             }
@@ -991,10 +985,10 @@ public class PageCanvas : Control
                     page.Areas.Remove(area);
                     page.SelectedArea = null;
                     break;
-                case Key.Left: area.X = Math.Max(0, area.X - step); break;
-                case Key.Right: area.X = Math.Min(page.WidthMm - area.Width, area.X + step); break;
-                case Key.Up: area.Y = Math.Max(0, area.Y - step); break;
-                case Key.Down: area.Y = Math.Min(page.HeightMm - area.Height, area.Y + step); break;
+                case Key.Left: area.X -= step; break;
+                case Key.Right: area.X += step; break;
+                case Key.Up: area.Y -= step; break;
+                case Key.Down: area.Y += step; break;
                 case Key.Escape: page.SelectedArea = null; break;
                 default: return;
             }

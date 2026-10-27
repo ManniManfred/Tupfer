@@ -119,21 +119,6 @@ public partial class PageViewModel
     }
 
     /// <summary>
-    /// Begrenzt eine Verschiebung so, dass alle Flächen auf der Seite bleiben
-    /// (Bilder und Texte dürfen über den Rand hinausragen).
-    /// </summary>
-    public Vector ClampMove(IEnumerable<object> items, Vector delta)
-    {
-        double dx = delta.X, dy = delta.Y;
-        foreach (var a in items.OfType<AreaViewModel>())
-        {
-            dx = Math.Clamp(dx, Math.Min(0, -a.X), Math.Max(0, WidthMm - a.X - a.Width));
-            dy = Math.Clamp(dy, Math.Min(0, -a.Y), Math.Max(0, HeightMm - a.Y - a.Height));
-        }
-        return new Vector(dx, dy);
-    }
-
-    /// <summary>
     /// Richtet die Objekte aneinander aus (am umschließenden Rechteck aller); ein einzelnes Objekt
     /// wird an der Seite ausgerichtet.
     /// </summary>

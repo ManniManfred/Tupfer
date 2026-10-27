@@ -317,14 +317,4 @@ public class PageEditTests
         page.Distribute(page.Selection, horizontal: false);
         Assert.Equal(0, b.Y);
     }
-
-    [Fact]
-    public void GemeinsamVerschiebenBleibtAufDerSeite()
-    {
-        var (_, page) = NewProject();
-        var a = AddArea(page, 5, 10, 20, 20);
-        var t = AddText(page);
-        var d = page.ClampMove([a, t], new Avalonia.Vector(-20, 3));
-        Assert.Equal(new Avalonia.Vector(-5, 3), d);
-    }
 }
