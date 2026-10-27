@@ -82,6 +82,9 @@ public enum ElementKind
 {
     Image,
     Text,
+
+    /// <summary>Farbige Fläche (Rechteck oder Ellipse) in <see cref="ElementEntry.Color"/>.</summary>
+    Shape,
 }
 
 public enum TextAlign
@@ -123,6 +126,9 @@ public class ElementEntry
     public bool Bold { get; set; }
     public bool Italic { get; set; }
     public TextAlign Align { get; set; }
+
+    // Farbfläche (Farbe wie beim Text)
+    public bool Ellipse { get; set; }
 }
 
 public enum AreaTarget

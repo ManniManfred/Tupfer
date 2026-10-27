@@ -50,6 +50,29 @@ public class PageEditTests
     }
 
     [Fact]
+    public void FarbflaecheSpeichernUndRueckgaengig()
+    {
+        var (project, page) = NewProject();
+        var shape = page.AddShape();
+        Assert.True(shape.IsShape && shape.HasColor);
+        shape.Color = "#90CAF9";
+        shape.Ellipse = true;
+
+        // Speichern und Laden
+        var json = System.Text.Json.JsonSerializer.Serialize(page.ToEntry(null),
+            new System.Text.Json.JsonSerializerOptions { Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } });
+        Assert.Contains("\"Shape\"", json);
+        var copy = ElementViewModel.FromEntry(project, page.Elements[0].ToEntry(null), null);
+        Assert.Equal(ElementKind.Shape, copy.Kind);
+        Assert.Equal("#90CAF9", copy.Color);
+        Assert.True(copy.Ellipse);
+        Assert.Equal("Farbfläche: Ellipse", copy.Caption);
+
+        project.History.Undo();
+        Assert.False(page.Elements[0].Ellipse);
+    }
+
+    [Fact]
     public void TippenErgibtEinenSchritt()
     {
         var (project, page) = NewProject();

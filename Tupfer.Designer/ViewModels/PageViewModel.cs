@@ -164,6 +164,22 @@ public partial class PageViewModel : ObservableObject
         return element;
     }
 
+    /// <summary>Neue Farbfläche in der Mitte der Seite.</summary>
+    public ElementViewModel AddShape()
+    {
+        var element = new ElementViewModel(Project, ElementKind.Shape)
+        {
+            Color = "#FBC02D",
+            Width = 40,
+            Height = 30,
+        };
+        element.X = Math.Round((WidthMm - element.Width) / 2, 1);
+        element.Y = Math.Round((HeightMm - element.Height) / 2, 1);
+        Elements.Add(element);
+        SelectedElement = element;
+        return element;
+    }
+
     /// <param name="baseDir">Pfade relativ hierzu speichern, null = absolut lassen.</param>
     public PageEntry ToEntry(string? baseDir) => new()
     {

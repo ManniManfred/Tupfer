@@ -26,6 +26,13 @@ public static class ImageConverter
             {
                 ctx.DrawText(e.CreateText(scale), rect.TopLeft);
             }
+            else if (e.IsShape)
+            {
+                if (e.Ellipse)
+                    ctx.DrawEllipse(e.ColorBrush, null, rect);
+                else
+                    ctx.FillRectangle(e.ColorBrush, rect);
+            }
         }
     }
 

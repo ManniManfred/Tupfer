@@ -12,7 +12,7 @@ public record AlignOption(TextAlign Value, string Name);
 
 public record ColorPreset(string Value, IBrush Brush);
 
-/// <summary>Ein Bild oder Text auf einer Seite. Maße in mm, gedreht wird um die Mitte des Rahmens.</summary>
+/// <summary>Ein Bild, Text oder eine Farbfläche auf einer Seite. Maße in mm, gedreht wird um die Mitte des Rahmens.</summary>
 public partial class ElementViewModel : ObservableObject
 {
     public static IReadOnlyList<AlignOption> AlignOptions { get; } = new[]
@@ -22,7 +22,7 @@ public partial class ElementViewModel : ObservableObject
         new AlignOption(TextAlign.Right, "Rechts"),
     };
 
-    /// <summary>Farben zur schnellen Auswahl für Texte.</summary>
+    /// <summary>Farben zur schnellen Auswahl für Texte und Farbflächen.</summary>
     public static IReadOnlyList<ColorPreset> ColorPresets { get; } = new[]
         {
             "#000000", "#FFFFFF", "#D32F2F", "#F57C00", "#FBC02D", "#388E3C", "#1976D2", "#7B1FA2",
@@ -60,6 +60,10 @@ public partial class ElementViewModel : ObservableObject
     public ElementKind Kind { get; }
     public bool IsImage => Kind == ElementKind.Image;
     public bool IsText => Kind == ElementKind.Text;
+    public bool IsShape => Kind == ElementKind.Shape;
+
+    /// <summary>Hat eine einstellbare Farbe (Text oder Farbfläche).</summary>
+    public bool HasColor => IsText || IsShape;
 
     [ObservableProperty] double _x;
     [ObservableProperty] double _y;
@@ -103,6 +107,11 @@ public partial class ElementViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ColorBrush))]
     string _color = "#000000";
 
+    /// <summary>Farbfläche als Ellipse statt Rechteck.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Caption))]
+    bool _ellipse;
+
     [ObservableProperty] bool _bold;
     [ObservableProperty] bool _italic;
 
@@ -114,9 +123,12 @@ public partial class ElementViewModel : ObservableObject
 
     public IBrush ColorBrush => Avalonia.Media.Color.TryParse(Color, out var c) ? new SolidColorBrush(c) : Brushes.Black;
 
-    public string Caption => IsImage
-        ? $"Bild: {Path.GetFileName(ImagePath)}"
-        : $"Text: {Text.Split('\n')[0].Trim()}";
+    public string Caption => Kind switch
+    {
+        ElementKind.Image => $"Bild: {Path.GetFileName(ImagePath)}",
+        ElementKind.Shape => $"Farbfläche: {(Ellipse ? "Ellipse" : "Rechteck")}",
+        _ => $"Text: {Text.Split('\n')[0].Trim()}",
+    };
 
     public AlignOption AlignOption
     {
@@ -225,6 +237,7 @@ public partial class ElementViewModel : ObservableObject
         ImagePath = baseDir == null || string.IsNullOrEmpty(ImagePath) ? ImagePath : Path.GetRelativePath(baseDir, ImagePath),
         CropX = CropX, CropY = CropY, CropWidth = CropWidth, CropHeight = CropHeight,
         Text = Text, FontSize = FontSize, FontFamily = FontFamily, Color = Color, Bold = Bold, Italic = Italic, Align = Align,
+        Ellipse = Ellipse,
     };
 
     public static ElementViewModel FromEntry(ProjectViewModel project, ElementEntry e, string? baseDir) => new(project, e.Kind)
@@ -233,5 +246,6 @@ public partial class ElementViewModel : ObservableObject
         ImagePath = baseDir == null || string.IsNullOrEmpty(e.ImagePath) ? e.ImagePath : Path.GetFullPath(e.ImagePath, baseDir),
         CropX = e.CropX, CropY = e.CropY, CropWidth = e.CropWidth, CropHeight = e.CropHeight,
         Text = e.Text, FontSize = e.FontSize, FontFamily = e.FontFamily, Color = e.Color, Bold = e.Bold, Italic = e.Italic, Align = e.Align,
+        Ellipse = e.Ellipse,
     };
 }

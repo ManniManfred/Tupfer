@@ -111,8 +111,8 @@ die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt 
 ## Funktionen
 
 - **Seiten:** Fotos und Bilder einfügen – auch per Drag&Drop aus dem Explorer – (drehen, zuschneiden, skalieren) und Texte setzen
-  (Schriftart, Größe, Farbe, Ausrichtung). Die Zeichenreihenfolge lässt sich ändern – eine Ebene
-  oder ganz nach vorne/hinten (Strg+Bild↑/↓, mit Umschalt ganz); die Liste *Bilder und Texte*
+  (Schriftart, Größe, Farbe, Ausrichtung), farbige Flächen (Rechteck oder Ellipse) als Hintergrund. Die Zeichenreihenfolge lässt sich ändern – eine Ebene
+  oder ganz nach vorne/hinten (Strg+Bild↑/↓, mit Umschalt ganz); die Liste *Bilder, Texte und Farbflächen*
   zeigt die Reihenfolge, wählt auch verdeckte Elemente aus und sortiert per Drag & Drop um (mit der Maus am Eintrag, per Finger am Griff links). OID-Flächen liegen immer über
   Bildern und Texten. Mit der Maus OID-Flächen aufziehen,
   verschieben und in der Größe ändern – als Rechteck, Kreis/Ellipse oder beliebiges Polygon, dessen

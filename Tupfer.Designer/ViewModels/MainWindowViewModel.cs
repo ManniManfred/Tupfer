@@ -631,6 +631,14 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
+    void InsertShape()
+    {
+        if (Project.SelectedPage is not { } page) return;
+        page.AddShape();
+        AreasOnly = false;
+    }
+
+    [RelayCommand]
     void DeleteElement()
     {
         if (Project.SelectedPage is { SelectedElement: { } element } page)

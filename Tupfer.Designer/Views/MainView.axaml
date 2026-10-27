@@ -202,6 +202,9 @@
             <MenuItem Header="_Text einfügen" Command="{Binding InsertTextCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconText}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="_Farbfläche einfügen" Command="{Binding InsertShapeCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconColorShape}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
           </MenuItem>
           <MenuItem Header="_Erstellen">
             <MenuItem Header="_GME-Datei bauen" InputGesture="F5" Command="{Binding BuildGmeCommand}">
@@ -224,7 +227,7 @@
               <MenuItem.Icon><PathIcon Data="{StaticResource IconPrint}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="Seiten als _PDF …" Command="{Binding ExportPdfCommand}" />
-            <MenuItem Header="Bilder und Texte mitdrucken" ToggleType="CheckBox" IsChecked="{Binding PrintElements, Mode=TwoWay}" />
+            <MenuItem Header="Bilder, Texte und Farbflächen mitdrucken" ToggleType="CheckBox" IsChecked="{Binding PrintElements, Mode=TwoWay}" />
             <MenuItem Header="OID-_Tabelle als PDF …" Command="{Binding ExportOidTableCommand}" />
             <MenuItem Header="Gewählte Fläche als P_NG …" Command="{Binding ExportAreaPngCommand}" />
             <Separator />
@@ -320,7 +323,7 @@
                     <TextBox Grid.Column="2" Text="{Binding HeightMm}" />
                   </Grid>
                   <StackPanel IsVisible="{Binding HasLayers}">
-                    <TextBlock Classes="label" Text="Bilder und Texte (oberstes zuerst) – zum Umsortieren ziehen, per Finger am Griff" TextWrapping="Wrap" />
+                    <TextBlock Classes="label" Text="Bilder, Texte und Farbflächen (oberstes zuerst) – zum Umsortieren ziehen, per Finger am Griff" TextWrapping="Wrap" />
                     <ItemsControl x:Name="LayerList" ItemsSource="{Binding Layers}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:ElementViewModel">
@@ -361,7 +364,7 @@
                   </Button>
                   <Button Classes="tool" Command="{Binding DeleteSelectionCommand}"
                           IsEnabled="{Binding Project.SelectedPage.HasSelection, FallbackValue=False}"
-                          ToolTip.Tip="Gewählte Flächen, Bilder und Texte löschen (Entf)">
+                          ToolTip.Tip="Gewählte Flächen, Bilder, Texte und Farbflächen löschen (Entf)">
                     <PathIcon Data="{StaticResource IconDelete}" />
                   </Button>
                   <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
@@ -371,12 +374,16 @@
                   <Button Classes="tool" Command="{Binding InsertTextCommand}" ToolTip.Tip="Text einfügen">
                     <StackPanel><PathIcon Data="{StaticResource IconText}" /><TextBlock Text="Text" /></StackPanel>
                   </Button>
+                  <Button Classes="tool" Command="{Binding InsertShapeCommand}"
+                          ToolTip.Tip="Farbige Fläche (Rechteck oder Ellipse) einfügen – unter OID-Flächen möglichst helle Farben wählen, sonst erkennt der Stift die Codes schlecht">
+                    <StackPanel><PathIcon Data="{StaticResource IconColorShape}" /><TextBlock Text="Farbfläche" /></StackPanel>
+                  </Button>
                   <ToggleButton Classes="tool" IsChecked="{Binding TestMode}"
                                 ToolTip.Tip="Testen: Flächen antippen wie mit dem Stift – spielt ab und führt die Skripte aus (F8)">
                     <StackPanel><PathIcon Data="{StaticResource IconTap}" /><TextBlock Text="Testen" /></StackPanel>
                   </ToggleButton>
                   <ToggleButton Classes="tool" IsChecked="{Binding AreasOnly}" Margin="4,0"
-                                ToolTip.Tip="Bilder und Texte sperren, um darauf OID-Flächen zu zeichnen">
+                                ToolTip.Tip="Bilder, Texte und Farbflächen sperren, um darauf OID-Flächen zu zeichnen">
                     <StackPanel><PathIcon Data="{StaticResource IconArea}" /><TextBlock Text="Nur OID-Flächen" /></StackPanel>
                   </ToggleButton>
                   <ToggleButton Classes="tool" IsChecked="{Binding MultiSelect}"
@@ -466,11 +473,17 @@
                              Text="Ziehen oder Pfeiltasten verschieben alle gemeinsam. Strg- oder Umschalt-Klick nimmt Objekte hinzu oder heraus." />
                 </StackPanel>
 
-                <!-- Bild oder Text -->
+                <!-- Bild, Text oder Farbfläche -->
                 <StackPanel DataContext="{Binding Project.SelectedPage.SelectedElement}" x:DataType="vm:ElementViewModel"
                             IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
                   <TextBlock Classes="section" Text="Bild" IsVisible="{Binding IsImage}" />
                   <TextBlock Classes="section" Text="Text" IsVisible="{Binding IsText}" />
+                  <TextBlock Classes="section" Text="Farbfläche" IsVisible="{Binding IsShape}" />
+                  <StackPanel IsVisible="{Binding IsShape}">
+                    <CheckBox Content="Ellipse statt Rechteck" IsChecked="{Binding Ellipse}" Margin="0,4,0,0" />
+                    <TextBlock Classes="hint" TextWrapping="Wrap"
+                               Text="Unter OID-Flächen helle Farben wählen, auf dunklem Grund erkennt der Stift die Codes schlecht." />
+                  </StackPanel>
                   <TextBlock Classes="hint" Text="{Binding FileName}" ToolTip.Tip="{Binding ImagePath}" IsVisible="{Binding IsImage}" />
                   <StackPanel IsVisible="{Binding IsText}">
                     <TextBox Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" Margin="0,4,0,0" />
@@ -492,6 +505,8 @@
                         </DataTemplate>
                       </ComboBox.ItemTemplate>
                     </ComboBox>
+                  </StackPanel>
+                  <StackPanel IsVisible="{Binding HasColor}">
                     <TextBlock Classes="label" Text="Farbe" />
                     <Grid ColumnDefinitions="Auto,8,*">
                       <Border Width="28" Height="28" CornerRadius="4" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"
