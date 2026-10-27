@@ -13,7 +13,7 @@ public record AlignOption(TextAlign Value, string Name);
 public record ColorPreset(string Value, IBrush Brush);
 
 /// <summary>Ein Bild, Text oder eine Farbfläche auf einer Seite. Maße in mm, gedreht wird um die Mitte des Rahmens.</summary>
-public partial class ElementViewModel : ObservableObject
+public partial class ElementViewModel : ObservableObject, IPolygonShape
 {
     public static IReadOnlyList<AlignOption> AlignOptions { get; } = new[]
     {
@@ -107,10 +107,96 @@ public partial class ElementViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ColorBrush))]
     string _color = "#000000";
 
-    /// <summary>Farbfläche als Ellipse statt Rechteck.</summary>
+    /// <summary>Form der Farbfläche.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Caption))]
-    bool _ellipse;
+    [NotifyPropertyChangedFor(nameof(Caption), nameof(IsPolygon), nameof(ShapeOption))]
+    AreaShape _shape;
+
+    /// <summary>Eckpunkte eines Polygons relativ zu X/Y im ungedrehten Rahmen (wird immer als Ganzes ersetzt).</summary>
+    [ObservableProperty] IReadOnlyList<AreaPoint> _points = [];
+
+    public bool IsPolygon => IsShape && Shape == AreaShape.Polygon;
+
+    public ShapeOption ShapeOption
+    {
+        get => AreaViewModel.ShapeOptions.First(o => o.Value == Shape);
+        set
+        {
+            if (value != null)
+                ChangeShape(value.Value);
+        }
+    }
+
+    /// <summary>Wechselt die Form im selben Rahmen; ein neues Polygon beginnt als Rechteck.</summary>
+    public void ChangeShape(AreaShape shape)
+    {
+        if (shape == Shape)
+            return;
+        Points = shape == AreaShape.Polygon ? [new(0, 0), new(Width, 0), new(Width, Height), new(0, Height)] : [];
+        Shape = shape;
+    }
+
+    bool _settingFrame;
+
+    // Neue Breite/Höhe (Eingabe oder Anfasser) skaliert die Polygonpunkte mit
+    partial void OnWidthChanged(double oldValue, double newValue)
+    {
+        if (!_settingFrame && IsPolygon && oldValue > 0 && newValue > 0)
+            Points = Points.Select(p => p with { X = p.X * newValue / oldValue }).ToList();
+    }
+
+    partial void OnHeightChanged(double oldValue, double newValue)
+    {
+        if (!_settingFrame && IsPolygon && oldValue > 0 && newValue > 0)
+            Points = Points.Select(p => p with { Y = p.Y * newValue / oldValue }).ToList();
+    }
+
+    /// <summary>Polygonpunkte in Seitenkoordinaten (mit Drehung).</summary>
+    public IEnumerable<AreaPoint> PagePoints
+    {
+        get
+        {
+            var e = ToEntry(null);
+            return Points.Select(p =>
+            {
+                var q = ToPage(e, new Point(p.X, p.Y));
+                return p with { X = q.X, Y = q.Y };
+            }).ToList();
+        }
+    }
+
+    /// <summary>
+    /// Setzt das Polygon aus Punkten in Seitenkoordinaten. Der Rahmen wird (bei gleicher Drehung)
+    /// an den Umriss einschließlich der Bögen angepasst, die Punkte bleiben auf der Seite stehen.
+    /// </summary>
+    public void SetPolygon(IReadOnlyList<AreaPoint> pagePoints)
+    {
+        var e = ToEntry(null);
+        var local = pagePoints.Select(p =>
+        {
+            var q = ToLocal(e, new Point(p.X, p.Y));
+            return p with { X = q.X, Y = q.Y };
+        }).ToList();
+        var (bx, by, bw, bh) = AreaGeometry.Bounds(AreaGeometry.Outline(AreaShape.Polygon, 0, 0, 0, 0, local));
+        var center = ToPage(e, new Point(bx + bw / 2, by + bh / 2));
+        _settingFrame = true;
+        try
+        {
+            Shape = AreaShape.Polygon;
+            Width = Math.Round(bw, 2);
+            Height = Math.Round(bh, 2);
+            X = Math.Round(center.X - Width / 2, 2);
+            Y = Math.Round(center.Y - Height / 2, 2);
+            Points = local.Select(p => p with { X = Math.Round(p.X - bx, 3), Y = Math.Round(p.Y - by, 3) }).ToList();
+        }
+        finally
+        {
+            _settingFrame = false;
+        }
+    }
+
+    /// <summary>Umriss der Farbfläche im ungedrehten Rahmen, in Seitenkoordinaten (mm).</summary>
+    public List<(double X, double Y)> Outline() => AreaGeometry.Outline(Shape, X, Y, Width, Height, Points);
 
     [ObservableProperty] bool _bold;
     [ObservableProperty] bool _italic;
@@ -126,7 +212,7 @@ public partial class ElementViewModel : ObservableObject
     public string Caption => Kind switch
     {
         ElementKind.Image => $"Bild: {Path.GetFileName(ImagePath)}",
-        ElementKind.Shape => $"Farbfläche: {(Ellipse ? "Ellipse" : "Rechteck")}",
+        ElementKind.Shape => $"Farbfläche: {ShapeOption.Name}",
         _ => $"Text: {Text.Split('\n')[0].Trim()}",
     };
 
@@ -182,6 +268,8 @@ public partial class ElementViewModel : ObservableObject
     public bool Contains(Point page, double toleranceMm = 0)
     {
         var p = ToLocal(ToEntry(null), page);
+        if (IsShape && Shape != AreaShape.Rectangle)
+            return AreaGeometry.Contains(AreaGeometry.Outline(Shape, 0, 0, Width, Height, Points), p.X, p.Y);
         return p.X >= -toleranceMm && p.Y >= -toleranceMm && p.X <= Width + toleranceMm && p.Y <= Height + toleranceMm;
     }
 
@@ -237,7 +325,7 @@ public partial class ElementViewModel : ObservableObject
         ImagePath = baseDir == null || string.IsNullOrEmpty(ImagePath) ? ImagePath : Path.GetRelativePath(baseDir, ImagePath),
         CropX = CropX, CropY = CropY, CropWidth = CropWidth, CropHeight = CropHeight,
         Text = Text, FontSize = FontSize, FontFamily = FontFamily, Color = Color, Bold = Bold, Italic = Italic, Align = Align,
-        Ellipse = Ellipse,
+        Shape = Shape, Points = IsPolygon ? Points.ToList() : null,
     };
 
     public static ElementViewModel FromEntry(ProjectViewModel project, ElementEntry e, string? baseDir) => new(project, e.Kind)
@@ -246,6 +334,8 @@ public partial class ElementViewModel : ObservableObject
         ImagePath = baseDir == null || string.IsNullOrEmpty(e.ImagePath) ? e.ImagePath : Path.GetFullPath(e.ImagePath, baseDir),
         CropX = e.CropX, CropY = e.CropY, CropWidth = e.CropWidth, CropHeight = e.CropHeight,
         Text = e.Text, FontSize = e.FontSize, FontFamily = e.FontFamily, Color = e.Color, Bold = e.Bold, Italic = e.Italic, Align = e.Align,
-        Ellipse = e.Ellipse,
+        // Projekte aus 1.18 kennen nur „Ellipse“
+        Shape = e.Ellipse && e.Shape == AreaShape.Rectangle ? AreaShape.Ellipse : e.Shape,
+        Points = e.Points ?? [],
     };
 }

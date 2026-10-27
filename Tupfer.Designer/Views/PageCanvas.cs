@@ -391,16 +391,29 @@ public class PageCanvas : Control
             return;
         ctx.FillRectangle(Brushes.DarkOrange, AreaHandleRect(r));
         if (area.IsPolygon)
+            DrawPolygonHandles(ctx, area);
+    }
+
+    /// <summary>Anfasser der Ecken (eckig) und Kanten (rund) eines Polygons.</summary>
+    void DrawPolygonHandles(DrawingContext ctx, IPolygonShape polygon)
+    {
+        var points = polygon.PagePoints.ToList();
+        for (int i = 0; i < points.Count; i++)
         {
-            var points = area.PagePoints.ToList();
-            for (int i = 0; i < points.Count; i++)
-            {
-                ctx.DrawEllipse(Brushes.White, HandlePen, EdgeHandlePx(points, i), HandleSize / 2 - 1, HandleSize / 2 - 1);
-                var v = ToPx(new Point(points[i].X, points[i].Y));
-                ctx.DrawRectangle(Brushes.White, HandlePen, new Rect(v.X - HandleSize / 2, v.Y - HandleSize / 2, HandleSize, HandleSize));
-            }
+            ctx.DrawEllipse(Brushes.White, HandlePen, EdgeHandlePx(points, i), HandleSize / 2 - 1, HandleSize / 2 - 1);
+            var v = ToPx(new Point(points[i].X, points[i].Y));
+            ctx.DrawRectangle(Brushes.White, HandlePen, new Rect(v.X - HandleSize / 2, v.Y - HandleSize / 2, HandleSize, HandleSize));
         }
     }
+
+    /// <summary>Gewähltes Polygon, dessen Ecken und Kanten sich ziehen lassen: OID-Fläche oder Farbfläche.</summary>
+    IPolygonShape? EditedPolygon(PageViewModel page) =>
+        page.SelectedArea is { IsPolygon: true } area ? area
+        : !ElementsLocked && page.SelectedElement is { IsPolygon: true } element ? element
+        : null;
+
+    /// <summary>Anfasser zum Skalieren; Polygone werden über ihre Ecken geformt.</summary>
+    static IEnumerable<(int X, int Y)> ScaleHandles(ElementViewModel e) => e.IsPolygon ? [] : Handles;
 
     void DrawPolygonInProgress(DrawingContext ctx, List<Point> points)
     {
@@ -429,9 +442,9 @@ public class PageCanvas : Control
     bool NearPx(Point a, Point b) => Math.Abs(a.X - b.X) <= HandleSize / 2 + _slop && Math.Abs(a.Y - b.Y) <= HandleSize / 2 + _slop;
 
     /// <summary>Getroffene Ecke (Vertex = true) oder Kante eines Polygons.</summary>
-    (int Index, bool Vertex)? HitPolygonHandle(AreaViewModel area, Point px)
+    (int Index, bool Vertex)? HitPolygonHandle(IPolygonShape polygon, Point px)
     {
-        var points = area.PagePoints.ToList();
+        var points = polygon.PagePoints.ToList();
         for (int i = 0; i < points.Count; i++)
             if (NearPx(ToPx(new Point(points[i].X, points[i].Y)), px))
                 return (i, true);
@@ -451,7 +464,7 @@ public class PageCanvas : Control
             var top = new Point(r.Center.X, r.Y);
             ctx.DrawLine(HandlePen, top, top - new Vector(0, RotateHandleDistance - HandleSize / 2));
             ctx.DrawEllipse(Brushes.White, HandlePen, top - new Vector(0, RotateHandleDistance), HandleSize / 2, HandleSize / 2);
-            foreach (var h in Handles)
+            foreach (var h in ScaleHandles(e))
             {
                 var c = new Point(r.X + (h.X + 1) / 2.0 * r.Width, r.Y + (h.Y + 1) / 2.0 * r.Height);
                 var hr = new Rect(c.X - HandleSize / 2, c.Y - HandleSize / 2, HandleSize, HandleSize);
@@ -461,6 +474,8 @@ public class PageCanvas : Control
                     ctx.DrawRectangle(Brushes.White, HandlePen, hr);
             }
         }
+        if (e.IsPolygon)
+            DrawPolygonHandles(ctx, e);
     }
 
     Point ToPx(Point mm) => new(mm.X * Scale, mm.Y * Scale);
@@ -476,7 +491,7 @@ public class PageCanvas : Control
 
     (int X, int Y)? HitHandle(ElementViewModel e, Point px)
     {
-        foreach (var h in Handles.Append(RotateHandle))
+        foreach (var h in ScaleHandles(e).Append(RotateHandle))
         {
             var d = HandlePx(e, h) - px;
             if (Math.Abs(d.X) <= HandleSize / 2 + _slop && Math.Abs(d.Y) <= HandleSize / 2 + _slop)
@@ -591,7 +606,7 @@ public class PageCanvas : Control
             foreach (var item in page.Selection.Where(i => !ElementsLocked || i is AreaViewModel))
                 _startPositions[item] = PageViewModel.BoundsOf(item).TopLeft;
         }
-        else if (page.SelectedArea is { IsPolygon: true } poly && HitPolygonHandle(poly, pos) is { } ph)
+        else if (EditedPolygon(page) is { } poly && HitPolygonHandle(poly, pos) is { } ph)
         {
             _vertex = ph.Index;
             if (e.ClickCount == 2)
@@ -745,10 +760,10 @@ public class PageCanvas : Control
     }
 
     /// <summary>Ersetzt eine Ecke des Polygons (Seitenkoordinaten).</summary>
-    static void UpdatePoints(AreaViewModel area, Func<List<AreaPoint>, List<AreaPoint>> change) =>
+    static void UpdatePoints(IPolygonShape area, Func<List<AreaPoint>, List<AreaPoint>> change) =>
         area.SetPolygon(change(area.PagePoints.ToList()));
 
-    static void RemoveVertex(AreaViewModel area, int index)
+    static void RemoveVertex(IPolygonShape area, int index)
     {
         if (area.Points.Count <= 3)
             return;
@@ -762,7 +777,7 @@ public class PageCanvas : Control
         });
     }
 
-    static void SplitEdge(AreaViewModel area, int index)
+    static void SplitEdge(IPolygonShape area, int index)
     {
         UpdatePoints(area, points =>
         {
@@ -813,7 +828,7 @@ public class PageCanvas : Control
                 area.Width = Snap(w);
                 area.Height = Snap(h);
                 break;
-            case DragMode.MoveVertex when page.SelectedArea is { IsPolygon: true } area:
+            case DragMode.MoveVertex when EditedPolygon(page) is { } area:
                 var v = SnapPoint(pos);
                 UpdatePoints(area, points =>
                 {
@@ -821,7 +836,7 @@ public class PageCanvas : Control
                     return points;
                 });
                 break;
-            case DragMode.BendEdge when page.SelectedArea is { IsPolygon: true } area:
+            case DragMode.BendEdge when EditedPolygon(page) is { } area:
                 UpdatePoints(area, points =>
                 {
                     var p = points[_vertex];
@@ -875,7 +890,7 @@ public class PageCanvas : Control
 
     Cursor? HoverCursor(PageViewModel page, Point px)
     {
-        if (page.SelectedArea is { IsPolygon: true } poly && HitPolygonHandle(poly, px) is { } ph)
+        if (EditedPolygon(page) is { } poly && HitPolygonHandle(poly, px) is { } ph)
             return ph.Vertex ? MoveCursor : HandCursor;
         if (!ElementsLocked && page.SelectedElement is { } el && HitHandle(el, px) is { } h)
         {

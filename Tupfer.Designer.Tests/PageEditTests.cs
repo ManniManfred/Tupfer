@@ -56,7 +56,7 @@ public class PageEditTests
         var shape = page.AddShape();
         Assert.True(shape.IsShape && shape.HasColor);
         shape.Color = "#90CAF9";
-        shape.Ellipse = true;
+        shape.ShapeOption = AreaViewModel.ShapeOptions.First(o => o.Value == AreaShape.Ellipse);
 
         // Speichern und Laden
         var json = System.Text.Json.JsonSerializer.Serialize(page.ToEntry(null),
@@ -65,11 +65,45 @@ public class PageEditTests
         var copy = ElementViewModel.FromEntry(project, page.Elements[0].ToEntry(null), null);
         Assert.Equal(ElementKind.Shape, copy.Kind);
         Assert.Equal("#90CAF9", copy.Color);
-        Assert.True(copy.Ellipse);
-        Assert.Equal("Farbfläche: Ellipse", copy.Caption);
+        Assert.Equal(AreaShape.Ellipse, copy.Shape);
+        Assert.Equal("Farbfläche: Kreis / Ellipse", copy.Caption);
 
         project.History.Undo();
-        Assert.False(page.Elements[0].Ellipse);
+        Assert.Equal(AreaShape.Rectangle, page.Elements[0].Shape);
+
+        // Projekte aus 1.18 kannten nur „Ellipse“
+        var old = ElementViewModel.FromEntry(project, new ElementEntry { Kind = ElementKind.Shape, Ellipse = true, Width = 10, Height = 10 }, null);
+        Assert.Equal(AreaShape.Ellipse, old.Shape);
+    }
+
+    [Fact]
+    public void GedrehtesFarbpolygon()
+    {
+        var (_, page) = NewProject();
+        var shape = page.AddShape();
+        shape.X = 10; shape.Y = 20; shape.Width = 40; shape.Height = 20; shape.Rotation = 90;
+        shape.ChangeShape(AreaShape.Polygon);
+        Assert.Equal(4, shape.Points.Count);
+
+        // Gedreht um die Mitte (30, 30): die linke obere Ecke (10, 20) liegt jetzt bei (40, 10)
+        var corners = shape.PagePoints.ToList();
+        Assert.Equal(40, corners[0].X, 6);
+        Assert.Equal(10, corners[0].Y, 6);
+
+        // Eine Ecke auf der Seite verschieben: die übrigen bleiben stehen, Drehung bleibt
+        corners[2] = corners[2] with { X = corners[2].X - 10 };
+        shape.SetPolygon(corners);
+        var moved = shape.PagePoints.ToList();
+        for (int i = 0; i < 4; i++)
+        {
+            Assert.Equal(corners[i].X, moved[i].X, 1);
+            Assert.Equal(corners[i].Y, moved[i].Y, 1);
+        }
+        Assert.Equal(90, shape.Rotation);
+
+        // Treffer nur innerhalb des Umrisses
+        Assert.True(shape.Contains(new Avalonia.Point(30, 30)));
+        Assert.False(shape.Contains(new Avalonia.Point(corners[2].X + 9, corners[2].Y)));
     }
 
     [Fact]

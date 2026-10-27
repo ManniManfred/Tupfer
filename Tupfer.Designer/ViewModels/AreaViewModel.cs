@@ -12,7 +12,7 @@ public record ShapeOption(AreaShape Value, string Name);
 /// X/Y/Width/Height sind der umschließende Rahmen; Polygonpunkte liegen relativ zu X/Y,
 /// sodass Verschieben nur X/Y ändert und eine neue Breite/Höhe die Punkte mitskaliert.
 /// </summary>
-public partial class AreaViewModel : ObservableObject
+public partial class AreaViewModel : ObservableObject, IPolygonShape
 {
     public static IReadOnlyList<TargetOption> TargetOptions { get; } = new[]
     {

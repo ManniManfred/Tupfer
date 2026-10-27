@@ -375,7 +375,7 @@
                     <StackPanel><PathIcon Data="{StaticResource IconText}" /><TextBlock Text="Text" /></StackPanel>
                   </Button>
                   <Button Classes="tool" Command="{Binding InsertShapeCommand}"
-                          ToolTip.Tip="Farbige Fläche (Rechteck oder Ellipse) einfügen – unter OID-Flächen möglichst helle Farben wählen, sonst erkennt der Stift die Codes schlecht">
+                          ToolTip.Tip="Farbige Fläche (Rechteck, Kreis/Ellipse oder Polygon) einfügen – unter OID-Flächen möglichst helle Farben wählen, sonst erkennt der Stift die Codes schlecht">
                     <StackPanel><PathIcon Data="{StaticResource IconColorShape}" /><TextBlock Text="Farbfläche" /></StackPanel>
                   </Button>
                   <ToggleButton Classes="tool" IsChecked="{Binding TestMode}"
@@ -480,7 +480,17 @@
                   <TextBlock Classes="section" Text="Text" IsVisible="{Binding IsText}" />
                   <TextBlock Classes="section" Text="Farbfläche" IsVisible="{Binding IsShape}" />
                   <StackPanel IsVisible="{Binding IsShape}">
-                    <CheckBox Content="Ellipse statt Rechteck" IsChecked="{Binding Ellipse}" Margin="0,4,0,0" />
+                    <TextBlock Classes="label" Text="Form" />
+                    <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Static vm:AreaViewModel.ShapeOptions}"
+                              SelectedItem="{Binding ShapeOption}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ShapeOption">
+                          <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Classes="hint" Margin="0,4,0,0" IsVisible="{Binding IsPolygon}" TextWrapping="Wrap"
+                               Text="Ecken ziehen: verschieben. Kreis in der Kantenmitte ziehen: Kante zum Bogen biegen (zurück zur Geraden ziehen = gerade). Doppelklick auf eine Ecke: löschen, auf eine Kantenmitte: neue Ecke." />
                     <TextBlock Classes="hint" TextWrapping="Wrap"
                                Text="Unter OID-Flächen helle Farben wählen, auf dunklem Grund erkennt der Stift die Codes schlecht." />
                   </StackPanel>

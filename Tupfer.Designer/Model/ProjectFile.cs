@@ -127,7 +127,15 @@ public class ElementEntry
     public bool Italic { get; set; }
     public TextAlign Align { get; set; }
 
-    // Farbfläche (Farbe wie beim Text)
+    // Farbfläche (Farbe wie beim Text); Form und Polygonpunkte (relativ zu X/Y, ungedreht) wie bei OID-Flächen
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public AreaShape Shape { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<AreaPoint>? Points { get; set; }
+
+    /// <summary>Nur zum Lesen von Projekten aus Version 1.18: Ellipse statt Rechteck.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Ellipse { get; set; }
 }
 

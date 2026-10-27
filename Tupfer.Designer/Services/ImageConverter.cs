@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Tupfer.Designer.Model;
 using Tupfer.Designer.Oid;
 using Tupfer.Designer.ViewModels;
 
@@ -28,10 +29,11 @@ public static class ImageConverter
             }
             else if (e.IsShape)
             {
-                if (e.Ellipse)
-                    ctx.DrawEllipse(e.ColorBrush, null, rect);
-                else
+                if (e.Shape == AreaShape.Rectangle)
                     ctx.FillRectangle(e.ColorBrush, rect);
+                else
+                    ctx.DrawGeometry(e.ColorBrush, null,
+                        new PolylineGeometry(e.Outline().Select(p => new Point(p.X * scale, p.Y * scale)), true));
             }
         }
     }
