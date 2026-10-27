@@ -167,12 +167,9 @@ public partial class PageViewModel : ObservableObject
     /// <summary>Neue Farbfläche in der Mitte der Seite.</summary>
     public ElementViewModel AddShape()
     {
-        var element = new ElementViewModel(Project, ElementKind.Shape)
-        {
-            Color = "#FBC02D",
-            Width = 40,
-            Height = 30,
-        };
+        var element = ElementViewModel.NewShape(Project, AreaShape.Rectangle);
+        element.Width = 40;
+        element.Height = 30;
         element.X = Math.Round((WidthMm - element.Width) / 2, 1);
         element.Y = Math.Round((HeightMm - element.Height) / 2, 1);
         Elements.Add(element);

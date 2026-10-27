@@ -88,6 +88,24 @@ public partial class MainWindowViewModel : ObservableObject
     public bool EllipseTool { get => AreaTool == AreaShape.Ellipse; set => SetTool(AreaShape.Ellipse, value); }
     public bool PolygonTool { get => AreaTool == AreaShape.Polygon; set => SetTool(AreaShape.Polygon, value); }
 
+    /// <summary>Die Zeichenwerkzeuge legen Farbflächen statt OID-Flächen an.</summary>
+    [ObservableProperty] bool _drawColorShapes;
+
+    partial void OnDrawColorShapesChanged(bool value)
+    {
+        if (!value)
+            return;
+        // Farbflächen sind Elemente: dürfen nicht gesperrt sein, und ein Werkzeug muss gewählt sein
+        AreasOnly = false;
+        AreaTool ??= AreaShape.Rectangle;
+    }
+
+    partial void OnAreasOnlyChanged(bool value)
+    {
+        if (value)
+            DrawColorShapes = false;
+    }
+
     void SetTool(AreaShape shape, bool on)
     {
         if (on)

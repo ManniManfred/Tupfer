@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Tupfer.Designer.Tests;
 
-/// <summary>Dateiauswahl, die nicht zurückkehrt (Browser: Dialog abgebrochen).</summary>
+/// <summary>Werkzeugleiste und Dateiauswahl, die nicht zurückkehrt (Browser: Dialog abgebrochen).</summary>
 public class FileDialogTests
 {
     class HangingDialogs : IFileDialogs
@@ -47,5 +47,16 @@ public class FileDialogTests
             // Sonst wartet xUnit am Ende auf die offenen Befehle
             dialogs.Open.ForEach(d => d.SetResult(null));
         }
+    }
+
+    [Fact]
+    public void FarbknopfUndNurOidFlaechenSchliessenSichAus()
+    {
+        var vm = new MainWindowViewModel { AreaTool = null, AreasOnly = true };
+        vm.DrawColorShapes = true;
+        Assert.False(vm.AreasOnly);
+        Assert.Equal(Model.AreaShape.Rectangle, vm.AreaTool);
+        vm.AreasOnly = true;
+        Assert.False(vm.DrawColorShapes);
     }
 }

@@ -54,6 +54,10 @@ public class PageCanvas : Control
     public static readonly StyledProperty<bool> MultiSelectProperty =
         AvaloniaProperty.Register<PageCanvas, bool>(nameof(MultiSelect));
 
+    /// <summary>Die Zeichenwerkzeuge legen Farbflächen statt OID-Flächen an.</summary>
+    public static readonly StyledProperty<bool> DrawColorShapesProperty =
+        AvaloniaProperty.Register<PageCanvas, bool>(nameof(DrawColorShapes));
+
     /// <summary>Wird im Testmodus mit der angetippten Fläche ausgeführt.</summary>
     public static readonly StyledProperty<ICommand?> TestTapCommandProperty =
         AvaloniaProperty.Register<PageCanvas, ICommand?>(nameof(TestTapCommand));
@@ -64,7 +68,7 @@ public class PageCanvas : Control
     const double Grid = 0.5;
     const double MinSizeMm = 3;
 
-    enum DragMode { None, Create, Move, Resize, MoveElement, ScaleElement, RotateElement, MoveVertex, BendEdge, MoveSelection }
+    enum DragMode { None, Create, CreateShape, Move, Resize, MoveElement, ScaleElement, RotateElement, MoveVertex, BendEdge, MoveSelection }
 
     /// <summary>Unter dieser Stichhöhe (mm) wird eine gebogene Kante wieder gerade.</summary>
     const double StraightSnapMm = 0.3;
@@ -176,6 +180,15 @@ public class PageCanvas : Control
         get => GetValue(MultiSelectProperty);
         set => SetValue(MultiSelectProperty, value);
     }
+
+    public bool DrawColorShapes
+    {
+        get => GetValue(DrawColorShapesProperty);
+        set => SetValue(DrawColorShapesProperty, value);
+    }
+
+    /// <summary>Farbflächen statt OID-Flächen zeichnen (nur, wenn Bilder und Texte nicht gesperrt sind).</summary>
+    bool CreatesColorShapes => DrawColorShapes && !ElementsLocked;
 
     public ICommand? TestTapCommand
     {
@@ -573,6 +586,12 @@ public class PageCanvas : Control
                 page.SelectedArea = null;
                 _mode = DragMode.None;
             }
+            else if (_mode == DragMode.CreateShape && page.SelectedElement is { } shape)
+            {
+                page.Elements.Remove(shape);
+                page.SelectedElement = null;
+                _mode = DragMode.None;
+            }
             e.Handled = true;
             return;
         }
@@ -680,6 +699,15 @@ public class PageCanvas : Control
             e.Handled = true;
             return;
         }
+        else if (CreatesColorShapes)
+        {
+            var shape = ElementViewModel.NewShape(page.Project, tool);
+            shape.X = Snap(_startMm.X);
+            shape.Y = Snap(_startMm.Y);
+            page.Elements.Add(shape);
+            page.SelectedElement = shape;
+            _mode = DragMode.CreateShape;
+        }
         else
         {
             var area = NewArea(page.Project);
@@ -730,6 +758,16 @@ public class PageCanvas : Control
 
     static Point SnapPoint(Point mm) => new(Snap(mm.X), Snap(mm.Y));
 
+    /// <summary>Rahmen einer neu aufgezogenen Fläche vom Startpunkt bis <paramref name="pos"/> (Umschalt: Kreis bzw. Quadrat).</summary>
+    Rect CreatedFrame(Point pos, bool square)
+    {
+        double w = Math.Abs(pos.X - _startMm.X), h = Math.Abs(pos.Y - _startMm.Y);
+        if (square)
+            w = h = Math.Max(w, h);
+        return new Rect(Snap(pos.X < _startMm.X ? _startMm.X - w : _startMm.X),
+            Snap(pos.Y < _startMm.Y ? _startMm.Y - h : _startMm.Y), Snap(w), Snap(h));
+    }
+
     /// <summary>Klick beim Zeichnen eines Polygons: Ecke hinzufügen oder abschließen.</summary>
     void ContinuePolygon(PageViewModel page, int clickCount)
     {
@@ -753,6 +791,14 @@ public class PageCanvas : Control
         InvalidateVisual();
         if (points.Count < 3)
             return;
+        if (CreatesColorShapes)
+        {
+            var shape = ElementViewModel.NewShape(page.Project, AreaShape.Polygon);
+            shape.SetPolygon(points.Select(p => new AreaPoint(p.X, p.Y)).ToList());
+            page.Elements.Add(shape);
+            page.SelectedElement = shape;
+            return;
+        }
         var area = NewArea(page.Project);
         area.SetPolygon(points.Select(p => new AreaPoint(p.X, p.Y)).ToList());
         page.Areas.Add(area);
@@ -819,15 +865,23 @@ public class PageCanvas : Control
         switch (_mode)
         {
             case DragMode.Create when page.SelectedArea is { } area:
-                double w = Math.Abs(pos.X - _startMm.X), h = Math.Abs(pos.Y - _startMm.Y);
-                // Umschalt: Kreis bzw. Quadrat
-                if (shift)
-                    w = h = Math.Max(w, h);
-                area.X = Snap(pos.X < _startMm.X ? _startMm.X - w : _startMm.X);
-                area.Y = Snap(pos.Y < _startMm.Y ? _startMm.Y - h : _startMm.Y);
-                area.Width = Snap(w);
-                area.Height = Snap(h);
+            {
+                var r = CreatedFrame(pos, shift);
+                area.X = r.X;
+                area.Y = r.Y;
+                area.Width = r.Width;
+                area.Height = r.Height;
                 break;
+            }
+            case DragMode.CreateShape when page.SelectedElement is { } shape:
+            {
+                var r = CreatedFrame(pos, shift);
+                shape.X = r.X;
+                shape.Y = r.Y;
+                shape.Width = r.Width;
+                shape.Height = r.Height;
+                break;
+            }
             case DragMode.MoveVertex when EditedPolygon(page) is { } area:
                 var v = SnapPoint(pos);
                 UpdatePoints(area, points =>
@@ -970,6 +1024,12 @@ public class PageCanvas : Control
             // Nur geklickt: keine Fläche anlegen, Auswahl aufheben
             page.Areas.Remove(area);
             page.SelectedArea = null;
+        }
+        if (_mode == DragMode.CreateShape && Page is { SelectedElement: { } shape } shapePage
+            && (shape.Width < MinSizeMm || shape.Height < MinSizeMm))
+        {
+            shapePage.Elements.Remove(shape);
+            shapePage.SelectedElement = null;
         }
         // Nach dem Skalieren den Rahmen eines Polygons wieder eng an den Umriss legen (Bögen)
         if (_mode == DragMode.Resize && Page?.SelectedArea is { IsPolygon: true } scaled)

@@ -50,6 +50,19 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     /// <summary>Schriftart für neue Texte.</summary>
     public static string DefaultFont => FontNames.Contains("Arial") ? "Arial" : "";
 
+    /// <summary>Farbe der zuletzt geänderten Farbfläche; neue Farbflächen übernehmen sie.</summary>
+    public static string LastShapeColor { get; private set; } = "#FBC02D";
+
+    /// <summary>Neue Farbfläche (noch ohne Lage und Größe).</summary>
+    public static ElementViewModel NewShape(ProjectViewModel project, AreaShape shape) =>
+        new(project, ElementKind.Shape) { Color = LastShapeColor, Shape = shape };
+
+    partial void OnColorChanged(string value)
+    {
+        if (IsShape && Avalonia.Media.Color.TryParse(value, out _))
+            LastShapeColor = value;
+    }
+
     public ElementViewModel(ProjectViewModel project, ElementKind kind)
     {
         Project = project;
