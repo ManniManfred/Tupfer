@@ -28,6 +28,8 @@ static class Program
         MainWindowViewModel.Examples = Examples.Create(pageUri);
         var query = System.Web.HttpUtility.ParseQueryString(pageUri.Query);
         App.StartExample = MainWindowViewModel.Examples.FirstOrDefault(e => e.Id == query["beispiel"]);
+        // Download-Seite mit den Setups für Windows, Linux und macOS
+        MainWindowViewModel.OpenDownloads = () => BrowserInterop.OpenUrl(new Uri(pageUri, "download.html").ToString());
 
         return AppBuilder.Configure<App>()
             .WithInterFont()

@@ -155,6 +155,11 @@ export function setTitle(title) {
     document.title = title;
 }
 
+/** Öffnet die Adresse in einem neuen Tab. */
+export function openUrl(url) {
+    window.open(url, '_blank', 'noopener');
+}
+
 // ---------- Sprachausgabe mit meSpeak (eSpeak als JavaScript) ----------
 
 let sources = null;

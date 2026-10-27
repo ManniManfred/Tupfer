@@ -1,0 +1,93 @@
+# Baut die Setups des Tupfer Designers für Windows, Linux und macOS und veröffentlicht sie als
+# GitHub-Release „v<Version>“ (Version aus Directory.Build.props). Die Download-Seite der Web-App
+# (Tupfer.Designer.Browser/wwwroot/download.html) verlinkt immer auf das neueste Release.
+name: Setups
+
+on:
+  push:
+    branches: [master]
+    # Nur wenn die Versionsnummer geändert wurde (bei jeder Änderung an der App)
+    paths: [Directory.Build.props]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: setups
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+          - rid: osx-x64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Version lesen
+        run: echo "VERSION=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)" >> "$GITHUB_ENV"
+      - name: Veröffentlichen
+        run: dotnet publish Tupfer.Designer -c Release -r ${{ matrix.rid }} --self-contained -o publish/${{ matrix.rid }}
+
+      - name: Windows-Setup
+        if: matrix.rid == 'win-x64'
+        run: |
+          choco install innosetup -y --no-progress
+          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" //DVersion=$VERSION //DSource=../../publish/win-x64 //DOutput=../../setups deploy/setup/windows.iss
+      - name: Linux-Pakete
+        if: matrix.rid == 'linux-x64'
+        run: deploy/setup/linux.sh $VERSION publish/linux-x64 setups
+      - name: macOS-Abbild
+        if: startsWith(matrix.rid, 'osx-')
+        run: |
+          arch=${{ matrix.rid }}
+          deploy/setup/macos.sh $VERSION publish/${{ matrix.rid }} setups/Tupfer-Designer-macOS-${arch#osx-}.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: setup-${{ matrix.rid }}
+          path: setups/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version lesen
+        run: echo "VERSION=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          path: setups
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: Tupfer Designer ${{ env.VERSION }}
+          make_latest: true
+          files: setups/*
+          body: |
+            Setups des Tupfer Designers ${{ env.VERSION }}:
+
+            - **Windows:** `Tupfer-Designer-Setup-Windows-x64.exe`
+            - **Linux:** `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.tar.gz`
+            - **macOS:** `Tupfer-Designer-macOS-arm64.dmg` (Apple-Chip M1 und neuer) oder `Tupfer-Designer-macOS-x64.dmg` (Intel)
+
+            Die Setups sind nicht signiert: Windows fragt beim ersten Start nach („Weitere Informationen → Trotzdem ausführen“),
+            unter macOS die App beim ersten Mal per Rechtsklick → „Öffnen“ starten.

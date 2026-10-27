@@ -132,6 +132,9 @@
             <Separator />
             <MenuItem Header="tttool-YAML _importieren …" Command="{Binding ImportYamlCommand}" />
             <MenuItem Header="tttool-YAML _exportieren …" Command="{Binding ExportYamlCommand}" />
+            <Separator IsVisible="{x:Static vm:MainWindowViewModel.HasDownloads}" />
+            <MenuItem Header="Desktop-Version _herunterladen …" Command="{Binding ShowDownloadsCommand}"
+                      IsVisible="{x:Static vm:MainWindowViewModel.HasDownloads}" />
           </MenuItem>
           <MenuItem Header="_Bearbeiten">
             <MenuItem Header="_Rückgängig" InputGesture="Ctrl+Z" Command="{Binding UndoCommand}"

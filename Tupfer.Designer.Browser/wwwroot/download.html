@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tupfer Designer herunterladen</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <style>
+    :root {
+      --bg: #F3F4F7;
+      --card: #FFFFFF;
+      --text: #1F2A44;
+      --muted: #5B6478;
+      --line: #DCE0E8;
+      --accent: #2F6FDE;
+      --accent-text: #FFFFFF;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161A22;
+        --card: #1F2430;
+        --text: #E6E9F0;
+        --muted: #A3ABBD;
+        --line: #333A4A;
+        --accent: #5B8FEF;
+        --accent-text: #0B1220;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      line-height: 1.5;
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 16px 48px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 1.75rem; margin: 0; }
+    h2 { font-size: 1.15rem; margin: 0 0 4px; }
+    p { margin: 0 0 12px; }
+    a { color: var(--accent); }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card.recommended { border: 2px solid var(--accent); }
+    .card .badge {
+      display: none;
+      align-self: flex-start;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .card.recommended .badge { display: block; }
+    .button {
+      display: block;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .button.primary { background: var(--accent); color: var(--accent-text); }
+    .button small { display: block; font-weight: 400; opacity: 0.85; }
+    .hint { font-size: 0.9rem; color: var(--muted); margin-top: auto; }
+    footer { font-size: 0.9rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="favicon.png" alt="" width="56" height="56" />
+    <div>
+      <h1>Tupfer Designer herunterladen</h1>
+      <p class="muted" id="version">Neueste Version für Windows, Linux und macOS</p>
+    </div>
+  </header>
+  <p>
+    Die Desktop-Version kann alles, was die Web-App kann, und läuft ohne Internet. Dazu kommen das
+    Programmieren in C#, die Windows-Sprachausgabe und das Speichern auf den Stift unabhängig vom Browser. Ohne Installation geht es weiterhin im Browser:
+    <a href="./">Tupfer Designer im Browser öffnen</a>.
+  </p>
+
+  <div class="grid">
+    <section class="card" data-os="windows">
+      <span class="badge">Für dieses Gerät</span>
+      <h2>Windows</h2>
+      <p class="muted">Windows 10 und 11 (64 Bit)</p>
+      <a class="button primary" data-asset="Tupfer-Designer-Setup-Windows-x64.exe">Setup herunterladen<small>.exe</small></a>
+      <p class="hint">Das Setup ist nicht signiert: Meldet Windows „Der Computer wurde geschützt“, auf
+        „Weitere Informationen“ und dann „Trotzdem ausführen“ klicken.</p>
+    </section>
+
+    <section class="card" data-os="linux">
+      <span class="badge">Für dieses Gerät</span>
+      <h2>Linux</h2>
+      <p class="muted">64 Bit (x64)</p>
+      <a class="button primary" data-asset="Tupfer-Designer-Linux-x64.deb">Paket herunterladen<small>.deb für Debian, Ubuntu, Mint …</small></a>
+      <a class="button" data-asset="Tupfer-Designer-Linux-x64.tar.gz">Archiv herunterladen<small>.tar.gz für alle anderen</small></a>
+      <p class="hint">Das Archiv entpacken und <code>tupfer-designer/Tupfer.Designer</code> starten.</p>
+    </section>
+
+    <section class="card" data-os="mac">
+      <span class="badge">Für dieses Gerät</span>
+      <h2>macOS</h2>
+      <p class="muted">macOS 12 oder neuer</p>
+      <a class="button primary" data-asset="Tupfer-Designer-macOS-arm64.dmg">Für Apple-Chip<small>M1, M2, M3 … (.dmg)</small></a>
+      <a class="button" data-asset="Tupfer-Designer-macOS-x64.dmg">Für Intel-Prozessor<small>.dmg</small></a>
+      <p class="hint">„Tupfer Designer“ in den Ordner „Programme“ ziehen. Die App ist nicht von Apple
+        beglaubigt: beim ersten Start per Rechtsklick → „Öffnen“ bestätigen.</p>
+    </section>
+  </div>
+
+  <footer>
+    Ältere Versionen und Quelltext: <a href="https://github.com/ManniManfred/Tupfer/releases">alle Versionen auf GitHub</a>.
+    Der Tupfer Designer ist freie Software (MIT-Lizenz).
+  </footer>
+</main>
+<script>
+  const repo = 'ManniManfred/Tupfer';
+
+  // Links auf das neueste Release; sie funktionieren auch ohne die Abfrage unten
+  for (const a of document.querySelectorAll('[data-asset]'))
+    a.href = `https://github.com/${repo}/releases/latest/download/${a.dataset.asset}`;
+
+  // Passendes Betriebssystem hervorheben
+  const platform = (navigator.userAgentData?.platform || navigator.platform || navigator.userAgent).toLowerCase();
+  const os = platform.includes('win') ? 'windows'
+    : platform.includes('mac') ? 'mac'
+    : platform.includes('linux') && !/android/i.test(navigator.userAgent) ? 'linux'
+    : null;
+  if (os) {
+    const card = document.querySelector(`[data-os="${os}"]`);
+    card.classList.add('recommended');
+    card.parentElement.prepend(card);
+  }
+
+  // Versionsnummer und Dateigrößen vom neuesten Release
+  fetch(`https://api.github.com/repos/${repo}/releases/latest`)
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(release => {
+      const date = new Date(release.published_at).toLocaleDateString('de-DE');
+      document.getElementById('version').textContent = `Version ${release.tag_name.replace(/^v/, '')} vom ${date}`;
+      for (const a of document.querySelectorAll('[data-asset]')) {
+        const asset = release.assets.find(x => x.name === a.dataset.asset);
+        if (asset)
+          a.querySelector('small').textContent += ` · ${Math.round(asset.size / 1048576)} MB`;
+      }
+    })
+    .catch(e => console.warn('Release-Angaben nicht verfügbar:', e));
+</script>
+</body>
+</html>

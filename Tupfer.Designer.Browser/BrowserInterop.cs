@@ -56,6 +56,10 @@ static partial class BrowserInterop
     [JSImport("setTitle", "tupfer")]
     public static partial void SetTitle(string title);
 
+    /// <summary>Öffnet die Adresse in einem neuen Tab.</summary>
+    [JSImport("openUrl", "tupfer")]
+    public static partial void OpenUrl(string url);
+
     /// <summary>Lädt die Sprachausgabe (meSpeak) und die Stimme für die Sprache.</summary>
     [JSImport("loadSpeech", "tupfer")]
     public static partial Task LoadSpeechAsync(string language);

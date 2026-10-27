@@ -51,6 +51,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     public static bool HasExamples => Examples.Count > 0;
 
+    /// <summary>Öffnet die Download-Seite mit den Setups (nur im Browser, sonst null).</summary>
+    public static Action? OpenDownloads { get; set; }
+
+    public static bool HasDownloads => OpenDownloads != null;
+
     /// <summary>false in Browsern ohne Speichern-Dialog (z. B. auf dem Handy): Dort gibt es „Auf den Stift speichern“ nicht.</summary>
     public static bool CanSaveToPen { get; set; } = true;
 
@@ -263,6 +268,9 @@ public partial class MainWindowViewModel : ObservableObject
         if (path != null)
             LoadProject(path);
     });
+
+    [RelayCommand]
+    void ShowDownloads() => OpenDownloads?.Invoke();
 
     [RelayCommand]
     Task OpenExample(ExampleProject example) => Guard("Öffnen", async () =>

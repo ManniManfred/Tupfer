@@ -21,6 +21,7 @@ Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 | `examples/tic-tac-toi-csharp/` | Dasselbe Spiel als C#-Programm (siehe „Programmieren in C#“) |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
 | `deploy/`, `captain-definition` | Web-App im Container mit nginx (z. B. für CapRover) |
+| `deploy/setup/` | Setups für Windows (Inno Setup), Linux (.deb, .tar.gz) und macOS (.dmg) |
 
 ## Beispiel: Tic-Tac-Toe
 
@@ -69,6 +70,23 @@ Schaf, Huhn). Vorschau: `examples/wo-ist/vorschau.png`.
 Auf dem Stift zuerst *Start* antippen (Produkt-Code `902`). Die Texte lassen sich durch eigene
 Aufnahmen ersetzen, zum Beispiel echte Tiergeräusche. Die Tierbilder stammen aus
 [Twemoji](https://github.com/jdecked/twemoji) (CC-BY 4.0, siehe `THIRD-PARTY-NOTICES.md`).
+
+## Herunterladen
+
+Fertige Setups gibt es auf der Download-Seite der Web-App (`download.html`, in der Web-App unter
+*Datei → Desktop-Version herunterladen*) und unter [Releases](https://github.com/ManniManfred/Tupfer/releases):
+
+| System | Datei |
+| --- | --- |
+| Windows 10/11 | `Tupfer-Designer-Setup-Windows-x64.exe` |
+| Linux | `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.tar.gz` |
+| macOS (Apple-Chip / Intel) | `Tupfer-Designer-macOS-arm64.dmg` / `Tupfer-Designer-macOS-x64.dmg` |
+
+Die Setups baut der Workflow `.github/workflows/setups.yml`, sobald sich die Versionsnummer in
+`Directory.Build.props` ändert (oder von Hand über *Actions → Setups → Run workflow*), und
+veröffentlicht sie als Release `v<Version>`. Sie sind nicht signiert: Windows fragt beim ersten Start
+nach („Weitere Informationen → Trotzdem ausführen“), unter macOS die App beim ersten Mal per
+Rechtsklick → *Öffnen* starten.
 
 ## Starten (Desktop)
 
