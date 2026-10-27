@@ -269,7 +269,8 @@ public partial class MainWindowViewModel : ObservableObject
             Log("Hinweis: Das C#-Programm lässt sich hier nicht bearbeiten – es werden die zuletzt übersetzten Skripte verwendet.");
     }
 
-    [RelayCommand]
+    // Im Browser kehrt die Dateiauswahl nach Abbrechen teils nie zurück: Befehl trotzdem freigeben
+    [RelayCommand(AllowConcurrentExecutions = true)]
     Task OpenProject() => Guard("Öffnen", async () =>
     {
         var path = await Dialogs!.OpenAsync("Projekt öffnen", "Tupfer-Projekt", "*" + ProjectStore.Extension);
@@ -352,7 +353,8 @@ public partial class MainWindowViewModel : ObservableObject
         Log($"Gespeichert: {path}");
     });
 
-    [RelayCommand]
+    // Im Browser kehrt die Dateiauswahl nach Abbrechen teils nie zurück: Befehl trotzdem freigeben
+    [RelayCommand(AllowConcurrentExecutions = true)]
     Task ImportYaml() => Guard("YAML-Import", async () =>
     {
         var path = await Dialogs!.OpenAsync("tttool-YAML importieren", "tttool YAML", "*.yaml", "*.yml");
@@ -612,7 +614,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand] void Undo() => Project.History.Undo();
     [RelayCommand] void Redo() => Project.History.Redo();
 
-    [RelayCommand]
+    // Im Browser kehrt die Dateiauswahl nach Abbrechen teils nie zurück: Befehl trotzdem freigeben
+    [RelayCommand(AllowConcurrentExecutions = true)]
     Task InsertImage() => Guard("Bild einfügen", async () =>
     {
         if (Project.SelectedPage is not { } page) return;
@@ -886,7 +889,8 @@ public partial class MainWindowViewModel : ObservableObject
     });
 
     /// <summary>Übernimmt eine vorhandene Audiodatei als Aufnahme des Textes.</summary>
-    [RelayCommand]
+    // Im Browser kehrt die Dateiauswahl nach Abbrechen teils nie zurück: Befehl trotzdem freigeben
+    [RelayCommand(AllowConcurrentExecutions = true)]
     Task ImportRecording(SpeakViewModel speak) => Guard("Aufnahme laden", async () =>
     {
         if (!await EnsureProjectDir())
