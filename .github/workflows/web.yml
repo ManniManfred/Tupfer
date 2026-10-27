@@ -1,5 +1,6 @@
 # Baut die Browser-Version des Tupfer Designers und veröffentlicht sie auf GitHub Pages.
-# Einmalig nötig: Repository → Settings → Pages → Source: „GitHub Actions“.
+# Einmalig nötig: Repository → Settings → Pages → Source: „GitHub Actions“ (für private Repositories
+# nur mit bezahltem GitHub-Plan). Ist Pages nicht eingeschaltet, wird nur gebaut und eine Warnung gezeigt.
 name: Web-Version
 
 on:
@@ -19,7 +20,20 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      pages: ${{ steps.pages.outputs.enabled }}
     steps:
+      - name: Prüfen, ob GitHub Pages eingeschaltet ist
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/pages" --silent 2>/dev/null; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=GitHub Pages nicht eingeschaltet::Die Web-Version wird nur gebaut, nicht veröffentlicht. Einschalten unter Settings → Pages → Source: „GitHub Actions“ (private Repositories brauchen einen bezahlten Plan)."
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
@@ -34,6 +48,7 @@ jobs:
 
   deploy:
     needs: build
+    if: needs.build.outputs.pages == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

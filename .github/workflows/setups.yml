@@ -6,8 +6,8 @@ name: Setups
 on:
   push:
     branches: [master]
-    # Nur wenn die Versionsnummer geändert wurde (bei jeder Änderung an der App)
-    paths: [Directory.Build.props]
+    # Nur wenn die Versionsnummer (bei jeder Änderung an der App) oder die Setups selbst geändert wurden
+    paths: [Directory.Build.props, deploy/setup/**, .github/workflows/setups.yml]
   workflow_dispatch:
 
 permissions:
@@ -47,9 +47,12 @@ jobs:
 
       - name: Windows-Setup
         if: matrix.rid == 'win-x64'
+        # PowerShell statt Git Bash, das Optionen wie /DSource=… sonst als Pfad umschreibt
+        shell: pwsh
         run: |
-          choco install innosetup -y --no-progress
-          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" //DVersion=$VERSION //DSource=../../publish/win-x64 //DOutput=../../setups deploy/setup/windows.iss
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DVersion=$env:VERSION" "/DSource=..\..\publish\win-x64" "/DOutput=..\..\setups" deploy\setup\windows.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Linux-Pakete
         if: matrix.rid == 'linux-x64'
         run: deploy/setup/linux.sh $VERSION publish/linux-x64 setups
