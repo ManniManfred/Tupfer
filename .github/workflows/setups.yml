@@ -107,7 +107,7 @@ jobs:
             - **Windows:** `Tupfer-Designer-Setup-Windows-x64.exe`
             - **Linux:** `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.AppImage` (alle Distributionen, ohne Installation)
             - **macOS:** `Tupfer-Designer-macOS-arm64.dmg` (Apple-Chip M1 und neuer) oder `Tupfer-Designer-macOS-x64.dmg` (Intel)
-            - **Nextcloud:** `Tupfer-Designer-Nextcloud.tar.gz` (App für Nextcloud 28–32, Installation siehe README)
+            - **Nextcloud:** `Tupfer-Designer-Nextcloud.tar.gz` (App für Nextcloud 28–35, Installation siehe README)
 
             Die Setups sind nicht signiert: Windows fragt beim ersten Start nach („Weitere Informationen → Trotzdem ausführen“),
             unter macOS die App beim ersten Mal per Rechtsklick → „Öffnen“ starten.

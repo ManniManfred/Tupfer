@@ -16,7 +16,7 @@ Projekte (*.tupfer.json) öffnet man in der Dateien-App per Klick, Bilder und Au
 	<website>https://github.com/mannimanfred/Tupfer</website>
 	<bugs>https://github.com/mannimanfred/Tupfer/issues</bugs>
 	<dependencies>
-		<nextcloud min-version="28" max-version="32"/>
+		<nextcloud min-version="28" max-version="35"/>
 	</dependencies>
 	<navigations>
 		<navigation>

@@ -89,7 +89,7 @@ Fertige Setups gibt es auf der [Download-Seite](https://mannimanfred.github.io/T
 | Windows 10/11 | `Tupfer-Designer-Setup-Windows-x64.exe` |
 | Linux | `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.AppImage` (alle Distributionen, ohne Installation) |
 | macOS (Apple-Chip / Intel) | `Tupfer-Designer-macOS-arm64.dmg` / `Tupfer-Designer-macOS-x64.dmg` |
-| Nextcloud 28–32 | `Tupfer-Designer-Nextcloud.tar.gz` (siehe „Tupfer Designer in Nextcloud“) |
+| Nextcloud 28–35 | `Tupfer-Designer-Nextcloud.tar.gz` (siehe „Tupfer Designer in Nextcloud“) |
 
 Die Setups baut der Workflow `.github/workflows/setups.yml`, sobald sich die Versionsnummer in
 `Directory.Build.props` ändert (oder von Hand über *Actions → Setups → Run workflow*), und
@@ -230,7 +230,7 @@ Unterschiede zur Desktop-Version:
 
 ## Tupfer Designer in Nextcloud
 
-Die App `nextcloud/tupfer` bringt die Web-Version in die eigene Nextcloud (28 bis 32): Der Designer
+Die App `nextcloud/tupfer` bringt die Web-Version in die eigene Nextcloud (28 bis 35): Der Designer
 läuft wie im Browser, liest und speichert seine Dateien aber direkt in Nextcloud. Nichts wird
 heruntergeladen oder hochgeladen, die Dateien bleiben auf dem eigenen Server.
 
