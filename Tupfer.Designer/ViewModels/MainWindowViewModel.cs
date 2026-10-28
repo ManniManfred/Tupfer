@@ -38,7 +38,7 @@ public partial class MainWindowViewModel : ObservableObject
 {
     public MainWindowViewModel()
     {
-        _project = CreateDefaultProject();
+        _project = CreateDefaultProject(Log);
     }
 
     public IFileDialogs? Dialogs { get; set; }
@@ -177,9 +177,12 @@ public partial class MainWindowViewModel : ObservableObject
         ShowLog = true;
     }
 
-    ProjectViewModel CreateDefaultProject()
+    /// <summary>Inhalt eines neuen Projekts (wie „Datei → Neu“), z. B. zum Anlegen einer Projektdatei.</summary>
+    public static ProjectFile DefaultProjectFile() => CreateDefaultProject(_ => { }).ToFile(Environment.CurrentDirectory);
+
+    static ProjectViewModel CreateDefaultProject(Action<string> log)
     {
-        var p = new ProjectViewModel(Log) { Comment = "Mein tiptoi-Buch", Welcome = "willkommen" };
+        var p = new ProjectViewModel(log) { Comment = "Mein tiptoi-Buch", Welcome = "willkommen" };
         p.Speak.Add(new SpeakViewModel { Name = "willkommen", Text = "Hallo! Tippe auf ein Bild." });
         p.Speak.Add(new SpeakViewModel { Name = "hallo", Text = "Das ist ein Beispiel." });
         p.AddScript("beispiel", "P(hallo)");
@@ -207,7 +210,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     void NewProject()
     {
-        Project = CreateDefaultProject();
+        Project = CreateDefaultProject(Log);
         FilePath = null;
         Dialogs?.ProjectCreated();
         ProgramErrors = ProgramOutput = "";

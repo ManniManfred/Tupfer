@@ -183,6 +183,25 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
         return local;
     }
 
+    /// <summary>
+    /// Legt ein neues Projekt (Inhalt wie „Datei → Neu“) in Nextcloud an und öffnet es. Gibt es die Datei
+    /// schon, wird sie nur geöffnet.
+    /// </summary>
+    public static async Task<string> CreateProjectAsync(string remote)
+    {
+        if (await NextcloudInterop.ExistsAsync(remote))
+            return await OpenProjectAsync(remote);
+        var workDir = BrowserFileDialogs.NewWorkDir();
+        SetAnchor(workDir, new Anchor(workDir, "/"));
+        var local = LocalPath(workDir, remote)!;
+        Directory.CreateDirectory(Path.GetDirectoryName(local)!);
+        Environment.CurrentDirectory = Path.GetDirectoryName(local)!;
+        ProjectStore.Save(MainWindowViewModel.DefaultProjectFile(), local);
+        await UploadAsync(local, remote, always: true);
+        NextcloudInterop.Notify($"In Nextcloud angelegt: {remote}");
+        return local;
+    }
+
     public async Task<string?> OpenAsync(string title, string filterName, params string[] patterns)
     {
         var endings = patterns.Select(p => p.TrimStart('*')).ToList();

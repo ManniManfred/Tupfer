@@ -13,6 +13,10 @@ static partial class NextcloudInterop
     [JSImport("startFile", "nextcloud")]
     public static partial string StartFile();
 
+    /// <summary>Beim Start neu anzulegendes Projekt in Nextcloud (?neu=…), sonst leer.</summary>
+    [JSImport("startNew", "nextcloud")]
+    public static partial string StartNew();
+
     /// <summary>Dateiauswahl von Nextcloud (Endungen durch Komma getrennt, oder ein Ordner); leer bei Abbruch.</summary>
     [JSImport("pick", "nextcloud")]
     public static partial Task<string> PickAsync(string title, string extensions, bool folder, string start);

@@ -1,4 +1,5 @@
-// Dateien-App: Tupfer-Projekte (*.tupfer.json) per Klick im Tupfer Designer öffnen.
+// Dateien-App: Tupfer-Projekte (*.tupfer.json) per Klick im Tupfer Designer öffnen und über das Menü
+// „Neu“ anlegen.
 // Ohne Build-Schritt: Die Aktion wird so angemeldet wie mit registerFileAction aus @nextcloud/files –
 // Version 3 (Nextcloud bis 32) und Version 4 (ab 33), die Funktionen verstehen beide Aufrufarten.
 (function () {
@@ -38,4 +39,68 @@
 		// Ist die Dateien-App schon geladen, liest sie die Aktionen nach diesem Ereignis neu
 		scope.registry?.dispatchEvent(new CustomEvent('register:action', { detail: action }))
 	}
+
+	// ---------- Menü „Neu“: Tupfer-Projekt ----------
+
+	const entry = {
+		id: 'tupfer-new',
+		displayName: 'Tupfer-Projekt',
+		iconSvgInline: icon,
+		category: 1, // „Neu erstellen“
+		order: 50,
+		// Nur in Ordnern, in denen man Dateien anlegen darf
+		enabled: (folder) => (folder.permissions & 4) !== 0,
+		handler: (folder, content) => {
+			const name = window.prompt('Name des neuen Tupfer-Projekts:', 'Neues Projekt')?.trim()
+			if (!name) {
+				return
+			}
+			const stem = name.replace(/\.tupfer\.json$/i, '').replace(/[\\/]/g, '_')
+			const taken = new Set((content || []).map((node) => node.basename.toLowerCase()))
+			let file = stem + '.tupfer.json'
+			for (let i = 2; taken.has(file.toLowerCase()); i++) {
+				file = `${stem} (${i}).tupfer.json`
+			}
+			const path = (folder.path || '/').replace(/\/$/, '') + '/' + file
+			// Der Designer legt das Projekt an (Inhalt wie „Datei → Neu“) und speichert es gleich
+			window.location.href = OC.generateUrl('/apps/tupfer/') + '?neu=' + encodeURIComponent(path)
+		},
+	}
+
+	// Wie NewMenu aus @nextcloud/files, falls die Dateien-App das Menü noch nicht angelegt hat
+	class NewMenu {
+		_entries = []
+		registerEntry(e) {
+			if (this.getEntryIndex(e.id) !== -1) {
+				throw new Error('Duplicate entry')
+			}
+			e.category = e.category ?? 1
+			this._entries.push(e)
+		}
+		unregisterEntry(e) {
+			const index = this.getEntryIndex(typeof e === 'string' ? e : e.id)
+			if (index !== -1) {
+				this._entries.splice(index, 1)
+			}
+		}
+		getEntries(context) {
+			return context
+				? this._entries.filter((e) => typeof e.enabled === 'function' ? e.enabled(context) : true)
+				: this._entries
+		}
+		getEntryIndex(id) {
+			return this._entries.findIndex((e) => e.id === id)
+		}
+	}
+
+	const addEntry = (menu) => {
+		if (!menu.getEntries().some((e) => e.id === entry.id)) {
+			menu.registerEntry(entry)
+		}
+	}
+	// @nextcloud/files 3 (bis Nextcloud 32) und 4 (ab 33)
+	window._nc_newfilemenu = window._nc_newfilemenu || new NewMenu()
+	addEntry(window._nc_newfilemenu)
+	scope.newFileMenu = scope.newFileMenu || new NewMenu()
+	addEntry(scope.newFileMenu)
 })()

@@ -253,6 +253,8 @@ Ordner `editor/`, die Nextcloud über PHP ausliefert. So braucht der Webserver k
 - Im App-Menü erscheint **Tupfer**. Dort startet der Designer mit dem zuletzt bearbeiteten Stand.
 - In der Dateien-App öffnet ein Klick auf eine `*.tupfer.json` das Projekt im Designer, ebenso
   der Eintrag *Mit Tupfer Designer öffnen* im Menü der Datei.
+- Über **+ Neu → Tupfer-Projekt** in der Dateien-App entsteht im aktuellen Ordner ein neues
+  Projekt (Inhalt wie *Datei → Neu*), das sich gleich im Designer öffnet.
 - **Öffnen und Einfügen:** *Projekt öffnen*, *Bild einfügen*, *SVG importieren* und
   *Aufnahme laden* zeigen die Dateiauswahl von Nextcloud. Bilder und Audiodateien, auf die ein
   Projekt verweist (auch in Nachbarordnern wie `../bilder/`), lädt der Designer mit dem Projekt.

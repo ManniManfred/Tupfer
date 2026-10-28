@@ -22,6 +22,11 @@ export function startFile() {
     return new URLSearchParams(location.search).get('datei') ?? '';
 }
 
+/** Beim Start neu anzulegendes Projekt (?neu=/Ordner/name.tupfer.json, aus dem Menü „Neu“ der Dateien-App). */
+export function startNew() {
+    return new URLSearchParams(location.search).get('neu') ?? '';
+}
+
 function user() {
     return host().OC.getCurrentUser().uid;
 }
