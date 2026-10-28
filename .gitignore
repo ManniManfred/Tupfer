@@ -212,3 +212,7 @@ _Pvt_Extensions/
 ModelManifest.xml
 
 tts-cache/
+
+# Nextcloud-App: Web-Version und Pakete (nextcloud/build.sh)
+nextcloud/tupfer/editor/
+nextcloud/dist/

@@ -19,16 +19,20 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
     const string Root = "/tupfer";
     static int _workDirs;
 
+    /// <summary>Ein neues Arbeitsverzeichnis wurde angelegt.</summary>
+    public static event Action<string>? WorkDirCreated;
+
     /// <summary>Legt ein leeres Arbeitsverzeichnis an und macht es zum aktuellen Verzeichnis.</summary>
     public static string NewWorkDir()
     {
         var dir = Path.Combine(Root, $"projekt{++_workDirs}");
         Directory.CreateDirectory(dir);
         Environment.CurrentDirectory = dir;
+        WorkDirCreated?.Invoke(dir);
         return dir;
     }
 
-    static bool IsProjectPattern(string pattern) =>
+    public static bool IsProjectPattern(string pattern) =>
         pattern.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase)
         || pattern.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)
         || pattern.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);

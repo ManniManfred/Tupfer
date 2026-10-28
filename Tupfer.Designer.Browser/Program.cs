@@ -28,6 +28,16 @@ static class Program
         MainWindowViewModel.Examples = Examples.Create(pageUri);
         var query = System.Web.HttpUtility.ParseQueryString(pageUri.Query);
         App.StartExample = MainWindowViewModel.Examples.FirstOrDefault(e => e.Id == query["beispiel"]);
+        // In der Nextcloud-App: Dateien in Nextcloud öffnen und speichern, ?datei=… gleich öffnen
+        if (NextcloudInterop.Available())
+        {
+            NextcloudFileDialogs.Init();
+            App.CreateDialogs = topLevel => new NextcloudFileDialogs(new BrowserFileDialogs(topLevel));
+            var startFile = NextcloudInterop.StartFile();
+            if (startFile.Length > 0)
+                App.StartExample = new ExampleProject("nextcloud", Path.GetFileName(startFile) + " aus Nextcloud",
+                    () => NextcloudFileDialogs.OpenProjectAsync(startFile));
+        }
         // Download-Seite mit den Setups für Windows, Linux und macOS
         MainWindowViewModel.OpenDownloads = () => BrowserInterop.OpenUrl(new Uri(pageUri, "download.html").ToString());
 

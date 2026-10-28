@@ -28,6 +28,7 @@ Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
 | `deploy/`, `captain-definition` | Web-App im Container mit nginx (z. B. für CapRover) |
 | `deploy/setup/` | Setups für Windows (Inno Setup), Linux (.deb, AppImage) und macOS (.dmg) |
+| `nextcloud/` | App für Nextcloud: die Web-App mit Dateien aus Nextcloud (siehe „Tupfer Designer in Nextcloud“) |
 
 ## Beispiel: Tic-Tac-Toe
 
@@ -88,6 +89,7 @@ Fertige Setups gibt es auf der [Download-Seite](https://mannimanfred.github.io/T
 | Windows 10/11 | `Tupfer-Designer-Setup-Windows-x64.exe` |
 | Linux | `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.AppImage` (alle Distributionen, ohne Installation) |
 | macOS (Apple-Chip / Intel) | `Tupfer-Designer-macOS-arm64.dmg` / `Tupfer-Designer-macOS-x64.dmg` |
+| Nextcloud 28–32 | `Tupfer-Designer-Nextcloud.tar.gz` (siehe „Tupfer Designer in Nextcloud“) |
 
 Die Setups baut der Workflow `.github/workflows/setups.yml`, sobald sich die Versionsnummer in
 `Directory.Build.props` ändert (oder von Hand über *Actions → Setups → Run workflow*), und
@@ -225,6 +227,46 @@ Unterschiede zur Desktop-Version:
   der Tab *Programm (C#)*. Projekte mit C#-Programm lassen sich trotzdem öffnen und bauen – dann
   mit den zuletzt (in der Desktop-Version) übersetzten Skripten.
 - Schriftarten: Es steht nur die eingebaute Schrift (Inter) zur Verfügung.
+
+## Tupfer Designer in Nextcloud
+
+Die App `nextcloud/tupfer` bringt die Web-Version in die eigene Nextcloud (28 bis 32): Der Designer
+läuft wie im Browser, liest und speichert seine Dateien aber direkt in Nextcloud. Nichts wird
+heruntergeladen oder hochgeladen, die Dateien bleiben auf dem eigenen Server.
+
+**Installieren** (als Administrator auf dem Server):
+
+```bash
+cd /var/www/nextcloud/apps        # oder custom_apps, je nach Einrichtung
+tar xzf Tupfer-Designer-Nextcloud.tar.gz
+chown -R www-data:www-data tupfer
+sudo -u www-data php ../occ app:enable tupfer
+```
+
+Das Paket `Tupfer-Designer-Nextcloud.tar.gz` liegt bei jedem
+[Release](https://github.com/ManniManfred/Tupfer/releases); selbst bauen mit `nextcloud/build.sh`
+(.NET-SDK mit `wasm-tools`, Ergebnis in `nextcloud/dist/`). Es enthält die fertige Web-Version im
+Ordner `editor/`, die Nextcloud über PHP ausliefert. So braucht der Webserver keine eigenen Regeln.
+
+**Benutzen:**
+
+- Im App-Menü erscheint **Tupfer**. Dort startet der Designer mit dem zuletzt bearbeiteten Stand.
+- In der Dateien-App öffnet ein Klick auf eine `*.tupfer.json` das Projekt im Designer, ebenso
+  der Eintrag *Mit Tupfer Designer öffnen* im Menü der Datei.
+- **Öffnen und Einfügen:** *Projekt öffnen*, *Bild einfügen*, *SVG importieren* und
+  *Aufnahme laden* zeigen die Dateiauswahl von Nextcloud. Bilder und Audiodateien, auf die ein
+  Projekt verweist (auch in Nachbarordnern wie `../bilder/`), lädt der Designer mit dem Projekt.
+  Bilder vom eigenen Rechner lassen sich weiter auf die Seite ziehen.
+- **Speichern:** Das Projekt wird an seinen Platz in Nextcloud geschrieben, zusammen mit neuen oder
+  geänderten Bildern und Aufnahmen. Unveränderte Dateien werden nicht erneut übertragen. Ein neues
+  Projekt (oder ein Beispiel) fragt beim ersten Speichern nach Ordner und Namen.
+- **Exporte** (GME, PDF, SVG, YAML) landen neben dem Projekt in Nextcloud. Bei einem noch nicht
+  gespeicherten Projekt werden sie wie im Browser heruntergeladen. *Drucken* und *Auf den Stift*
+  funktionieren wie im Browser.
+
+Die natürliche Sprachausgabe lädt ihre Stimmen wie im Browser von cdnjs, jsDelivr und Hugging Face.
+Die App erlaubt dafür diese Adressen in ihren Sicherheitsregeln (Content-Security-Policy). Ist der
+Server vom Internet abgeschnitten, spricht meSpeak.
 
 ## Typischer Ablauf
 

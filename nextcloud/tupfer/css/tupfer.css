@@ -1,0 +1,24 @@
+/* Der Designer füllt den ganzen Inhaltsbereich unter der Kopfzeile von Nextcloud */
+#tupfer-app {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+#tupfer-frame {
+	display: block;
+	width: 100%;
+	height: 100%;
+	border: 0;
+}
+
+#tupfer-app .tupfer-missing {
+	max-width: 640px;
+	margin: 60px auto;
+	padding: 0 16px;
+	line-height: 1.5;
+}
+
+#tupfer-app .tupfer-missing h2 {
+	margin-bottom: 12px;
+}

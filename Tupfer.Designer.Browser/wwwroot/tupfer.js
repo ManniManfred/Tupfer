@@ -153,6 +153,11 @@ export async function autosaveLoadMedia() {
 /** Setzt den Titel des Browser-Tabs. */
 export function setTitle(title) {
     document.title = title;
+    // In der Nextcloud-App auch den Titel des umgebenden Fensters
+    try {
+        if (window.parent !== window && window.parent.document.getElementById('tupfer-app'))
+            window.parent.document.title = title;
+    } catch { }
 }
 
 /** Öffnet die Adresse in einem neuen Tab. */

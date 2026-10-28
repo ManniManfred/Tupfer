@@ -7,7 +7,7 @@ on:
   push:
     branches: [master]
     # Nur wenn die Versionsnummer (bei jeder Änderung an der App) oder die Setups selbst geändert wurden
-    paths: [Directory.Build.props, deploy/setup/**, .github/workflows/setups.yml]
+    paths: [Directory.Build.props, deploy/setup/**, nextcloud/**, .github/workflows/setups.yml]
   workflow_dispatch:
 
 permissions:
@@ -67,8 +67,24 @@ jobs:
           name: setup-${{ matrix.rid }}
           path: setups/*
 
+  nextcloud:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: WebAssembly-Werkzeuge installieren
+        run: dotnet workload install wasm-tools
+      - name: Nextcloud-App bauen
+        run: nextcloud/build.sh setups
+      - uses: actions/upload-artifact@v4
+        with:
+          name: setup-nextcloud
+          path: setups/*
+
   release:
-    needs: build
+    needs: [build, nextcloud]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -91,6 +107,7 @@ jobs:
             - **Windows:** `Tupfer-Designer-Setup-Windows-x64.exe`
             - **Linux:** `Tupfer-Designer-Linux-x64.deb` (Debian, Ubuntu, Mint …) oder `Tupfer-Designer-Linux-x64.AppImage` (alle Distributionen, ohne Installation)
             - **macOS:** `Tupfer-Designer-macOS-arm64.dmg` (Apple-Chip M1 und neuer) oder `Tupfer-Designer-macOS-x64.dmg` (Intel)
+            - **Nextcloud:** `Tupfer-Designer-Nextcloud.tar.gz` (App für Nextcloud 28–32, Installation siehe README)
 
             Die Setups sind nicht signiert: Windows fragt beim ersten Start nach („Weitere Informationen → Trotzdem ausführen“),
             unter macOS die App beim ersten Mal per Rechtsklick → „Öffnen“ starten.

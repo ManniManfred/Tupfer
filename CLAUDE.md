@@ -24,6 +24,10 @@
   Sprachausgabe mit Piper von CDN/Hugging Face, Rückfall meSpeak in `wwwroot/`) liegen nur dort. Ohne C#-Übersetzer (kein Roslyn):
   `Compiler/ProgramCompiler.cs` wird durch einen Platzhalter ersetzt. Braucht `dotnet workload install wasm-tools`:
   `dotnet publish Tupfer.Designer.Browser -c Release -o publish`
+- `nextcloud/tupfer/` – Nextcloud-App (PHP, ohne Build-Schritt für JS): liefert die Web-Version aus
+  `editor/` aus und bettet sie per iframe ein; Dateizugriff über WebDAV in
+  `Tupfer.Designer.Browser/wwwroot/nextcloud.js` und `NextcloudFileDialogs.cs`. Paket bauen:
+  `nextcloud/build.sh` (Version wird aus `Directory.Build.props` übernommen).
 - Tests (u. a. C#-Übersetzer gegen natives C#): `dotnet test Tupfer.Designer.Tests`
 - OID-Erzeugung (`Tupfer.Designer/Oid/`) und GME-Erstellung (`Tupfer.Designer/Gme/`) sind
   Portierungen von tttool (github.com/entropia/tip-toi-reveng, Referenz: Version 1.11).

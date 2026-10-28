@@ -330,7 +330,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task OpenExample(ExampleProject example) => Guard("Öffnen", async () =>
     {
-        Log($"Lade Beispiel „{example.Title}“ …");
+        Log($"Lade „{example.Title}“ …");
         Load(await example.FetchAsync());
     });
 
