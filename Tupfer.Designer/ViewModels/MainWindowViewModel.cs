@@ -1119,11 +1119,63 @@ public partial class MainWindowViewModel : ObservableObject
             data = await Task.Run(() => tts.Speak(key, speak.Text));
             extension = Audio.ExtensionOf(data);
         }
-        // Nicht auf das Ende warten (der Knopf bliebe so lange gesperrt), nur sofortige Fehler melden
+        EndSpeakPlayback();
         var playing = Audio.Device.PlayAsync(data, extension);
         if (playing.IsCompleted)
+        {
             await playing;
+            return;
+        }
+        // Während der Wiedergabe zeigt der Text Stopp und Pause statt Abspielen
+        int id = ++_speakPlayId;
+        _playingSpeak = speak;
+        speak.IsPlaying = true;
+        // Nicht auf das Ende warten (der Knopf bliebe so lange gesperrt)
+        try
+        {
+            await playing;
+        }
+        finally
+        {
+            if (id == _speakPlayId)
+                EndSpeakPlayback();
+        }
     });
+
+    SpeakViewModel? _playingSpeak;
+    int _speakPlayId;
+
+    /// <summary>Setzt die Anzeige der laufenden Wiedergabe zurück.</summary>
+    void EndSpeakPlayback()
+    {
+        _speakPlayId++;
+        if (_playingSpeak is { } speak)
+        {
+            speak.IsPlaying = false;
+            speak.IsPaused = false;
+        }
+        _playingSpeak = null;
+    }
+
+    /// <summary>Beendet die Wiedergabe eines Textes.</summary>
+    [RelayCommand]
+    void StopSpeak(SpeakViewModel? speak)
+    {
+        if (_playingSpeak is null || (speak is not null && speak != _playingSpeak))
+            return;
+        EndSpeakPlayback();
+        Audio.Device.StopPlayback();
+    }
+
+    /// <summary>Hält die Wiedergabe eines Textes an bzw. setzt sie fort.</summary>
+    [RelayCommand]
+    void PauseSpeak(SpeakViewModel? speak)
+    {
+        if (_playingSpeak is not { } playing || (speak is not null && speak != playing))
+            return;
+        playing.IsPaused = !playing.IsPaused;
+        Audio.Device.SetPlaybackPaused(playing.IsPaused);
+    }
 
     SpeakViewModel? _recordingSpeak;
 

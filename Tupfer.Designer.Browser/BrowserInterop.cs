@@ -80,6 +80,10 @@ static partial class BrowserInterop
     [JSImport("stopAudio", "tupfer")]
     public static partial void StopAudio();
 
+    /// <summary>Hält die laufende Wiedergabe an bzw. setzt sie fort.</summary>
+    [JSImport("pauseAudio", "tupfer")]
+    public static partial void PauseAudio(bool paused);
+
     /// <summary>Startet eine Aufnahme vom Mikrofon (fragt beim ersten Mal nach der Erlaubnis).</summary>
     [JSImport("startRecording", "tupfer")]
     public static partial Task StartRecordingAsync();

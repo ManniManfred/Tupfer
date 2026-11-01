@@ -485,19 +485,25 @@ async function fetchModel(url) {
 
 let player = null;
 let playing = Promise.resolve();
+/** Beendet das Warten auf die laufende Wiedergabe. */
+let finishPlaying = () => {};
 
 /** Startet die Wiedergabe von Audiodaten; eine laufende wird beendet. */
 export function playAudio(data, mimeType) {
     stopAudio();
     const audio = player = new Audio(URL.createObjectURL(new Blob([data.slice()], { type: mimeType })));
-    // Fertig am Ende, bei Fehlern und wenn die Wiedergabe abgebrochen wird (pause)
+    // Fertig am Ende, bei Fehlern und wenn die Wiedergabe abgebrochen wird (stopAudio), nicht beim Anhalten
     playing = new Promise(resolve => {
+        let finished = false;
         const done = () => {
+            if (finished)
+                return;
+            finished = true;
             URL.revokeObjectURL(audio.src);
             resolve();
         };
+        finishPlaying = done;
         audio.addEventListener('ended', done);
-        audio.addEventListener('pause', done);
         audio.addEventListener('error', done);
         audio.play().catch(e => {
             console.warn('Wiedergabe nicht möglich:', e);
@@ -521,7 +527,18 @@ export function stopAudio() {
     if (player) {
         player.pause();
         player = null;
+        finishPlaying();
     }
+}
+
+/** Hält die laufende Wiedergabe an bzw. setzt sie fort. */
+export function pauseAudio(paused) {
+    if (!player)
+        return;
+    if (paused)
+        player.pause();
+    else
+        player.play().catch(e => console.warn('Wiedergabe nicht möglich:', e));
 }
 
 let recording = null;

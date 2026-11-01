@@ -57,6 +57,16 @@ public partial class SpeakViewModel : ObservableObject
     /// <summary>Für diesen Text läuft gerade eine Aufnahme.</summary>
     [ObservableProperty] bool _isRecording;
 
+    /// <summary>Dieser Text wird gerade abgespielt (auch wenn angehalten).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotPlaying))]
+    bool _isPlaying;
+
+    /// <summary>Die Wiedergabe dieses Textes ist angehalten.</summary>
+    [ObservableProperty] bool _isPaused;
+
+    public bool IsNotPlaying => !IsPlaying;
+
     public bool HasRecording => !string.IsNullOrEmpty(Recording);
 
     public string RecordingName => HasRecording ? Path.GetFileName(Recording!) : "";

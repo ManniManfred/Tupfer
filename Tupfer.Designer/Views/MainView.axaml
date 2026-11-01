@@ -718,11 +718,26 @@
                       <Grid ColumnDefinitions="*,4,Auto">
                         <TextBox Text="{Binding SpeakEntry.Text, FallbackValue=''}" AcceptsReturn="True" TextWrapping="Wrap"
                                  PlaceholderText="Text, den der Stift spricht" />
-                        <Button Grid.Column="2" Classes="tool" VerticalAlignment="Top" ToolTip.Tip="Anhören"
-                                Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
-                                CommandParameter="{Binding SpeakEntry}">
-                          <PathIcon Data="{StaticResource IconPlay}" />
-                        </Button>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
+                          <Button Classes="tool" ToolTip.Tip="Anhören" IsVisible="{Binding SpeakEntry.IsNotPlaying, FallbackValue=True}"
+                                  Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
+                                  CommandParameter="{Binding SpeakEntry}">
+                            <PathIcon Data="{StaticResource IconPlay}" />
+                          </Button>
+                          <Button Classes="tool" ToolTip.Tip="Anhalten bzw. fortsetzen" IsVisible="{Binding SpeakEntry.IsPlaying, FallbackValue=False}"
+                                  Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PauseSpeakCommand}"
+                                  CommandParameter="{Binding SpeakEntry}">
+                            <Panel>
+                              <PathIcon Data="{StaticResource IconPause}" IsVisible="{Binding !SpeakEntry.IsPaused, FallbackValue=True}" />
+                              <PathIcon Data="{StaticResource IconPlay}" IsVisible="{Binding SpeakEntry.IsPaused, FallbackValue=False}" />
+                            </Panel>
+                          </Button>
+                          <Button Classes="tool" ToolTip.Tip="Wiedergabe beenden" IsVisible="{Binding SpeakEntry.IsPlaying, FallbackValue=False}"
+                                  Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).StopSpeakCommand}"
+                                  CommandParameter="{Binding SpeakEntry}">
+                            <PathIcon Data="{StaticResource IconStop}" />
+                          </Button>
+                        </StackPanel>
                       </Grid>
                       <TextBlock Classes="hint" TextWrapping="Wrap" Margin="0,4,0,0"
                                  Text="Name, Stimme und eigene Aufnahme im Tab „Sprachausgabe“." />
@@ -1001,10 +1016,23 @@
                       </ComboBox.ItemTemplate>
                     </ComboBox>
                     <StackPanel Grid.Column="3" Classes="speakbuttons" Orientation="Horizontal" Margin="4,0,0,0">
-                      <Button Classes="tool" ToolTip.Tip="Anhören"
+                      <Button Classes="tool" ToolTip.Tip="Anhören" IsVisible="{Binding IsNotPlaying, FallbackValue=True}"
                               Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
-                              CommandParameter="{Binding}">
+                              CommandParameter="{Binding }">
                         <PathIcon Data="{StaticResource IconPlay}" />
+                      </Button>
+                      <Button Classes="tool" ToolTip.Tip="Anhalten bzw. fortsetzen" IsVisible="{Binding IsPlaying, FallbackValue=False}"
+                              Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PauseSpeakCommand}"
+                              CommandParameter="{Binding }">
+                        <Panel>
+                          <PathIcon Data="{StaticResource IconPause}" IsVisible="{Binding !IsPaused, FallbackValue=True}" />
+                          <PathIcon Data="{StaticResource IconPlay}" IsVisible="{Binding IsPaused, FallbackValue=False}" />
+                        </Panel>
+                      </Button>
+                      <Button Classes="tool" ToolTip.Tip="Wiedergabe beenden" IsVisible="{Binding IsPlaying, FallbackValue=False}"
+                              Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).StopSpeakCommand}"
+                              CommandParameter="{Binding }">
+                        <PathIcon Data="{StaticResource IconStop}" />
                       </Button>
                       <Button Classes="tool" ToolTip.Tip="Mit dem Mikrofon aufnehmen bzw. Aufnahme beenden"
                               Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).RecordSpeakCommand}"

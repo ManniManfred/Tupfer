@@ -20,6 +20,9 @@ public interface IAudioDevice
     /// <summary>Beendet eine laufende Wiedergabe.</summary>
     void StopPlayback();
 
+    /// <summary>Hält die laufende Wiedergabe an bzw. setzt sie fort.</summary>
+    void SetPlaybackPaused(bool paused);
+
     /// <summary>Startet eine Aufnahme vom Mikrofon.</summary>
     Task StartRecordingAsync();
 
@@ -323,7 +326,7 @@ public class DesktopAudio : IAudioDevice
         {
             Mci($"open \"{file}\" alias tupferplay");
             Mci("play tupferplay");
-            while (id == _playId && MciStatus("status tupferplay mode") == "playing")
+            while (id == _playId && MciStatus("status tupferplay mode") is "playing" or "paused")
                 await Task.Delay(100);
             return;
         }
@@ -358,6 +361,24 @@ public class DesktopAudio : IAudioDevice
         {
         }
         _player = null;
+    }
+
+    public void SetPlaybackPaused(bool paused)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Mci(paused ? "pause tupferplay" : "resume tupferplay", throwOnError: false);
+            return;
+        }
+        // Das Abspielprogramm anhalten bzw. weiterlaufen lassen
+        try
+        {
+            if (_player is { HasExited: false } player)
+                using (Process.Start("kill", [paused ? "-STOP" : "-CONT", player.Id.ToString()])) { }
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+        }
     }
 
     public Task StartRecordingAsync()

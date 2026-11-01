@@ -26,6 +26,8 @@ class BrowserAudio : IAudioDevice
 
     public void StopPlayback() => BrowserInterop.StopAudio();
 
+    public void SetPlaybackPaused(bool paused) => BrowserInterop.PauseAudio(paused);
+
     public Task StartRecordingAsync() => BrowserInterop.StartRecordingAsync();
 
     public async Task<byte[]> StopRecordingAsync() =>
