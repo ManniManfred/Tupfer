@@ -55,6 +55,8 @@ public partial class PageViewModel
         }
         foreach (var element in Elements)
             element.IsSelected = _selection.Contains(element);
+        foreach (var area in Areas)
+            area.IsSelected = _selection.Contains(area);
         OnPropertyChanged(nameof(Selection));
         OnPropertyChanged(nameof(IsMultiSelection));
         OnPropertyChanged(nameof(CanDistribute));

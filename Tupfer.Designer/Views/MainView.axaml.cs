@@ -52,10 +52,13 @@ public partial class MainView : UserControl
         AttachedToVisualTree += (_, _) => TopLevel.GetTopLevel(this)?.AddHandler(KeyDownEvent, OnUndoKey);
         DetachedFromVisualTree += (_, _) => TopLevel.GetTopLevel(this)?.RemoveHandler(KeyDownEvent, OnUndoKey);
         // Tunnel: vor dem Scrollen per Touch im Seiten-Bereich
-        LayerList.AddHandler(PointerPressedEvent, OnLayerDragStart, RoutingStrategies.Tunnel);
-        LayerList.AddHandler(PointerMovedEvent, OnLayerDragMove, RoutingStrategies.Tunnel);
-        LayerList.AddHandler(PointerReleasedEvent, (_, _) => EndLayerDrag(), RoutingStrategies.Tunnel);
-        LayerList.AddHandler(PointerCaptureLostEvent, (_, _) => EndLayerDrag());
+        foreach (var list in new[] { AreaLayerList, LayerList })
+        {
+            list.AddHandler(PointerPressedEvent, OnLayerDragStart, RoutingStrategies.Tunnel);
+            list.AddHandler(PointerMovedEvent, OnLayerDragMove, RoutingStrategies.Tunnel);
+            list.AddHandler(PointerReleasedEvent, (_, _) => EndLayerDrag(), RoutingStrategies.Tunnel);
+            list.AddHandler(PointerCaptureLostEvent, (_, _) => EndLayerDrag());
+        }
 
         FitButton.Click += (_, _) => FitPage();
         // Zoomfeld: Eingabetaste übernimmt, Esc verwirft; beim Betreten alles markieren
@@ -185,75 +188,90 @@ public partial class MainView : UserControl
     }
 
     // ---------- Ebenen-Liste: Umsortieren per Drag & Drop ----------
+    // Zwei Listen: OID-Flächen und darunter Bilder, Texte und Farbflächen. Gezogen wird nur innerhalb
+    // einer Liste, denn OID-Flächen liegen immer über allen Bildern und Texten.
 
     /// <summary>Ab dieser Strecke (Pixel) wird aus einem Klick auf einen Eintrag ein Ziehen.</summary>
     const double LayerDragDistance = 4;
 
-    ElementViewModel? _layerDrag;
-    (ElementViewModel Element, Point Start)? _layerPress;
+    (ItemsControl List, object Item)? _layerDrag;
+    (ItemsControl List, object Item, Point Start)? _layerPress;
+
+    static bool IsLayerItem(object? item) => item is AreaViewModel or ElementViewModel;
 
     void OnLayerDragStart(object? sender, PointerPressedEventArgs e)
     {
-        if (e.Source is not Visual source || !e.GetCurrentPoint(LayerList).Properties.IsLeftButtonPressed)
+        if (sender is not ItemsControl list || e.Source is not Visual source
+            || !e.GetCurrentPoint(list).Properties.IsLeftButtonPressed || DataContext is not MainWindowViewModel vm)
             return;
-        var row = source.GetSelfAndVisualAncestors().OfType<StyledElement>().FirstOrDefault(v => v.DataContext is ElementViewModel);
-        if (row?.DataContext is not ElementViewModel element)
+        var row = source.GetSelfAndVisualAncestors().OfType<StyledElement>().FirstOrDefault(v => IsLayerItem(v.DataContext));
+        if (row?.DataContext is not { } item)
             return;
         bool onHandle = source.GetSelfAndVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("draghandle"));
-        if (onHandle)
+        if (!onHandle && (vm.MultiSelect || (e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta | KeyModifiers.Shift)) != 0))
         {
-            BeginLayerDrag(element, e.Pointer);
+            // Strg-/Umschalt-Klick bzw. „Mehrere wählen“: in die Auswahl aufnehmen oder daraus entfernen
+            vm.ToggleLayerSelection(item);
+            e.Handled = true;
+        }
+        else if (onHandle)
+        {
+            BeginLayerDrag(list, item, e.Pointer);
             e.Handled = true;
         }
         else if (e.Pointer.Type != PointerType.Touch)
         {
             // Maus und Stift: der ganze Eintrag, sobald er ein Stück gezogen wird (sonst ist es ein Klick).
             // Per Finger nur am Griff, damit Wischen über die Liste weiter den Bereich scrollt.
-            _layerPress = (element, e.GetPosition(LayerList));
+            _layerPress = (list, item, e.GetPosition(list));
         }
     }
 
-    void BeginLayerDrag(ElementViewModel element, IPointer pointer)
+    void BeginLayerDrag(ItemsControl list, object item, IPointer pointer)
     {
         if (DataContext is not MainWindowViewModel vm)
             return;
-        vm.SelectElementCommand.Execute(element);
-        _layerDrag = element;
+        if (item is AreaViewModel area)
+            vm.SelectAreaCommand.Execute(area);
+        else
+            vm.SelectElementCommand.Execute(item);
+        _layerDrag = (list, item);
         _layerPress = null;
         vm.Project.History.BeginChange();
         // Die Liste selbst fängt den Zeiger: Die Einträge werden beim Umsortieren neu erzeugt
-        pointer.Capture(LayerList);
-        LayerList.Classes.Add("dragging");
+        pointer.Capture(list);
+        list.Classes.Add("dragging");
     }
 
     void OnLayerDragMove(object? sender, PointerEventArgs e)
     {
-        var pos = e.GetPosition(LayerList);
         if (_layerDrag == null && _layerPress is { } press)
         {
-            if (Math.Abs(pos.Y - press.Start.Y) < LayerDragDistance && Math.Abs(pos.X - press.Start.X) < LayerDragDistance)
+            var p = e.GetPosition(press.List);
+            if (Math.Abs(p.Y - press.Start.Y) < LayerDragDistance && Math.Abs(p.X - press.Start.X) < LayerDragDistance)
                 return;
-            BeginLayerDrag(press.Element, e.Pointer);
+            BeginLayerDrag(press.List, press.Item, e.Pointer);
         }
-        if (_layerDrag == null || DataContext is not MainWindowViewModel { Project.SelectedPage: { } page } || page.Layers.Count == 0)
+        if (_layerDrag is not { } drag || DataContext is not MainWindowViewModel { Project.SelectedPage: { } page })
+            return;
+        int count = drag.Item is AreaViewModel ? page.AreaLayers.Count : page.Layers.Count;
+        if (count == 0)
             return;
         e.Handled = true;
         // Alle Einträge sind gleich hoch. Nicht die Positionen der Einträge nehmen: Nach dem Verschieben
         // werden sie neu angelegt und haben bis zum nächsten Layout keine gültige Position.
-        double rowHeight = LayerList.Bounds.Height / page.Layers.Count;
-        int target = Math.Clamp((int)(pos.Y / rowHeight), 0, page.Layers.Count - 1);
-        int from = page.Elements.IndexOf(_layerDrag), to = page.Elements.Count - 1 - target;
-        if (from >= 0 && from != to)
-            page.Elements.Move(from, to);
+        var pos = e.GetPosition(drag.List);
+        double rowHeight = drag.List.Bounds.Height / count;
+        page.MoveLayer(drag.Item, (int)Math.Floor(pos.Y / rowHeight));
     }
 
     void EndLayerDrag()
     {
         _layerPress = null;
-        if (_layerDrag == null)
+        if (_layerDrag is not { } drag)
             return;
         _layerDrag = null;
-        LayerList.Classes.Remove("dragging");
+        drag.List.Classes.Remove("dragging");
         if (DataContext is MainWindowViewModel vm)
             vm.Project.History.EndChange();
     }

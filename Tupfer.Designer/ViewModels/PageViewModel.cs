@@ -18,7 +18,8 @@ public partial class PageViewModel : ObservableObject
         PropertyChanged += (_, e) => Changed?.Invoke(this, e.PropertyName);
         Areas.CollectionChanged += OnCollectionChanged;
         Elements.CollectionChanged += OnCollectionChanged;
-        Elements.CollectionChanged += (_, _) => SyncLayers();
+        Elements.CollectionChanged += (_, _) => SyncLayers(Elements, Layers);
+        Areas.CollectionChanged += (_, _) => SyncLayers(Areas, AreaLayers);
     }
 
     public ProjectViewModel Project { get; }
@@ -37,6 +38,12 @@ public partial class PageViewModel : ObservableObject
 
     /// <summary>Bilder und Texte für die Ebenen-Liste: das oberste zuerst.</summary>
     public ObservableCollection<ElementViewModel> Layers { get; } = new();
+
+    /// <summary>
+    /// OID-Flächen für die Ebenen-Liste: die oberste zuerst. Sie liegen immer über allen Bildern
+    /// und Texten; ihre Reihenfolge entscheidet nur, welche von sich überlappenden Flächen gilt.
+    /// </summary>
+    public ObservableCollection<AreaViewModel> AreaLayers { get; } = new();
 
     /// <summary>
     /// Wird bei jeder Änderung der Seite, ihrer Flächen oder Elemente ausgelöst:
@@ -59,24 +66,46 @@ public partial class PageViewModel : ObservableObject
         OnSingleSelectionChanged(value);
     }
 
-    /// <summary>Gleicht die Ebenen-Liste ab, ohne sie neu aufzubauen.</summary>
-    void SyncLayers()
+    /// <summary>Gleicht eine Ebenen-Liste ab, ohne sie neu aufzubauen.</summary>
+    void SyncLayers<T>(ObservableCollection<T> source, ObservableCollection<T> layers)
     {
-        var target = Elements.Reverse().ToList();
+        var target = source.Reverse().ToList();
         for (int i = 0; i < target.Count; i++)
         {
-            int index = Layers.IndexOf(target[i]);
+            int index = layers.IndexOf(target[i]);
             if (index < 0)
-                Layers.Insert(i, target[i]);
+                layers.Insert(i, target[i]);
             else if (index != i)
-                Layers.Move(index, i);
+                layers.Move(index, i);
         }
-        while (Layers.Count > target.Count)
-            Layers.RemoveAt(Layers.Count - 1);
+        while (layers.Count > target.Count)
+            layers.RemoveAt(layers.Count - 1);
         OnPropertyChanged(nameof(HasLayers));
+        OnPropertyChanged(nameof(HasAreaLayers));
+        OnPropertyChanged(nameof(HasAnyLayers));
     }
 
     public bool HasLayers => Layers.Count > 0;
+    public bool HasAreaLayers => AreaLayers.Count > 0;
+    public bool HasAnyLayers => HasLayers || HasAreaLayers;
+
+    /// <summary>
+    /// Verschiebt eine Fläche bzw. ein Element in seiner Ebenen-Liste an die Stelle
+    /// <paramref name="layerIndex"/> (0 = oben). Flächen bleiben dabei immer über den Elementen.
+    /// </summary>
+    public void MoveLayer(object item, int layerIndex)
+    {
+        static void Move<T>(ObservableCollection<T> list, T item, int layerIndex)
+        {
+            int from = list.IndexOf(item), to = list.Count - 1 - Math.Clamp(layerIndex, 0, list.Count - 1);
+            if (from >= 0 && from != to)
+                list.Move(from, to);
+        }
+        if (item is AreaViewModel a)
+            Move(Areas, a, layerIndex);
+        else if (item is ElementViewModel e)
+            Move(Elements, e, layerIndex);
+    }
 
     /// <summary>
     /// Ändert die Zeichenreihenfolge. Eine Ebene vor bzw. zurück heißt: über bzw. unter das nächste

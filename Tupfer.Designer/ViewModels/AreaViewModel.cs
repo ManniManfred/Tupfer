@@ -121,6 +121,9 @@ public partial class AreaViewModel : ObservableObject, IPolygonShape
     /// <summary>Umriss in Seitenkoordinaten (mm).</summary>
     public List<(double X, double Y)> Outline() => AreaGeometry.Outline(Shape, X, Y, Width, Height, Points);
 
+    /// <summary>Gewählt (für die Ebenen-Liste); gehört nicht zum Projekt.</summary>
+    [ObservableProperty] bool _isSelected;
+
     public bool Contains(double x, double y) =>
         IsRectangle ? x >= X && x <= X + Width && y >= Y && y <= Y + Height : AreaGeometry.Contains(Outline(), x, y);
 

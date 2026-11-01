@@ -91,6 +91,12 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
     </Style>
+    <!-- Gruppe innerhalb eines Abschnitts (z. B. in der Ebenen-Liste) -->
+    <Style Selector="TextBlock.sublabel">
+      <Setter Property="Margin" Value="0,8,0,2" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+    </Style>
     <Style Selector=":is(TextBlock).hint">
       <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
       <Setter Property="TextWrapping" Value="Wrap" />
@@ -160,7 +166,7 @@
       <Setter Property="Margin" Value="0,0,6,6" />
     </Style>
 
-    <!-- Ebenen-Liste (Bilder und Texte einer Seite) -->
+    <!-- Ebenen-Liste (OID-Flächen, Bilder und Texte einer Seite) -->
     <Style Selector="Button.layer">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />

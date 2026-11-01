@@ -322,24 +322,51 @@
                     <TextBlock Grid.Column="1" Text=" × " VerticalAlignment="Center" />
                     <TextBox Grid.Column="2" Text="{Binding HeightMm}" />
                   </Grid>
-                  <StackPanel IsVisible="{Binding HasLayers}">
-                    <TextBlock Classes="label" Text="Bilder, Texte und Farbflächen (oberstes zuerst) – zum Umsortieren ziehen, per Finger am Griff" TextWrapping="Wrap" />
-                    <ItemsControl x:Name="LayerList" ItemsSource="{Binding Layers}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:ElementViewModel">
-                          <Grid ColumnDefinitions="Auto,*">
-                            <Border Classes="draghandle">
-                              <PathIcon Data="{StaticResource IconDragHandle}" Width="16" Height="16" Foreground="{StaticResource TextSecondary}" />
-                            </Border>
-                            <Button Grid.Column="1" Classes="layer" Classes.selected="{Binding IsSelected}"
-                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectElementCommand}"
-                                    CommandParameter="{Binding}">
-                              <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />
-                            </Button>
-                          </Grid>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                  <StackPanel IsVisible="{Binding HasAnyLayers}">
+                    <TextBlock Classes="label" Text="Elemente der Seite (oberstes zuerst)" />
+                    <TextBlock Classes="hint" TextWrapping="Wrap"
+                               Text="Antippen wählt aus, Strg-/Umschalt-Klick mehrere. Zum Umsortieren ziehen, per Finger am Griff. OID-Flächen liegen immer über Bildern und Texten." />
+                    <StackPanel IsVisible="{Binding HasAreaLayers}">
+                      <TextBlock Classes="sublabel" Text="OID-Flächen" />
+                      <ItemsControl x:Name="AreaLayerList" ItemsSource="{Binding AreaLayers}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:AreaViewModel">
+                            <Grid ColumnDefinitions="Auto,*">
+                              <Border Classes="draghandle">
+                                <PathIcon Data="{StaticResource IconDragHandle}" Width="16" Height="16" Foreground="{StaticResource TextSecondary}" />
+                              </Border>
+                              <Button Grid.Column="1" Classes="layer" Classes.selected="{Binding IsSelected}"
+                                      Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectAreaCommand}"
+                                      CommandParameter="{Binding}" ToolTip.Tip="OID-Fläche">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                  <PathIcon Data="{StaticResource IconArea}" Width="14" Height="14" Foreground="{StaticResource TextSecondary}" />
+                                  <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                              </Button>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                    <StackPanel IsVisible="{Binding HasLayers}">
+                      <TextBlock Classes="sublabel" Text="Bilder, Texte und Farbflächen" />
+                      <ItemsControl x:Name="LayerList" ItemsSource="{Binding Layers}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:ElementViewModel">
+                            <Grid ColumnDefinitions="Auto,*">
+                              <Border Classes="draghandle">
+                                <PathIcon Data="{StaticResource IconDragHandle}" Width="16" Height="16" Foreground="{StaticResource TextSecondary}" />
+                              </Border>
+                              <Button Grid.Column="1" Classes="layer" Classes.selected="{Binding IsSelected}"
+                                      Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectElementCommand}"
+                                      CommandParameter="{Binding}">
+                                <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />
+                              </Button>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
                   </StackPanel>
                 </StackPanel>
 
