@@ -92,13 +92,18 @@
   <Grid x:Name="RootGrid" RowDefinitions="Auto,*,0,0">
 
     <!-- ================= Kopfzeile ================= -->
-    <Border Grid.Row="0" Background="{StaticResource CardBackground}"
+    <Border x:Name="HeaderBar" Grid.Row="0" Background="{StaticResource CardBackground}"
             BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,0,1" Padding="12,6">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0">
           <Image Source="/Assets/Tupfer.png" Width="28" Height="28" />
-          <TextBlock x:Name="AppTitle" Text="{x:Static vm:MainWindowViewModel.AppName}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"
-                     Foreground="{StaticResource TextPrimary}" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock x:Name="AppTitle" Text="{x:Static vm:MainWindowViewModel.AppName}" FontSize="16" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimary}" />
+            <!-- Desktop mit eigener Titelleiste: Dateiname statt im Fenstertitel -->
+            <TextBlock x:Name="FileTitle" IsVisible="False" Text="{Binding FileName}" FontSize="11"
+                       Foreground="{StaticResource TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="220" />
+          </StackPanel>
         </StackPanel>
 
         <!-- Im kompakten Layout statt des Titels nur die Version -->
@@ -106,7 +111,7 @@
                    FontSize="11" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"
                    HorizontalAlignment="Right" Margin="4,0,8,0" />
 
-        <Menu Grid.Column="1" VerticalAlignment="Center">
+        <Menu x:Name="HeaderMenu" Grid.Column="1" VerticalAlignment="Center">
           <MenuItem Header="_Datei">
             <MenuItem Header="_Neu" InputGesture="Ctrl+N" Command="{Binding NewProjectCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconNew}" Width="14" Height="14" /></MenuItem.Icon>
@@ -242,7 +247,7 @@
           </MenuItem>
         </Menu>
 
-        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+        <StackPanel x:Name="HeaderButtons" Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
           <!-- Im kompakten Layout nur über die Menüs erreichbar -->
           <StackPanel x:Name="HeaderFileButtons" Orientation="Horizontal" Spacing="2">
           <Button Classes="tool" Command="{Binding NewProjectCommand}" ToolTip.Tip="Neues Projekt (Strg+N)">

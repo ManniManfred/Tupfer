@@ -16,9 +16,13 @@ static class Program
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
+#pragma warning disable AVALONIA_X11_CSD // noch als experimentell markiert
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            // Linux: Kopfzeile und Titelleiste vereint, Rahmen zeichnet Avalonia selbst
+            .With(new X11PlatformOptions { EnableDrawnDecorations = true })
             .LogToTrace();
+#pragma warning restore AVALONIA_X11_CSD
 }

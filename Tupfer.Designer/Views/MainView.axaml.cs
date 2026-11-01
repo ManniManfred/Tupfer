@@ -1,9 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Chrome;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Input.GestureRecognizers;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Tupfer.Designer.ViewModels;
@@ -72,6 +74,80 @@ public partial class MainView : UserControl
         ShowCanvas.Click += (_, _) => ShowPagesPanel(CanvasPanel);
         ShowPages.Click += (_, _) => ShowPagesPanel(PagesPanel);
         ShowProperties.Click += (_, _) => ShowPagesPanel(PropertiesPanel);
+    }
+
+    // ---------- Titelleiste ----------
+
+    bool _isTitleBar;
+
+    /// <summary>
+    /// Desktop: Die Kopfzeile ersetzt die Titelleiste des Fensters. Freie Flächen verschieben das Fenster,
+    /// Menü und Knöpfe bleiben bedienbar; der Dateiname steht dann in der Kopfzeile.
+    /// </summary>
+    public void UseAsTitleBar(Window window)
+    {
+        _isTitleBar = true;
+        FileTitle.IsVisible = _compact != true;
+        if (OperatingSystem.IsLinux())
+        {
+            // Selbst gezeichnete Rahmen: Klicks auf eine Titelleisten-Fläche kommen nicht an, ein Doppelklick
+            // maximiert dort also nicht. Verschieben und Maximieren deshalb selbst erledigen.
+            HeaderBar.AddHandler(PointerPressedEvent, (_, e) =>
+            {
+                if (!e.GetCurrentPoint(HeaderBar).Properties.IsLeftButtonPressed
+                    || e.Source is Visual source && (HeaderMenu.IsVisualAncestorOf(source) || HeaderButtons.IsVisualAncestorOf(source)))
+                    return;
+                if (e.ClickCount == 2)
+                    window.WindowState = window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+                else
+                    window.BeginMoveDrag(e);
+                e.Handled = true;
+            });
+        }
+        else
+        {
+            WindowDecorationProperties.SetElementRole(HeaderBar, WindowDecorationsElementRole.TitleBar);
+            WindowDecorationProperties.SetElementRole(HeaderMenu, WindowDecorationsElementRole.User);
+            WindowDecorationProperties.SetElementRole(HeaderButtons, WindowDecorationsElementRole.User);
+        }
+        // Titelleiste so hoch wie die Kopfzeile, damit die Fensterknöpfe darin sitzen
+        HeaderBar.SizeChanged += (_, e) =>
+        {
+            if (e.HeightChanged)
+                window.ExtendClientAreaTitleBarHeightHint = e.NewSize.Height;
+        };
+        window.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == Window.WindowDecorationMarginProperty || e.Property == Window.WindowStateProperty)
+                Dispatcher.UIThread.Post(() => UpdateTitleBarSpace(window), DispatcherPriority.Background);
+        };
+        window.Opened += (_, _) => Dispatcher.UIThread.Post(() => UpdateTitleBarSpace(window), DispatcherPriority.Background);
+    }
+
+    /// <summary>Platz für Rahmen und Fensterknöpfe lassen und den doppelten Fenstertitel ausblenden.</summary>
+    void UpdateTitleBarSpace(Window window)
+    {
+        // Oben nur der Rahmen: Die Kopfzeile liegt selbst in der Titelleiste
+        var m = window.WindowDecorationMargin;
+        Margin = new Thickness(m.Left, m.Left, m.Right, m.Bottom);
+
+        // Selbst gezeichnete Fensterrahmen (Linux): Knöpfe rechts, Titeltext überflüssig
+        Visual root = window;
+        while (root.GetVisualParent() is { } parent)
+            root = parent;
+        Control? buttons = null;
+        foreach (var part in root.GetVisualDescendants().OfType<Control>())
+        {
+            if (part.Name == "PART_OverlayPanel")
+                buttons = part;
+            else if (part.Name is "PART_TitleTextPanel" or "PART_FullScreenButton")
+                part.IsVisible = false;
+        }
+        (root as Layoutable)?.UpdateLayout();
+        double right = buttons?.Bounds.Width ?? 0;
+        // macOS: Ampelknöpfe links
+        double left = OperatingSystem.IsMacOS() && window.WindowState != WindowState.FullScreen ? 70 : 0;
+        HeaderBar.Padding = new Thickness(12 + left, 6, 12 + right, 6);
     }
 
     // ---------- Kompaktes Layout ----------
@@ -195,6 +271,7 @@ public partial class MainView : UserControl
         Classes.Set("compact", compact);
 
         AppTitle.IsVisible = !compact;
+        FileTitle.IsVisible = _isTitleBar && !compact;
         CompactVersion.IsVisible = compact;
         HeaderFileButtons.IsVisible = !compact;
         GmeLabel.IsVisible = !compact;

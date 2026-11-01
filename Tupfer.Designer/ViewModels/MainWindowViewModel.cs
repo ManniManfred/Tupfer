@@ -66,6 +66,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title))]
+    [NotifyPropertyChangedFor(nameof(FileName))]
     string? _filePath;
 
     [ObservableProperty] string _logText = "";
@@ -156,7 +157,10 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Programmname mit Version.</summary>
     public static string AppName { get; } = $"Tupfer Designer {Version}";
 
-    public string Title => $"{AppName} – {(FilePath == null ? "Neues Projekt" : Path.GetFileName(FilePath))}";
+    public string Title => $"{AppName} – {FileName}";
+
+    /// <summary>Name der Projektdatei für die Titelleiste.</summary>
+    public string FileName => FilePath == null ? "Neues Projekt" : Path.GetFileName(FilePath);
 
     string BaseDir => FilePath != null ? Path.GetDirectoryName(FilePath)! : Environment.CurrentDirectory;
 
