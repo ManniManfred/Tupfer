@@ -13,11 +13,17 @@ namespace Tupfer.Designer.Services;
 /// </remarks>
 public static class NoiseReduction
 {
-    /// <summary>Stärkste Absenkung einzelner Frequenzen durch den Wiener-Filter (-15 dB).</summary>
-    const float MinGain = 0.178f;
+    /// <summary>Stärkste Absenkung einzelner Frequenzen durch den Wiener-Filter (-18 dB).</summary>
+    const float MinGain = 0.126f;
 
-    /// <summary>Zusätzliche Absenkung in Sprechpausen durch das Noise-Gate (-6 dB).</summary>
-    const float GateGain = 0.5f;
+    /// <summary>Zusätzliche Absenkung in Sprechpausen durch das Noise-Gate (-9 dB).</summary>
+    const float GateGain = 0.35f;
+
+    /// <summary>
+    /// Abschnitte, die leiser sind (mittlere Leistung, etwa -70 dBFS), gelten als digitale Stille, z. B. beim Start
+    /// des Mikrofons, und zählen nicht zum Rauschprofil.
+    /// </summary>
+    const double SilencePower = 1e-7;
 
     /// <summary>Glättung des a-priori-Rauschabstands über die Zeit.</summary>
     const float Alpha = 0.98f;
@@ -50,6 +56,7 @@ public static class NoiseReduction
         int offset = -n + hop;
         var power = new float[frames][];
         var energy = new double[frames];
+        var meanSquare = new double[frames];
         var re = new double[n];
         var im = new double[n];
         var spectra = new (float[] Re, float[] Im)[frames];
@@ -61,7 +68,9 @@ public static class NoiseReduction
                 int j = start + i;
                 re[i] = j >= 0 && j < x.Length ? x[j] * window[i] : 0;
                 im[i] = 0;
+                meanSquare[f] += re[i] * re[i];
             }
+            meanSquare[f] /= 0.375 * n; // mittleres Quadrat des Hann-Fensters
             Fft(re, im, false);
             var r = new float[bins];
             var m = new float[bins];
@@ -79,17 +88,21 @@ public static class NoiseReduction
             energy[f] = e;
         }
 
-        // Rauschprofil: Mittel der leisesten Abschnitte (nur vollständig in der Aufnahme liegende)
+        // Rauschprofil: Mittel der leisesten Abschnitte (nur vollständig in der Aufnahme liegende, ohne digitale
+        // Stille: sonst wäre das Profil fast null und es würde nichts unterdrückt)
         var inside = Enumerable.Range(0, frames)
             .Where(f => offset + f * hop >= 0 && offset + f * hop + n <= x.Length)
             .OrderBy(f => energy[f]).ToArray();
         if (inside.Length < 10)
             return x;
+        double loudEnergy = energy[inside[inside.Length * 9 / 10]];
+        inside = inside.Where(f => meanSquare[f] > SilencePower && energy[f] > loudEnergy * 1e-6).ToArray();
+        if (inside.Length < 10)
+            return x;
         int quiet = Math.Max(3, (int)(inside.Length * NoisePercentile));
         double quietEnergy = inside.Take(quiet).Average(f => energy[f]);
-        double loudEnergy = energy[inside[inside.Length * 9 / 10]];
         // Ohne deutlich leisere Abschnitte (mindestens 10 dB unter den lauten) wäre das „Rauschen“ Sprache
-        if (quietEnergy <= 1e-12 || quietEnergy * 10 > loudEnergy)
+        if (quietEnergy * 10 > loudEnergy)
             return x;
         var noise = new float[bins];
         foreach (var f in inside.Take(quiet))

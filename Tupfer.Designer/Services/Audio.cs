@@ -116,7 +116,7 @@ public static class Audio
     {
         var samples = Resample(ReadWav(wav, out int rate), rate, SampleRate);
         if (denoise)
-            samples = NoiseReduction.Apply(samples, SampleRate);
+            samples = NoiseReduction.Apply(TrimSilence(samples, SampleRate), SampleRate);
         var info = VorbisInfo.InitVariableBitRate(1, SampleRate, quality);
         var ogg = new OggStream(0x54757066); // „Tupf“
         using var output = new MemoryStream();
@@ -157,6 +157,36 @@ public static class Audio
             ogg.PacketIn(packet);
         Flush(true);
         return output.ToArray();
+    }
+
+    /// <summary>
+    /// Kürzt digitale Stille (unter -60 dBFS) am Anfang und Ende, wie sie beim Starten des Mikrofons entsteht;
+    /// 50 ms bleiben stehen. Leise Sprache oder Rauschen werden nicht abgeschnitten.
+    /// </summary>
+    public static float[] TrimSilence(float[] samples, int sampleRate)
+    {
+        const float threshold = 0.001f;
+        int first = Array.FindIndex(samples, v => Math.Abs(v) > threshold);
+        if (first < 0)
+            return samples;
+        int last = Array.FindLastIndex(samples, v => Math.Abs(v) > threshold);
+        int margin = sampleRate / 20;
+        int start = Math.Max(0, first - margin), end = Math.Min(samples.Length, last + 1 + margin);
+        return start == 0 && end == samples.Length ? samples : samples[start..end];
+    }
+
+    /// <summary>Anteil der Samples am Anschlag (übersteuerte Aufnahme); 0 bei unlesbaren Dateien.</summary>
+    public static double ClippedFraction(byte[] wav)
+    {
+        try
+        {
+            var samples = ReadWav(wav, out _);
+            return samples.Length == 0 ? 0 : samples.Count(v => Math.Abs(v) >= 0.99f) / (double)samples.Length;
+        }
+        catch (InvalidDataException)
+        {
+            return 0;
+        }
     }
 
     /// <summary>Liest eine WAV-Datei als Samples (mono, -1 … 1); mehrere Kanäle werden gemittelt.</summary>

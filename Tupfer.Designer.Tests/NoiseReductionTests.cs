@@ -80,6 +80,48 @@ public class NoiseReductionTests
     }
 
     [Fact]
+    public void DigitaleStilleAmAnfangStoertNicht()
+    {
+        // Beim Starten des Mikrofons kommen oft erst Nullen: Sie dürfen nicht als Rauschprofil gelten
+        var clean = Speech(4);
+        var noisy = clean.Zip(Noise(clean.Length, 0.03), (a, b) => a + b).ToArray();
+        for (int i = 0; i < Rate * 8 / 10; i++)
+            noisy[i] = 0;
+        var result = NoiseReduction.Apply(noisy, Rate);
+        double before = 0, after = 0;
+        for (int i = Rate * 21 / 20; i < Rate * 29 / 20; i++) // Pause von 1 bis 1,5 s ohne Ränder
+        {
+            before += noisy[i] * (double)noisy[i];
+            after += result[i] * (double)result[i];
+        }
+        Assert.True(Db(before / after) > 15, $"Rauschen nur um {Db(before / after):0.0} dB gesenkt");
+    }
+
+    [Fact]
+    public void KuerztStilleAnDenRaendern()
+    {
+        var samples = new float[Rate * 2];
+        for (int i = Rate / 2; i < Rate; i++)
+            samples[i] = 0.1f;
+        var trimmed = Audio.TrimSilence(samples, Rate);
+        Assert.Equal(Rate / 2 + 2 * (Rate / 20), trimmed.Length);
+        Assert.Equal(0.1f, trimmed[Rate / 20]);
+        // Ohne Stille bzw. ganz still: unverändert
+        var noise = Noise(Rate, 0.01);
+        Assert.Same(noise, Audio.TrimSilence(noise, Rate));
+        Assert.Equal(Rate, Audio.TrimSilence(new float[Rate], Rate).Length);
+    }
+
+    [Fact]
+    public void ErkenntUebersteuerung()
+    {
+        var clipped = Speech(2).Select(v => (short)Math.Clamp(v * 6 * 32767, -32767, 32767)).ToArray();
+        Assert.True(Audio.ClippedFraction(Audio.Wav(clipped)) > 0.01);
+        var normal = Speech(2).Select(v => (short)(v * 32767)).ToArray();
+        Assert.Equal(0, Audio.ClippedFraction(Audio.Wav(normal)));
+    }
+
+    [Fact]
     public void ErhaeltSignalform()
     {
         var clean = Speech(4);

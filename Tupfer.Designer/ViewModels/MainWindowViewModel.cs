@@ -1144,6 +1144,10 @@ public partial class MainWindowViewModel : ObservableObject
             await File.WriteAllBytesAsync(path, ogg);
             current.Recording = path;
             Log($"Aufnahme für „{current.Name}“ gespeichert ({Audio.WavSeconds(wav):0.0} s, {ogg.Length / 1024.0:0} KB): {path}");
+            // Übersteuerung lässt sich nachträglich nicht beheben: Hinweis zum Pegel
+            if (Audio.ClippedFraction(wav) is > 0.002 and var clipped)
+                Notice($"Die Aufnahme ist übersteuert ({clipped:0.0 %} der Werte am Anschlag) und klingt verzerrt. "
+                    + "Bitte das Mikrofon leiser stellen oder etwas weiter weg sprechen und neu aufnehmen.");
             return;
         }
         if (!await EnsureProjectDir())
