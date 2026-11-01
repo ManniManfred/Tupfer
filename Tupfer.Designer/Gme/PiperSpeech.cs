@@ -40,7 +40,7 @@ public static class PiperSpeech
     {
         var parts = voiceId.Split('#', 2);
         var (config, session) = await UseVoiceAsync(parts[0]);
-        var ids = await PhonemizeAsync(config["espeak"]?["voice"]?.GetValue<string>() ?? parts[0].Split('_')[0], text.Trim());
+        var ids = PhonemeIds(config, await PhonemizeAsync(config["espeak"]?["voice"]?.GetValue<string>() ?? parts[0].Split('_')[0], text.Trim()));
         var inference = config["inference"];
         float Scale(string name, float standard) => inference?[name]?.GetValue<float>() ?? standard;
         long speaker = 0;
@@ -235,8 +235,64 @@ public static class PiperSpeech
         return (program, data, [Path.GetDirectoryName(program)!, Path.Combine(root, "lib")]);
     }
 
-    /// <summary>Wandelt Text in Lautschrift-IDs (espeak-ng), wie piper_phonemize im Browser.</summary>
-    static async Task<long[]> PhonemizeAsync(string espeakVoice, string text)
+    /// <summary>
+    /// Lautschrift-IDs für eine Stimme aus ihrer eigenen Tabelle (phoneme_id_map in der .onnx.json), wie Piper:
+    /// je Satz „^“, jedes Phonem gefolgt von „_“, dann „$“; Phoneme, die die Stimme nicht kennt, entfallen.
+    /// piper_phonemize liefert IDs aus seiner eingebauten Tabelle, die nicht zu jeder Stimme passt
+    /// (z. B. hat de_DE-ramona-low nur 130 statt 152 Einträge); sie dienen nur zum Trennen der Sätze.
+    /// </summary>
+    public static long[] PhonemeIds(JsonNode config, (long[] Ids, string[] Phonemes) phonemized)
+    {
+        var map = config["phoneme_id_map"]?.AsObject();
+        if (map == null || map.Count == 0 || phonemized.Phonemes.Length == 0)
+            return phonemized.Ids;
+        long[] Lookup(string phoneme) =>
+            map[phoneme]?.AsArray().Select(id => id!.GetValue<long>()).ToArray() ?? [];
+        var pad = Lookup("_");
+        var ids = new List<long>();
+        foreach (var sentence in Sentences(phonemized.Ids, phonemized.Phonemes))
+        {
+            ids.AddRange(Lookup("^"));
+            ids.AddRange(pad);
+            foreach (var phoneme in sentence)
+                if (map.ContainsKey(phoneme))
+                {
+                    ids.AddRange(Lookup(phoneme));
+                    ids.AddRange(pad);
+                }
+            ids.AddRange(Lookup("$"));
+        }
+        return ids.ToArray();
+    }
+
+    /// <summary>
+    /// Teilt die Phoneme in Sätze, so wie piper_phonemize sie in seinen IDs mit 1 (^) … 2 ($) einschließt
+    /// (0 = Pause „_“); passt die Zahl nicht, ist alles ein Satz.
+    /// </summary>
+    static List<string[]> Sentences(long[] defaultIds, string[] phonemes)
+    {
+        var counts = new List<int>();
+        foreach (var id in defaultIds)
+        {
+            if (id == 1)
+                counts.Add(0);
+            else if (id > 2 && counts.Count > 0)
+                counts[^1]++;
+        }
+        if (counts.Count == 0 || counts.Sum() != phonemes.Length)
+            return [phonemes];
+        var sentences = new List<string[]>();
+        int start = 0;
+        foreach (var count in counts)
+        {
+            sentences.Add(phonemes[start..(start + count)]);
+            start += count;
+        }
+        return sentences;
+    }
+
+    /// <summary>Wandelt Text in Lautschrift (espeak-ng), wie piper_phonemize im Browser: IDs der eingebauten Tabelle und Phoneme.</summary>
+    static async Task<(long[] Ids, string[] Phonemes)> PhonemizeAsync(string espeakVoice, string text)
     {
         var (program, data, libraryDirs) = await PhonemizerAsync();
         var psi = new ProcessStartInfo(program)
@@ -269,8 +325,11 @@ public static class PiperSpeech
         var line = (await output).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
         if (process.ExitCode != 0 || line == null)
             throw new InvalidOperationException("Lautschrift fehlgeschlagen: " + ((await error).Trim() is { Length: > 0 } e ? e : $"Code {process.ExitCode}"));
-        return JsonNode.Parse(line)?["phoneme_ids"]?.AsArray().Select(id => id!.GetValue<long>()).ToArray()
+        var result = JsonNode.Parse(line);
+        var ids = result?["phoneme_ids"]?.AsArray().Select(id => id!.GetValue<long>()).ToArray()
             ?? throw new InvalidDataException("Lautschrift ohne phoneme_ids.");
+        var phonemes = result["phonemes"]?.AsArray().Select(p => p!.GetValue<string>()).ToArray() ?? [];
+        return (ids, phonemes);
     }
 
     /// <summary>WAV-Datei (mono, 16 Bit) aus Abtastwerten zwischen -1 und 1.</summary>

@@ -268,7 +268,10 @@ async function fetchCached(url) {
     return response;
 }
 
-/** Wandelt Text in Lautschrift-IDs (espeak-ng); eine Instanz wird wiederverwendet, solange sie läuft. */
+/**
+ * Wandelt Text in Lautschrift (espeak-ng): IDs der eingebauten Tabelle und Phoneme;
+ * eine Instanz wird wiederverwendet, solange sie läuft.
+ */
 let phonemizeOut = null, phonemizeErr = null, phonemizeScript = null, ortReady = null;
 async function phonemize(espeakVoice, text) {
     // Nur einmal laden, auch wenn mehrere Texte gleichzeitig gesprochen werden
@@ -292,12 +295,51 @@ async function phonemize(espeakVoice, text) {
         } catch (e) {
             phonemizeErr ??= String(e);
         }
-        if (phonemizeOut)
-            return JSON.parse(phonemizeOut).phoneme_ids;
+        if (phonemizeOut) {
+            const result = JSON.parse(phonemizeOut);
+            return { ids: result.phoneme_ids, phonemes: result.phonemes ?? [] };
+        }
         piperPhonemizer = null; // neu starten und noch einmal versuchen
         if (attempt === 1)
             throw new Error('Lautschrift fehlgeschlagen: ' + (phonemizeErr ?? 'keine Ausgabe'));
     }
+}
+
+/**
+ * Lautschrift-IDs für eine Stimme aus ihrer eigenen Tabelle (phoneme_id_map), wie Piper und wie
+ * PiperSpeech.PhonemeIds am Desktop: je Satz „^“, jedes Phonem gefolgt von „_“, dann „$“; unbekannte
+ * Phoneme entfallen. Die IDs von piper_phonemize (eingebaute Tabelle, passt nicht zu jeder Stimme)
+ * dienen nur zum Trennen der Sätze: 1 (^) … 2 ($), 0 = Pause.
+ */
+function phonemeIds(config, { ids, phonemes }) {
+    const map = config.phoneme_id_map;
+    if (!map || !Object.keys(map).length || !phonemes.length)
+        return ids;
+    const counts = [];
+    for (const id of ids) {
+        if (id === 1)
+            counts.push(0);
+        else if (id > 2 && counts.length)
+            counts[counts.length - 1]++;
+    }
+    const sentences = [];
+    if (counts.length && counts.reduce((a, b) => a + b, 0) === phonemes.length) {
+        let start = 0;
+        for (const count of counts)
+            sentences.push(phonemes.slice(start, start += count));
+    } else {
+        sentences.push(phonemes);
+    }
+    const pad = map._ ?? [];
+    const result = [];
+    for (const sentence of sentences) {
+        result.push(...(map['^'] ?? []), ...pad);
+        for (const phoneme of sentence)
+            if (Object.hasOwn(map, phoneme))
+                result.push(...map[phoneme], ...pad);
+        result.push(...(map.$ ?? []));
+    }
+    return result;
 }
 
 /** Pfad in piper-voices ohne Endung, z. B. de_DE-kerstin-low → de/de_DE/kerstin/low/de_DE-kerstin-low. */
@@ -354,7 +396,7 @@ async function useVoice(model) {
 export async function speakNatural(voiceId, text) {
     const [model, speaker] = voiceId.split('#');
     const { config, session } = await useVoice(model);
-    const ids = await phonemize(config.espeak.voice, text.trim());
+    const ids = phonemeIds(config, await phonemize(config.espeak.voice, text.trim()));
     const inference = config.inference ?? {};
     const feeds = {
         input: new ort.Tensor('int64', BigInt64Array.from(ids, BigInt), [1, ids.length]),
