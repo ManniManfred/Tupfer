@@ -186,6 +186,43 @@ public class PageEditTests
     }
 
     [Fact]
+    public void FlaecheSpieltTextDirektAb()
+    {
+        var (project, page) = NewProject();
+        var hallo = project.AddSpeak("hallo");
+        hallo.Text = "Hallo!";
+        var area = new AreaViewModel(project) { X = 10, Y = 10, Width = 20, Height = 20 };
+        page.Areas.Add(area);
+        Assert.Null(area.SpeakEntry);
+
+        // Text wählen: Skript „P(hallo)“ wird angelegt und bekommt einen Code
+        area.SpeakEntry = hallo;
+        Assert.Equal("hallo", area.Script);
+        Assert.Equal("P(hallo)", project.Scripts.Single().Text);
+        Assert.NotNull(area.Oid);
+        Assert.Same(hallo, area.SpeakEntry);
+
+        // Eine zweite Fläche mit demselben Text nutzt dasselbe Skript
+        var second = new AreaViewModel(project);
+        page.Areas.Add(second);
+        second.SpeakEntry = hallo;
+        Assert.Single(project.Scripts);
+        Assert.Equal(area.Oid, second.Oid);
+
+        // Gleichnamiges Skript mit anderem Inhalt: neues Skript mit eigenem Namen
+        project.Scripts.Single().Text = "P(hallo)\nJ(weiter)";
+        Assert.Null(area.SpeakEntry);
+        var third = new AreaViewModel(project);
+        third.SpeakEntry = hallo;
+        Assert.Equal("hallo1", third.Script);
+        Assert.Equal(2, project.Scripts.Count);
+
+        // Neuer Name, wenn es den Text schon gibt
+        Assert.Equal("hallo2", project.AddSpeak("hallo").Name);
+        Assert.Equal("text3", project.AddSpeak().Name);
+    }
+
+    [Fact]
     public void TippenErgibtEinenSchritt()
     {
         var (project, page) = NewProject();

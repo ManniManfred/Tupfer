@@ -127,7 +127,9 @@ Ist dann `oggenc` (vorbis-tools) installiert, werden diese Texte als OGG eingebe
   Bildern und Texten. Mit der Maus OID-Flächen aufziehen,
   verschieben und in der Größe ändern – als Rechteck, Kreis/Ellipse oder beliebiges Polygon, dessen
   Kanten sich zu Kreisbögen biegen lassen. Jede Fläche wird einem Skript oder einem Sondercode
-  (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet.
+  (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet. Soll eine Fläche nur etwas sagen, wählt man
+  unter *Sprachausgabe (direkt abspielen)* einen Text oder legt mit **+** gleich einen neuen an und
+  tippt ihn dort ein (mit Knopf zum Anhören); das Skript `P(name)` legt der Designer selbst an.
 - **Mehrere Objekte anordnen:** Mit Strg- oder Umschalt-Klick (auf dem Handy: *Mehrere wählen*)
   bzw. Strg+A mehrere Flächen, Bilder und Texte wählen. Sie lassen sich gemeinsam verschieben (Ziehen,
   Pfeiltasten) und löschen, links/rechts/oben/unten bündig oder mittig **ausrichten** und ab drei

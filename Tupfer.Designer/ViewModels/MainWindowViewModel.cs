@@ -941,8 +941,18 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     void AddSpeak()
     {
-        var speak = new SpeakViewModel { Name = $"text{Project.Speak.Count + 1}" };
-        Project.Speak.Add(speak);
+        Project.SelectedSpeak = Project.AddSpeak();
+    }
+
+    /// <summary>Neuer Text für die gewählte OID-Fläche: wird gleich mit einem Skript „P(name)“ verknüpft.</summary>
+    [RelayCommand]
+    void NewSpeakForArea()
+    {
+        if (Project.SelectedPage?.SelectedArea is not { } area) return;
+        var label = new string(area.Label.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+        var speak = Project.AddSpeak(label);
+        speak.Text = area.Label.Trim();
+        area.SpeakEntry = speak;
         Project.SelectedSpeak = speak;
     }
 

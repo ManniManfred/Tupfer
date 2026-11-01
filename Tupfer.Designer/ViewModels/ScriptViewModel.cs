@@ -28,6 +28,9 @@ public partial class ScriptViewModel : ObservableObject
 
     partial void OnCodeChanged(int? value) => _project.RefreshAreas();
 
+    // Flächen zeigen an, ob ihr Skript nur einen Text abspielt
+    partial void OnTextChanged(string value) => _project.RefreshAreas();
+
     public ScriptEntry ToEntry() => new()
     {
         Name = Name,

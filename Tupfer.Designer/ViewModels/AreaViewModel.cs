@@ -123,7 +123,7 @@ public partial class AreaViewModel : ObservableObject, IPolygonShape
         IsRectangle ? x >= X && x <= X + Width && y >= Y && y <= Y + Height : AreaGeometry.Contains(Outline(), x, y);
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TargetOption), nameof(IsScript), nameof(Oid), nameof(Caption))]
+    [NotifyPropertyChangedFor(nameof(TargetOption), nameof(IsScript), nameof(Oid), nameof(Caption), nameof(SpeakEntry), nameof(HasSpeakEntry))]
     AreaTarget _target;
 
     string _script = "";
@@ -140,6 +140,26 @@ public partial class AreaViewModel : ObservableObject, IPolygonShape
     }
 
     public bool IsScript => Target == AreaTarget.Script;
+
+    /// <summary>
+    /// Text, den die Fläche direkt abspielt (ihr Skript besteht nur aus „P(name)“), sonst null.
+    /// Setzen verknüpft die Fläche mit einem solchen Skript (vorhanden oder neu angelegt).
+    /// </summary>
+    public SpeakViewModel? SpeakEntry
+    {
+        get => IsScript ? Project.SpeakOfScript(_script) : null;
+        set
+        {
+            if (value == null || value == SpeakEntry)
+                return;
+            var name = Project.ScriptForSpeak(value);
+            Target = AreaTarget.Script;
+            Script = name;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool HasSpeakEntry => SpeakEntry != null;
 
     public TargetOption TargetOption
     {
@@ -176,6 +196,8 @@ public partial class AreaViewModel : ObservableObject, IPolygonShape
     {
         OnPropertyChanged(nameof(Oid));
         OnPropertyChanged(nameof(Caption));
+        OnPropertyChanged(nameof(SpeakEntry));
+        OnPropertyChanged(nameof(HasSpeakEntry));
     }
 
     public AreaEntry ToEntry() => new()

@@ -169,6 +169,53 @@ public partial class ProjectViewModel : ObservableObject
         return null;
     }
 
+    /// <summary>Zeile eines Skripts, das nur einen Text abspielt.</summary>
+    static string PlayLine(string speakName) => $"P({speakName})";
+
+    /// <summary>Text, den das Skript abspielt, wenn es nur aus „P(name)“ besteht; sonst null.</summary>
+    public SpeakViewModel? SpeakOfScript(string? scriptName)
+    {
+        if (Scripts.FirstOrDefault(s => s.Name == scriptName) is not { } script)
+            return null;
+        var lines = script.Text.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
+        return lines.Count == 1 ? Speak.FirstOrDefault(sp => PlayLine(sp.Name) == lines[0]) : null;
+    }
+
+    /// <summary>
+    /// Skript, das nur diesen Text abspielt: ein vorhandenes („P(name)“) oder ein neues mit dem
+    /// Namen des Texts. Liefert den Namen des Skripts.
+    /// </summary>
+    public string ScriptForSpeak(SpeakViewModel speak)
+    {
+        if (Scripts.FirstOrDefault(s => !s.Generated && !s.Helper && SpeakOfScript(s.Name) == speak) is { } existing)
+            return existing.Name;
+        var name = Scripts.Any(s => s.Name == speak.Name) || string.IsNullOrWhiteSpace(speak.Name)
+            ? UniqueScriptName(string.IsNullOrWhiteSpace(speak.Name) ? "text" : speak.Name)
+            : speak.Name;
+        AddScript(name, PlayLine(speak.Name));
+        AssignCodes();
+        return name;
+    }
+
+    /// <summary>Neuer, leerer Text mit eindeutigem Namen (aus <paramref name="prefix"/>, sonst „textN“).</summary>
+    public SpeakViewModel AddSpeak(string? prefix = null)
+    {
+        var name = string.IsNullOrWhiteSpace(prefix) ? "" : prefix;
+        if (name.Length == 0 || Speak.Any(s => s.Name == name))
+        {
+            var start = name.Length == 0 ? "text" : name;
+            for (int i = name.Length == 0 ? Speak.Count + 1 : 2; ; i++)
+                if (Speak.All(s => s.Name != start + i))
+                {
+                    name = start + i;
+                    break;
+                }
+        }
+        var speak = new SpeakViewModel { Name = name };
+        Speak.Add(speak);
+        return speak;
+    }
+
     public string UniqueScriptName(string prefix)
     {
         for (int i = 1; ; i++)
