@@ -14,8 +14,10 @@
 
 ## Projekt
 
-- **Versionsnummer:** steht in `Directory.Build.props` (`<Version>`) und wird im Titel angezeigt.
-  Bei jeder Änderung an der App mit hochzählen (Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle).
+- **Versionsnummer:** wird im Titel angezeigt und kommt beim Release aus dem Tag: Ein gepushtes Tag
+  `v1.2.3` baut Setups, Nextcloud-App und Web-Version (GitHub Pages) mit Version `1.2.3`.
+  `Directory.Build.props` (`<Version>`) gilt nur für lokale Builds und wird nicht mehr hochgezählt.
+  Tags nur setzen, wenn der Benutzer es verlangt (Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle).
 
 - Sprache in Code-Kommentaren, UI und Dokumentation: Deutsch.
 - `Tupfer.Designer/` – Avalonia-App (.NET 10): `dotnet build Tupfer.Designer`
@@ -27,7 +29,7 @@
 - `nextcloud/tupfer/` – Nextcloud-App (PHP, ohne Build-Schritt für JS): liefert die Web-Version aus
   `editor/` aus und bettet sie per iframe ein; Dateizugriff über WebDAV in
   `Tupfer.Designer.Browser/wwwroot/nextcloud.js` und `NextcloudFileDialogs.cs`. Paket bauen:
-  `nextcloud/build.sh` (Version wird aus `Directory.Build.props` übernommen).
+  `nextcloud/build.sh` (Version aus der Umgebungsvariable `VERSION`, sonst aus `Directory.Build.props`).
 - Tests (u. a. C#-Übersetzer gegen natives C#): `dotnet test Tupfer.Designer.Tests`
 - OID-Erzeugung (`Tupfer.Designer/Oid/`) und GME-Erstellung (`Tupfer.Designer/Gme/`) sind
   Portierungen von tttool (github.com/entropia/tip-toi-reveng, Referenz: Version 1.11).

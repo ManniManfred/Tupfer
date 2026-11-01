@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Version des Tupfer Designers (Desktop und Browser), wird im Titel angezeigt.
-         Bei jeder Änderung hochzählen: Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle. -->
+         Releases setzen sie aus dem Tag (v1.2.3 → 1.2.3), dieser Wert gilt nur für lokale Builds. -->
     <Version>1.26.0</Version>
   </PropertyGroup>
 </Project>

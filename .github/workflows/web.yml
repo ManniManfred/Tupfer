@@ -1,11 +1,13 @@
-# Baut die Browser-Version des Tupfer Designers und veröffentlicht sie auf GitHub Pages.
+# Baut die Browser-Version des Tupfer Designers und veröffentlicht sie auf GitHub Pages, sobald ein
+# Tag „v<Version>“ gepusht wird (Version aus dem Tag).
 # Einmalig nötig: Repository → Settings → Pages → Source: „GitHub Actions“ (für private Repositories
 # nur mit bezahltem GitHub-Plan). Ist Pages nicht eingeschaltet, wird nur gebaut und eine Warnung gezeigt.
 name: Web-Version
 
 on:
   push:
-    branches: [master]
+    tags: ['v*']
+  # Von Hand nur mit einem Tag unter „Use workflow from“
   workflow_dispatch:
 
 permissions:
@@ -34,6 +36,10 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::warning title=GitHub Pages nicht eingeschaltet::Die Web-Version wird nur gebaut, nicht veröffentlicht. Einschalten unter Settings → Pages → Source: „GitHub Actions“ (private Repositories brauchen einen bezahlten Plan)."
           fi
+      - name: Version aus dem Tag
+        run: |
+          if [ "$GITHUB_REF_TYPE" != tag ]; then echo "::error::Nur für Tags wie v1.2.3"; exit 1; fi
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
@@ -41,7 +47,7 @@ jobs:
       - name: WebAssembly-Werkzeuge installieren
         run: dotnet workload install wasm-tools
       - name: Veröffentlichen
-        run: dotnet publish Tupfer.Designer.Browser -c Release -o publish
+        run: dotnet publish Tupfer.Designer.Browser -c Release -o publish -p:Version="$VERSION"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: publish/wwwroot

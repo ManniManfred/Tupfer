@@ -90,9 +90,10 @@ Fertige Setups gibt es auf der [Download-Seite](https://mannimanfred.github.io/T
 | macOS (Apple-Chip / Intel) | `Tupfer-Designer-macOS-arm64.dmg` / `Tupfer-Designer-macOS-x64.dmg` |
 | Nextcloud 28–35 | `Tupfer-Designer-Nextcloud.tar.gz` (siehe „Tupfer Designer in Nextcloud“) |
 
-Die Setups baut der Workflow `.github/workflows/setups.yml`, sobald sich die Versionsnummer in
-`Directory.Build.props` ändert (oder von Hand über *Actions → Setups → Run workflow*), und
-veröffentlicht sie als Release `v<Version>`. Sie sind nicht signiert: Windows fragt beim ersten Start
+Die Setups baut der Workflow `.github/workflows/setups.yml`, sobald ein Tag `v<Version>` gepusht
+wird, und veröffentlicht sie als Release unter diesem Tag. Die Versionsnummer kommt aus dem Tag
+(`v1.27.0` → `1.27.0`), `Directory.Build.props` gilt nur für lokale Builds. Neue Version:
+`git tag v1.27.0 && git push origin v1.27.0`. Sie sind nicht signiert: Windows fragt beim ersten Start
 nach („Weitere Informationen → Trotzdem ausführen“), unter macOS die App beim ersten Mal per
 Rechtsklick → *Öffnen* starten.
 
@@ -192,9 +193,11 @@ Unter *Datei → Beispiele* lassen sich die Beispiele aus `examples/` (Tic-Tac-T
 Adresse geht es auch gleich beim Start: `…/index.html?beispiel=tic-tac-toi`. Weitere Beispiele werden in
 `Tupfer.Designer.Browser/Examples.cs` und der `.csproj` eingetragen.
 
-Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem Push auf `master` und
-veröffentlicht sie auf GitHub Pages unter https://mannimanfred.github.io/Tupfer/ (einmalig unter
-*Settings → Pages → Source* „GitHub Actions“ wählen).
+Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem gepushten Tag `v<Version>`
+und veröffentlicht sie auf GitHub Pages unter https://mannimanfred.github.io/Tupfer/. Einmalig
+einrichten: unter *Settings → Pages → Source* „GitHub Actions“ wählen und unter *Settings →
+Environments → github-pages → Deployment branches and tags* eine Regel für Tags `v*` hinzufügen
+(sonst lässt GitHub nur Deploys vom Branch `master` zu).
 
 **Auf dem Handy:** Bei schmalen Bildschirmen (unter etwa 760 Pixel) schaltet die Oberfläche auf ein
 kompaktes Layout um: Im Tab *Seiten* wechselt man oben zwischen *Seite* (Zeichenfläche), *Seiten*
