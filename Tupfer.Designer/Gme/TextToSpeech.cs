@@ -2,14 +2,15 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using Tupfer.Designer.Services;
 
 namespace Tupfer.Designer.Gme;
 
 /// <summary>
 /// Erzeugt Sprachausgaben für die GME-Datei. Zuerst mit der natürlichen Stimme (Piper, im Browser
 /// und am Desktop, siehe <see cref="NaturalSynthesizer"/>); geht das nicht, wie tttool mit pico2wave,
-/// espeak oder (macOS) say, unter Windows mit der eingebauten Sprachausgabe. Ist oggenc vorhanden, wird nach
-/// Ogg/Vorbis umgewandelt, sonst wird die WAV-Datei direkt eingebettet (der Stift spielt beides).
+/// espeak oder (macOS) say, unter Windows mit der eingebauten Sprachausgabe. Danach wird mit oggenc nach
+/// Ogg/Vorbis umgewandelt, ohne oggenc mit dem eingebauten Encoder (<see cref="Audio.WavToOgg"/>).
 /// Ergebnisse werden in einem Cache-Verzeichnis abgelegt.
 /// </summary>
 public class TextToSpeech
@@ -38,7 +39,6 @@ public class TextToSpeech
     readonly string _cacheDir;
     readonly Action<string> _log;
     readonly Action<string> _notice;
-    bool _warnedNoOgg;
 
     /// <param name="notice">Für Meldungen, die sichtbar sein sollen (z. B. langes Laden); Standard: <paramref name="log"/>.</param>
     public TextToSpeech(string cacheDir, Action<string> log, Action<string>? notice = null)
@@ -116,8 +116,9 @@ public class TextToSpeech
         }
         if (File.Exists(ogg))
             return File.ReadAllBytes(ogg);
-        if (File.Exists(wav) && !CanRun("oggenc"))
-            return File.ReadAllBytes(wav);
+        // WAV aus früheren Versionen (ohne oggenc) weiterverwenden
+        if (File.Exists(wav) && !CanRun("oggenc") && ToOgg(File.ReadAllBytes(wav), ogg) is { } cached)
+            return cached;
 
         _log($"Spreche „{text}“");
         var tmp = Path.Combine(_cacheDir, $"tmp-{key}.wav");
@@ -131,18 +132,31 @@ public class TextToSpeech
             if (Run("oggenc", "-Q", "-o", ogg, tmp))
                 return File.ReadAllBytes(ogg);
 
-            if (!_warnedNoOgg)
-            {
-                _log("Hinweis: oggenc (vorbis-tools) nicht gefunden – Sprachausgaben werden als WAV eingebettet (größere GME-Datei).");
-                _warnedNoOgg = true;
-            }
+            var data = File.ReadAllBytes(tmp);
+            if (ToOgg(data, ogg) is { } encoded)
+                return encoded;
             File.Copy(tmp, wav, true);
-            return File.ReadAllBytes(wav);
+            return data;
         }
         finally
         {
             if (File.Exists(tmp))
                 File.Delete(tmp);
+        }
+    }
+
+    /// <summary>Wandelt ohne oggenc selbst um und legt das Ergebnis im Cache ab; null bei unbekanntem WAV-Format.</summary>
+    static byte[]? ToOgg(byte[] wav, string oggPath)
+    {
+        try
+        {
+            var ogg = Audio.WavToOgg(wav);
+            File.WriteAllBytes(oggPath, ogg);
+            return ogg;
+        }
+        catch (InvalidDataException)
+        {
+            return null;
         }
     }
 

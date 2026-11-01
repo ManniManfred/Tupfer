@@ -2,6 +2,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Encoding = System.Text.Encoding;
+using NVorbis;
+using OggVorbisEncoder;
 
 namespace Tupfer.Designer.Services;
 
@@ -99,6 +102,157 @@ public static class Audio
     /// <summary>Dauer einer WAV-Datei in Sekunden (ungefähr, aus der Dateigröße).</summary>
     public static double WavSeconds(byte[] wav) =>
         wav.Length > 44 ? (wav.Length - 44) / (double)Math.Max(1, BitConverter.ToInt32(wav, 28)) : 0;
+
+    /// <summary>Vorbis-Qualität (-0.1 … 1): 0.4 entspricht „oggenc -q 4“ und klingt für Sprache gut.</summary>
+    public const float OggQuality = 0.4f;
+
+    /// <summary>
+    /// Wandelt eine WAV-Datei (PCM 8/16/24/32 Bit oder Float, beliebige Abtastrate und Kanäle) in
+    /// Ogg Vorbis mono mit <see cref="SampleRate"/> um, wie es der Stift erwartet.
+    /// Das Ergebnis ist bei gleicher Eingabe immer gleich (feste Seriennummer).
+    /// </summary>
+    public static byte[] WavToOgg(byte[] wav, float quality = OggQuality)
+    {
+        var samples = Resample(ReadWav(wav, out int rate), rate, SampleRate);
+        var info = VorbisInfo.InitVariableBitRate(1, SampleRate, quality);
+        var ogg = new OggStream(0x54757066); // „Tupf“
+        using var output = new MemoryStream();
+
+        void Flush(bool force)
+        {
+            while (ogg.PageOut(out var page, force))
+            {
+                output.Write(page.Header, 0, page.Header.Length);
+                output.Write(page.Body, 0, page.Body.Length);
+            }
+        }
+
+        var comments = new Comments();
+        comments.AddTag("ENCODER", "Tupfer");
+        ogg.PacketIn(HeaderPacketBuilder.BuildInfoPacket(info));
+        ogg.PacketIn(HeaderPacketBuilder.BuildCommentsPacket(comments));
+        ogg.PacketIn(HeaderPacketBuilder.BuildBooksPacket(info));
+        // Die Kopfpakete stehen auf eigenen Seiten vor den Audiodaten
+        Flush(true);
+
+        var state = ProcessingState.Create(info);
+        const int block = 1024;
+        var buffer = new[] { new float[block] };
+        for (int pos = 0; pos < samples.Length; pos += block)
+        {
+            int n = Math.Min(block, samples.Length - pos);
+            Array.Copy(samples, pos, buffer[0], 0, n);
+            state.WriteData(buffer, n);
+            while (!ogg.Finished && state.PacketOut(out var packet))
+            {
+                ogg.PacketIn(packet);
+                Flush(false);
+            }
+        }
+        state.WriteEndOfStream();
+        while (!ogg.Finished && state.PacketOut(out var packet))
+            ogg.PacketIn(packet);
+        Flush(true);
+        return output.ToArray();
+    }
+
+    /// <summary>Liest eine WAV-Datei als Samples (mono, -1 … 1); mehrere Kanäle werden gemittelt.</summary>
+    static float[] ReadWav(byte[] wav, out int sampleRate)
+    {
+        if (wav.Length < 12 || Encoding.ASCII.GetString(wav, 0, 4) != "RIFF" || Encoding.ASCII.GetString(wav, 8, 4) != "WAVE")
+            throw new InvalidDataException("Keine WAV-Datei.");
+        int format = 0, channels = 0, bits = 0;
+        sampleRate = 0;
+        for (int pos = 12; pos + 8 <= wav.Length;)
+        {
+            var id = Encoding.ASCII.GetString(wav, pos, 4);
+            int size = BitConverter.ToInt32(wav, pos + 4);
+            int start = pos + 8;
+            if (id == "fmt " && size >= 16 && start + 16 <= wav.Length)
+            {
+                format = BitConverter.ToUInt16(wav, start);
+                channels = BitConverter.ToUInt16(wav, start + 2);
+                sampleRate = BitConverter.ToInt32(wav, start + 4);
+                bits = BitConverter.ToUInt16(wav, start + 14);
+                // WAVE_FORMAT_EXTENSIBLE: eigentliches Format im Untertyp
+                if (format == 0xFFFE && size >= 26 && start + 26 <= wav.Length)
+                    format = BitConverter.ToUInt16(wav, start + 24);
+            }
+            else if (id == "data")
+            {
+                if (channels < 1 || sampleRate < 1 || !(format == 1 && bits is 8 or 16 or 24 or 32 || format == 3 && bits == 32))
+                    throw new InvalidDataException("Nicht unterstütztes WAV-Format (erwartet PCM oder Float).");
+                // Längenangabe kann nach einem abgebrochenen Aufnahmeprogramm falsch sein
+                int length = size < 0 || start + size > wav.Length ? wav.Length - start : size;
+                int bytes = bits / 8, frame = bytes * channels;
+                var samples = new float[length / frame];
+                for (int i = 0; i < samples.Length; i++)
+                {
+                    float sum = 0;
+                    for (int c = 0; c < channels; c++)
+                        sum += Sample(wav, start + i * frame + c * bytes, bits, format == 3);
+                    samples[i] = sum / channels;
+                }
+                return samples;
+            }
+            if (size < 0)
+                break;
+            pos = start + size + (size & 1);
+        }
+        throw new InvalidDataException("WAV-Datei ohne Audiodaten.");
+    }
+
+    static float Sample(byte[] d, int i, int bits, bool isFloat) => bits switch
+    {
+        8 => (d[i] - 128) / 128f,
+        16 => BitConverter.ToInt16(d, i) / 32768f,
+        24 => (d[i] | d[i + 1] << 8 | (sbyte)d[i + 2] << 16) / 8388608f,
+        _ => isFloat ? Math.Clamp(BitConverter.ToSingle(d, i), -1f, 1f) : BitConverter.ToInt32(d, i) / 2147483648f,
+    };
+
+    /// <summary>Ändert die Abtastrate (lineare Interpolation, für Sprache ausreichend).</summary>
+    static float[] Resample(float[] samples, int from, int to)
+    {
+        if (from == to || samples.Length == 0)
+            return samples;
+        var result = new float[(int)((long)samples.Length * to / from)];
+        double step = (double)from / to;
+        for (int i = 0; i < result.Length; i++)
+        {
+            double x = i * step;
+            int j = (int)x;
+            float a = samples[Math.Min(j, samples.Length - 1)], b = samples[Math.Min(j + 1, samples.Length - 1)];
+            result[i] = a + (b - a) * (float)(x - j);
+        }
+        return result;
+    }
+
+    /// <summary>Wandelt Ogg Vorbis in WAV (mono oder Stereo, 16 Bit), z. B. zum Abspielen unter Windows.</summary>
+    public static byte[] OggToWav(byte[] ogg)
+    {
+        using var reader = new VorbisReader(new MemoryStream(ogg), true);
+        var samples = new List<short>();
+        var buffer = new float[4096 * reader.Channels];
+        int n;
+        while ((n = reader.ReadSamples(buffer, 0, buffer.Length)) > 0)
+            for (int i = 0; i < n; i++)
+                samples.Add((short)Math.Round(Math.Clamp(buffer[i], -1f, 1f) * 32767));
+        var wav = Wav(samples.ToArray(), reader.SampleRate);
+        if (reader.Channels > 1)
+        {
+            BitConverter.TryWriteBytes(wav.AsSpan(22), (short)reader.Channels);
+            BitConverter.TryWriteBytes(wav.AsSpan(28), reader.SampleRate * 2 * reader.Channels);
+            BitConverter.TryWriteBytes(wav.AsSpan(32), (short)(2 * reader.Channels));
+        }
+        return wav;
+    }
+
+    /// <summary>Dauer einer Ogg-Vorbis-Datei in Sekunden.</summary>
+    public static double OggSeconds(byte[] ogg)
+    {
+        using var reader = new VorbisReader(new MemoryStream(ogg), true);
+        return reader.TotalTime.TotalSeconds;
+    }
 }
 
 /// <summary>
@@ -120,6 +274,12 @@ public class DesktopAudio : IAudioDevice
     {
         StopPlayback();
         int id = _playId;
+        // MCI kennt kein Ogg Vorbis: vorher in WAV umwandeln
+        if (OperatingSystem.IsWindows() && extension.Equals(".ogg", StringComparison.OrdinalIgnoreCase))
+        {
+            data = await Task.Run(() => Audio.OggToWav(data));
+            extension = ".wav";
+        }
         var file = TempFile("play" + extension.ToLowerInvariant());
         File.WriteAllBytes(file, data);
         if (OperatingSystem.IsWindows())

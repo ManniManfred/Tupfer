@@ -1136,10 +1136,12 @@ public partial class MainWindowViewModel : ObservableObject
             _recordingSpeak = null;
             current.IsRecording = false;
             var wav = await Audio.Device.StopRecordingAsync();
-            var path = RecordingPath(current, ".wav");
-            await File.WriteAllBytesAsync(path, wav);
+            // Als Ogg Vorbis speichern: etwa ein Zehntel der WAV-Größe, wie es auch tttool einbettet
+            var ogg = await Task.Run(() => Audio.WavToOgg(wav));
+            var path = RecordingPath(current, ".ogg");
+            await File.WriteAllBytesAsync(path, ogg);
             current.Recording = path;
-            Log($"Aufnahme für „{current.Name}“ gespeichert ({Audio.WavSeconds(wav):0.0} s): {path}");
+            Log($"Aufnahme für „{current.Name}“ gespeichert ({Audio.WavSeconds(wav):0.0} s, {ogg.Length / 1024.0:0} KB): {path}");
             return;
         }
         if (!await EnsureProjectDir())
@@ -1160,7 +1162,28 @@ public partial class MainWindowViewModel : ObservableObject
         var source = await Dialogs!.OpenAsync("Audiodatei wählen", "Audio", GmeBuilder.MediaExtensions.Select(e => "*" + e).ToArray());
         if (source == null)
             return;
-        var path = RecordingPath(speak, Path.GetExtension(source).ToLowerInvariant());
+        var extension = Path.GetExtension(source).ToLowerInvariant();
+        if (extension == ".wav")
+        {
+            // WAV-Dateien als Ogg Vorbis übernehmen (kleiner, Format für den Stift); unbekannte WAV-Formate unverändert
+            try
+            {
+                var wav = await File.ReadAllBytesAsync(source);
+                var ogg = await Task.Run(() => Audio.WavToOgg(wav));
+                var oggPath = RecordingPath(speak, ".ogg");
+                await File.WriteAllBytesAsync(oggPath, ogg);
+                if (!IsDesktop)
+                    File.Delete(source);
+                speak.Recording = oggPath;
+                Log($"Aufnahme für „{speak.Name}“ als Ogg Vorbis übernommen: {oggPath}");
+                return;
+            }
+            catch (InvalidDataException ex)
+            {
+                Log($"WAV-Datei wird unverändert übernommen ({ex.Message})");
+            }
+        }
+        var path = RecordingPath(speak, extension);
         if (!string.Equals(Path.GetFullPath(source), path, StringComparison.OrdinalIgnoreCase))
         {
             // Im Browser liegt die gewählte Datei schon als Kopie im Projektverzeichnis

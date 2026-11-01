@@ -469,6 +469,11 @@ export function waitAudio() {
     return playing;
 }
 
+/** Ob der Browser den MIME-Typ abspielen kann. */
+export function canPlayAudio(mimeType) {
+    return new Audio().canPlayType(mimeType) !== '';
+}
+
 /** Beendet eine laufende Wiedergabe. */
 export function stopAudio() {
     if (player) {

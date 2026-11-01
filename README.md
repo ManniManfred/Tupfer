@@ -115,8 +115,8 @@ und jede Stimme (20–110 MB) von Hugging Face und legt sie im Benutzerverzeichn
 `~/Library/Application Support/Tupfer/piper`); gesprochen wird danach ohne Netz, die Stimmen laufen
 mit ONNX Runtime auf dem eigenen Rechner. Ohne Netz beim ersten Mal spricht die Sprachausgabe des
 Systems: unter Windows die eingebaute Stimme, unter Linux/macOS `pico2wave`, `espeak` oder `say`.
-Ist dann `oggenc` (vorbis-tools) installiert, werden diese Texte als OGG eingebettet, sonst als WAV
-(größere Datei, der Stift spielt beides); die Piper-Stimmen werden als WAV eingebettet.
+Diese Texte werden als Ogg Vorbis eingebettet – mit `oggenc` (vorbis-tools), falls installiert, sonst mit
+dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
 
 ## Funktionen
 
@@ -150,7 +150,8 @@ Ist dann `oggenc` (vorbis-tools) installiert, werden diese Texte als OGG eingebe
 - **Sprachausgabe:** Texte, die beim Bauen per Text-to-Speech vertont werden, mit Knopf zum Anhören.
   Jeder Text kann stattdessen eine eigene Aufnahme bekommen – direkt mit dem Mikrofon aufgenommen
   oder als Audiodatei (`.wav`, `.ogg`, `.mp3`) übernommen; sie liegt im Projektordner unter
-  `aufnahmen/`. Auf dem Desktop nutzt das unter Windows die eingebaute Audio-Schnittstelle, unter
+  `aufnahmen/`. Aufnahmen und übernommene WAV-Dateien werden als Ogg Vorbis (mono, 22 kHz) gespeichert,
+  dem Format des Stifts – etwa ein Zehntel der WAV-Größe. Auf dem Desktop nutzt das unter Windows die eingebaute Audio-Schnittstelle, unter
   Linux/macOS `paplay`/`aplay`/`ffplay`/`afplay` zum Abspielen und `arecord`, `sox` oder `ffmpeg`
   zum Aufnehmen. Alternativ eigene Audiodateien im Medienverzeichnis.
 - **Testen (F8):** Ohne Drucken und Stift ausprobieren – im Testmodus führt Antippen einer Fläche ihr
@@ -237,7 +238,7 @@ Unterschiede zur Desktop-Version:
 - **Personen erkennen** lädt beim ersten Gebrauch die Laufzeit onnxruntime-web von cdnjs (wie die
   Sprachausgabe); die Modelle kommen von der eigenen Seite.
 - **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
-  fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als WAV (mono, 22 kHz).
+  fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als Ogg Vorbis (mono, 22 kHz).
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.
 - **Kein C#-Programm:** Der Übersetzer (Roslyn) würde die Web-App mehr als verdoppeln, deshalb fehlt
   der Tab *Programm (C#)*. Projekte mit C#-Programm lassen sich trotzdem öffnen und bauen – dann

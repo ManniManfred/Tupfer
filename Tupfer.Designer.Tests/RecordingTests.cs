@@ -88,4 +88,64 @@ public class RecordingTests : IDisposable
         Assert.Equal(".wav", Audio.ExtensionOf(wav));
         Assert.Equal(".ogg", Audio.ExtensionOf("OggS...."u8.ToArray()));
     }
+
+    /// <summary>Sinuston (Sprachbereich), damit der Encoder etwas zu tun hat.</summary>
+    static short[] Sine(int count, int rate, double hz = 440) =>
+        Enumerable.Range(0, count).Select(i => (short)(8000 * Math.Sin(2 * Math.PI * hz * i / rate))).ToArray();
+
+    [Fact]
+    public void AufnahmeAlsOggVorbis()
+    {
+        var wav = Audio.Wav(Sine(Audio.SampleRate * 2, Audio.SampleRate));
+        var ogg = Audio.WavToOgg(wav);
+
+        Assert.Equal(".ogg", Audio.ExtensionOf(ogg));
+        Assert.Equal("OggS", System.Text.Encoding.ASCII.GetString(ogg, 0, 4));
+        // Erstes Paket: Vorbis-Kennung, mono, 22050 Hz
+        int header = 27 + ogg[26];
+        Assert.Equal(1, ogg[header]);
+        Assert.Equal("vorbis", System.Text.Encoding.ASCII.GetString(ogg, header + 1, 6));
+        Assert.Equal(1, ogg[header + 11]);
+        Assert.Equal(Audio.SampleRate, BitConverter.ToInt32(ogg, header + 12));
+        Assert.Equal(2.0, Audio.OggSeconds(ogg), 1);
+        Assert.True(ogg.Length < wav.Length / 5, $"OGG {ogg.Length} Bytes, WAV {wav.Length} Bytes");
+        // Gleiche Eingabe, gleiche Datei (GME bleibt reproduzierbar)
+        Assert.Equal(ogg, Audio.WavToOgg(wav));
+
+        // Zurückgewandelt: gleiche Länge, Ton noch hörbar
+        var back = Audio.OggToWav(ogg);
+        Assert.Equal(2.0, Audio.WavSeconds(back), 1);
+        var samples = Enumerable.Range(0, (back.Length - 44) / 2).Select(i => BitConverter.ToInt16(back, 44 + i * 2)).ToArray();
+        Assert.InRange(samples.Max(s => Math.Abs((int)s)), 6000, 10000);
+    }
+
+    [Fact]
+    public void AndereAbtastrateUndStereo()
+    {
+        // 44,1 kHz Stereo, 1,5 s → mono 22050 Hz
+        var mono = Sine(66150, 44100);
+        var stereo = Audio.Wav(mono.SelectMany(s => new[] { s, s }).ToArray(), 44100);
+        BitConverter.TryWriteBytes(stereo.AsSpan(22), (short)2);
+        BitConverter.TryWriteBytes(stereo.AsSpan(28), 44100 * 4);
+        BitConverter.TryWriteBytes(stereo.AsSpan(32), (short)4);
+        var ogg = Audio.WavToOgg(stereo);
+        int header = 27 + ogg[26];
+        Assert.Equal(1, ogg[header + 11]);
+        Assert.Equal(Audio.SampleRate, BitConverter.ToInt32(ogg, header + 12));
+        Assert.Equal(1.5, Audio.OggSeconds(ogg), 1);
+
+        Assert.Throws<InvalidDataException>(() => Audio.WavToOgg("keine WAV-Datei"u8.ToArray()));
+    }
+
+    [Fact]
+    public void OggAufnahmeInGme()
+    {
+        var ogg = Audio.WavToOgg(Audio.Wav(Sine(Audio.SampleRate, Audio.SampleRate)));
+        File.WriteAllBytes(Path.Combine(_dir, "aufnahmen", "hallo.ogg"), ogg);
+        byte[] NoSpeech(string lang, string text) => throw new InvalidOperationException("Sprachausgabe darf nicht laufen");
+        var gme = GmeBuilder.Build(Project(new SpeakEntry { Name = "hallo", Text = "Hallo", Recording = "aufnahmen/hallo.ogg" }),
+            _dir, NoSpeech, new DateTime(2026, 1, 1));
+        // Unverändert eingebettet (GME-Medien sind mit einer festen Maske verschlüsselt, daher nur die Länge)
+        Assert.True(gme.Length > ogg.Length);
+    }
 }

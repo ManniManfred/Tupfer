@@ -26,6 +26,9 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <!-- Aufnahmen als Ogg Vorbis (MIT, reines C#, auch im Browser) -->
+    <PackageReference Include="OggVorbisEncoder" Version="1.2.2" />
+    <PackageReference Include="NVorbis" Version="0.10.5" />
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
     <PackageReference Include="System.Speech" Version="10.0.0" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />

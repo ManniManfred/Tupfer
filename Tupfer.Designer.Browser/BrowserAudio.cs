@@ -14,6 +14,12 @@ class BrowserAudio : IAudioDevice
             ".flac" => "audio/flac",
             _ => "audio/wav",
         };
+        // Ältere Safari-Versionen spielen kein Ogg Vorbis: dann als WAV
+        if (mime == "audio/ogg" && !BrowserInterop.CanPlayAudio("audio/ogg; codecs=vorbis"))
+        {
+            data = Audio.OggToWav(data);
+            mime = "audio/wav";
+        }
         BrowserInterop.PlayAudio(data, mime);
         return BrowserInterop.WaitAudioAsync();
     }

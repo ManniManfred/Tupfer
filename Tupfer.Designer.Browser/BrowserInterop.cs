@@ -72,6 +72,10 @@ static partial class BrowserInterop
     [JSImport("waitAudio", "tupfer")]
     public static partial Task WaitAudioAsync();
 
+    /// <summary>Ob der Browser den MIME-Typ (z. B. „audio/ogg; codecs=vorbis“) abspielen kann.</summary>
+    [JSImport("canPlayAudio", "tupfer")]
+    public static partial bool CanPlayAudio(string mimeType);
+
     /// <summary>Beendet eine laufende Wiedergabe.</summary>
     [JSImport("stopAudio", "tupfer")]
     public static partial void StopAudio();
