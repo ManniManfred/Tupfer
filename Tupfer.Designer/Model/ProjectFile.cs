@@ -132,6 +132,7 @@ public class ElementEntry
     public AreaShape Shape { get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonConverter(typeof(AreaPointListConverter))]
     public List<AreaPoint>? Points { get; set; }
 
     /// <summary>Breite des Rands der Farbfläche (mm), 0 = kein Rand.</summary>
@@ -165,9 +166,10 @@ public enum AreaShape
 /// <paramref name="Bulge"/> beschreibt die Kante zum nächsten Punkt: 0 = gerade, sonst ein Kreisbogen
 /// mit Bulge = tan(Bogenwinkel / 4) = 2 · Stichhöhe / Sehnenlänge (wie in DXF). Positiv wölbt
 /// sich der Bogen nach links (in Laufrichtung, y nach unten), negativ nach rechts.
+/// Gespeichert als <c>[x,y]</c> bzw. <c>[x,y,bulge]</c> (siehe <see cref="AreaPointConverter"/>).
 /// </summary>
-public record AreaPoint(double X, double Y,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] double Bulge = 0);
+[JsonConverter(typeof(AreaPointConverter))]
+public record AreaPoint(double X, double Y, double Bulge = 0);
 
 /// <summary>
 /// Eine OID-Fläche. X/Y/Width/Height (mm) sind der umschließende Rahmen; bei einer Ellipse
@@ -186,6 +188,7 @@ public class AreaEntry
 
     /// <summary>Nur bei <see cref="AreaShape.Polygon"/>: die Eckpunkte (mindestens drei).</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonConverter(typeof(AreaPointListConverter))]
     public List<AreaPoint>? Points { get; set; }
 
     public AreaTarget Target { get; set; }

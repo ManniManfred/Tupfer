@@ -158,9 +158,9 @@ public class AreaShapeTests
         {
             ProjectStore.Save(file, path);
             var json = File.ReadAllText(path);
-            // Rechtecke und gerade Kanten bleiben im alten Format
+            // Rechtecke bleiben im alten Format, Punkte kompakt, Bogen nur wo vorhanden
             Assert.Equal(2, json.Split("\"Shape\"").Length - 1);
-            Assert.Equal(1, json.Split("\"Bulge\"").Length - 1);
+            Assert.Contains("\"Points\": [[0,0,0.5],[10,0],[5,8]]", json);
 
             var areas = ProjectStore.Load(path).Pages[0].Areas;
             Assert.Equal(AreaShape.Rectangle, areas[0].Shape);
