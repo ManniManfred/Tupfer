@@ -12,6 +12,7 @@ static class Program
         // Natürliche Stimmen wie im Browser (Piper); ohne Netz spricht die Sprachausgabe des Systems
         TextToSpeech.NaturalSynthesizer = PiperSpeech.SpeakAsync;
         PersonDetector.Segmenter = PersonSegmenter.SegmentAsync;
+        PersonDetector.FaceDetector = PersonSegmenter.DetectFacesAsync;
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 

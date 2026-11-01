@@ -907,7 +907,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>
     /// Erkennt die Personen auf dem gewählten Bild und legt für jede eine OID-Fläche (Polygon) an,
-    /// die einen eigenen Text abspielt („person1“ …, zunächst „Person 1“).
+    /// die einen eigenen Text abspielt („person1“ …, zunächst „Person 1“). Ist die Person durch etwas
+    /// davor geteilt, bekommt jeder Teil eine Fläche mit demselben Text.
     /// </summary>
     [RelayCommand]
     Task DetectPersons() => Guard("der Personenerkennung", async () =>
@@ -915,8 +916,8 @@ public partial class MainWindowViewModel : ObservableObject
         if (Project.SelectedPage is not { SelectedElement: { IsImage: true } image } page)
             return;
         Log($"Suche Personen auf „{image.FileName}“ …");
-        var outlines = await PersonDetector.DetectAsync(image);
-        if (outlines.Count == 0)
+        var persons = await PersonDetector.DetectAsync(image);
+        if (persons.Count == 0)
         {
             Notice("Auf dem Bild wurden keine Personen gefunden.");
             return;
@@ -924,24 +925,27 @@ public partial class MainWindowViewModel : ObservableObject
         var areas = new List<AreaViewModel>();
         Project.History.Change(() =>
         {
-            foreach (var outline in outlines)
+            foreach (var outlines in persons)
             {
                 int n = 1;
                 while (Project.Speak.Any(s => s.Name == $"person{n}"))
                     n++;
                 var speak = Project.AddSpeak($"person{n}");
                 speak.Text = $"Person {n}";
-                var area = new AreaViewModel(Project) { Label = $"Person {n}" };
-                area.SetPolygon(outline);
-                page.Areas.Add(area);
-                area.SpeakEntry = speak;
-                areas.Add(area);
+                foreach (var outline in outlines)
+                {
+                    var area = new AreaViewModel(Project) { Label = $"Person {n}" };
+                    area.SetPolygon(outline);
+                    page.Areas.Add(area);
+                    area.SpeakEntry = speak;
+                    areas.Add(area);
+                }
             }
         });
         page.Select(areas);
-        Notice(areas.Count == 1
+        Notice(persons.Count == 1
             ? "1 Person erkannt: OID-Fläche „Person 1“ angelegt. Text im Tab „Sprachausgabe“ ändern oder aufnehmen."
-            : $"{areas.Count} Personen erkannt: OID-Flächen angelegt (Personen, die sich berühren, ergeben eine gemeinsame Fläche). Texte im Tab „Sprachausgabe“ ändern oder aufnehmen.");
+            : $"{persons.Count} Personen erkannt (von links nach rechts nummeriert): OID-Flächen angelegt. Texte im Tab „Sprachausgabe“ ändern oder aufnehmen.");
     });
 
     [RelayCommand]

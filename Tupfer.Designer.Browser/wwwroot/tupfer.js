@@ -387,27 +387,45 @@ function toBinary(bytes) {
     return binary;
 }
 
-// ---------- Personenerkennung (DeepLab v3 von MediaPipe, models/personen.onnx) ----------
+// ---------- Personenerkennung (DeepLab v3 von MediaPipe, models/personen.onnx;
+//            Gesichter mit YuNet von OpenCV Zoo, models/gesichter.onnx) ----------
 
-let segmentInput = null;
+let modelInput = null;
 let segmentSession = null;
+let faceSession = null;
 
-/** Merkt sich das RGB-Bild (257 × 257 × 3) für segmentPersons. */
-export function setSegmentInput(data) {
-    segmentInput = data.slice();
+/** Merkt sich das RGB-Bild für segmentPersons oder detectFaces. */
+export function setModelInput(data) {
+    modelInput = data.slice();
 }
 
-/** Liefert die Maske (257 × 257, 1 = Person) Base64-kodiert. */
-export async function segmentPersons() {
-    const input = segmentInput;
-    segmentInput = null;
+function takeModelInput() {
+    const input = modelInput;
+    modelInput = null;
+    return input;
+}
+
+async function loadSession(url) {
     await loadOrt();
-    segmentSession ??= fetchModel('models/personen.onnx')
-        .then(data => ort.InferenceSession.create(data))
-        .catch(e => { segmentSession = null; throw e; });
+    return ort.InferenceSession.create(await fetchModel(url));
+}
+
+/** Liefert die Wahrscheinlichkeit „Person“ (257 × 257, 0 … 255) Base64-kodiert. */
+export async function segmentPersons() {
+    const input = takeModelInput();
+    segmentSession ??= loadSession('models/personen.onnx').catch(e => { segmentSession = null; throw e; });
     const session = await segmentSession;
     const result = await session.run({ bild: new ort.Tensor('uint8', input, [1, 257, 257, 3]) });
     return btoa(toBinary(result.person.data));
+}
+
+/** Liefert die Gesichter je Ankerpunkt (float32, siehe PersonDetector.DecodeFaces) Base64-kodiert. */
+export async function detectFaces(width, height) {
+    const input = takeModelInput();
+    faceSession ??= loadSession('models/gesichter.onnx').catch(e => { faceSession = null; throw e; });
+    const session = await faceSession;
+    const data = (await session.run({ bild: new ort.Tensor('uint8', input, [1, height, width, 3]) })).gesichter.data;
+    return btoa(toBinary(new Uint8Array(data.buffer, data.byteOffset, data.byteLength)));
 }
 
 async function fetchModel(url) {

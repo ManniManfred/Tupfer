@@ -131,11 +131,15 @@ Ist dann `oggenc` (vorbis-tools) installiert, werden diese Texte als OGG eingebe
   unter *Sprachausgabe (direkt abspielen)* einen Text oder legt mit **+** gleich einen neuen an und
   tippt ihn dort ein (mit Knopf zum Anhören); das Skript `P(name)` legt der Designer selbst an.
 - **Personen erkennen:** Bild wählen und *Personen erkennen* klicken – für jede Person auf dem Foto
-  entsteht eine OID-Fläche als Polygon entlang ihres Umrisses, mit eigenem Text („Person 1“ …),
-  den man danach ändert oder aufnimmt. Die Erkennung läuft auf dem eigenen Rechner bzw. im Browser
-  (Modell DeepLab v3 von MediaPipe, 2,8 MB, wird mitgeliefert); das Foto verlässt ihn nicht.
-  Personen, die sich berühren, ergeben eine gemeinsame Fläche, sehr kleine Personen (z. B. im
-  Publikum) werden nicht erkannt. Die Ecken lassen sich wie bei jedem Polygon nachbessern.
+  entsteht eine OID-Fläche als Polygon entlang ihres Umrisses, mit eigenem Text („Person 1“ …, von
+  links nach rechts), den man danach ändert oder aufnimmt. Auch auf Gruppenfotos, auf denen sich alle
+  berühren, bekommt jede Person ihre eigene Fläche: Erst werden die Gesichter gesucht (YuNet), dann
+  die Personen passend zur Gesichtsgröße in Ausschnitten erkannt (DeepLab v3 von MediaPipe) und die
+  Fläche zwischen den Gesichtern aufgeteilt. Verdeckt etwas eine Person (z. B. ein Schild vor dem
+  Bauch), bekommt jeder sichtbare Teil eine Fläche mit demselben Text. Die Erkennung läuft auf dem
+  eigenen Rechner bzw. im Browser (beide Modelle zusammen 3 MB, werden mitgeliefert); das Foto
+  verlässt ihn nicht. Personen ohne sichtbares Gesicht werden nur erkannt, wenn sie frei stehen.
+  Die Ecken lassen sich wie bei jedem Polygon nachbessern.
 - **Mehrere Objekte anordnen:** Mit Strg- oder Umschalt-Klick (auf dem Handy: *Mehrere wählen*)
   bzw. Strg+A mehrere Flächen, Bilder und Texte wählen. Sie lassen sich gemeinsam verschieben (Ziehen,
   Pfeiltasten) und löschen, links/rechts/oben/unten bündig oder mittig **ausrichten** und ab drei
@@ -231,7 +235,7 @@ Unterschiede zur Desktop-Version:
   [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als JavaScript, klingt deutlich künstlicher).
   Die Texte werden als WAV eingebettet. Die Desktop-Version hat dieselben Stimmen.
 - **Personen erkennen** lädt beim ersten Gebrauch die Laufzeit onnxruntime-web von cdnjs (wie die
-  Sprachausgabe); das Modell kommt von der eigenen Seite.
+  Sprachausgabe); die Modelle kommen von der eigenen Seite.
 - **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
   fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als WAV (mono, 22 kHz).
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.

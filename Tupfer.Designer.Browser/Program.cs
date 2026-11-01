@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Avalonia;
 using Avalonia.Browser;
@@ -20,8 +21,13 @@ static class Program
         TextToSpeech.Synthesizer = BrowserInterop.Speak;
         PersonDetector.Segmenter = async rgb =>
         {
-            BrowserInterop.SetSegmentInput(rgb);
+            BrowserInterop.SetModelInput(rgb);
             return Convert.FromBase64String(await BrowserInterop.SegmentPersonsAsync());
+        };
+        PersonDetector.FaceDetector = async (rgb, width, height) =>
+        {
+            BrowserInterop.SetModelInput(rgb);
+            return MemoryMarshal.Cast<byte, float>(Convert.FromBase64String(await BrowserInterop.DetectFacesAsync(width, height))).ToArray();
         };
         Audio.Device = new BrowserAudio();
         MainWindowViewModel.AutoSaveStore = new BrowserAutoSaveStore();

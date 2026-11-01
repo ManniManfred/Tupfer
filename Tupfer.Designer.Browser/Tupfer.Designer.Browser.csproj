@@ -26,9 +26,10 @@
     <EmbeddedResource Include="../Tupfer.Designer/Oid/KnownCodes.txt" LogicalName="KnownCodes.txt" />
   </ItemGroup>
 
-  <!-- Modell der Personenerkennung, wird erst beim Gebrauch geladen -->
+  <!-- Modelle der Personenerkennung, werden erst beim Gebrauch geladen -->
   <ItemGroup>
     <Content Include="../Tupfer.Designer/Assets/personen.onnx" Link="wwwroot/models/personen.onnx" />
+    <Content Include="../Tupfer.Designer/Assets/gesichter.onnx" Link="wwwroot/models/gesichter.onnx" />
   </ItemGroup>
 
   <!-- Beispielprojekte zum direkten Öffnen (Datei → Beispiele), Liste in Examples.cs -->

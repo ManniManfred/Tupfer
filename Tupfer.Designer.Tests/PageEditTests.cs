@@ -256,11 +256,15 @@ public class PageEditTests
     [Fact]
     public async Task PersonenerkennungAmDesktop()
     {
-        // Das eingebettete Modell läuft und liefert eine Maske in der richtigen Größe
+        // Die eingebetteten Modelle laufen und liefern Ausgaben in der richtigen Größe; auf einem
+        // schwarzen Bild sind weder Personen noch Gesichter
         int n = Services.PersonDetector.Size;
-        var mask = await Services.PersonSegmenter.SegmentAsync(new byte[n * n * 3]);
-        Assert.Equal(n * n, mask.Length);
-        Assert.All(mask, b => Assert.True(b <= 1));
+        var probability = await Services.PersonSegmenter.SegmentAsync(new byte[n * n * 3]);
+        Assert.Equal(n * n, probability.Length);
+        Assert.All(probability, p => Assert.True(p < 128));
+        var faces = await Services.PersonSegmenter.DetectFacesAsync(new byte[96 * 64 * 3], 96, 64);
+        Assert.Equal((12 * 8 + 6 * 4 + 3 * 2) * 5, faces.Length);
+        Assert.Empty(Services.PersonDetector.DecodeFaces(faces, 96, 64, Services.PersonDetector.MinFaceScore));
     }
 
     [Fact]

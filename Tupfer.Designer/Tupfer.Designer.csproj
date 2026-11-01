@@ -14,8 +14,10 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\Tupfer.ico;Assets\Tupfer.png" />
     <EmbeddedResource Include="Oid\KnownCodes.txt" LogicalName="KnownCodes.txt" />
-    <!-- Personenerkennung (DeepLab v3 von MediaPipe, Apache 2.0; Umwandlung: tools/personen-modell) -->
+    <!-- Personenerkennung (DeepLab v3 von MediaPipe, Apache 2.0, und YuNet von OpenCV Zoo, MIT;
+         Umwandlung: tools/personen-modell) -->
     <EmbeddedResource Include="Assets\personen.onnx" LogicalName="personen.onnx" />
+    <EmbeddedResource Include="Assets\gesichter.onnx" LogicalName="gesichter.onnx" />
   </ItemGroup>
 
   <ItemGroup>

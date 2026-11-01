@@ -74,17 +74,17 @@ public static class ImageConverter
     }
 
     /// <summary>
-    /// Zeichnet einen Ausschnitt des Bilds auf <paramref name="width"/> × <paramref name="height"/> Pixel
-    /// (oben links in ein schwarzes Bild der Größe <paramref name="totalWidth"/> × <paramref name="totalHeight"/>);
+    /// Zeichnet einen Ausschnitt <paramref name="source"/> des Bilds in den Bereich <paramref name="destination"/>
+    /// eines schwarzen Bilds der Größe <paramref name="totalWidth"/> × <paramref name="totalHeight"/>;
     /// liefert die RGB-Daten Zeile für Zeile.
     /// </summary>
-    public static byte[] RenderRegion(Bitmap bitmap, Rect source, int width, int height, int totalWidth, int totalHeight)
+    public static byte[] RenderRegion(Bitmap bitmap, Rect source, Rect destination, int totalWidth, int totalHeight)
     {
         using var target = new RenderTargetBitmap(new PixelSize(totalWidth, totalHeight), new Vector(96, 96));
         using (var ctx = target.CreateDrawingContext())
         {
             ctx.FillRectangle(Brushes.Black, new Rect(0, 0, totalWidth, totalHeight));
-            ctx.DrawImage(bitmap, source, new Rect(0, 0, width, height));
+            ctx.DrawImage(bitmap, source, destination);
         }
         return ToRgb(target).Rgb;
     }
