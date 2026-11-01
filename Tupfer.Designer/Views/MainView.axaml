@@ -350,7 +350,7 @@
 
                 <TextBlock Classes="label" Text="Bedienung" />
                 <TextBlock Classes="hint"
-                           Text="• Auf freier Stelle ziehen: neue OID-Fläche mit dem gewählten Werkzeug (Rechteck oder Kreis, Umschalt = Quadrat/Kreis; Werkzeug ausschalten: keine neuen Flächen; Farbknopf neben den Werkzeugen: Farbfläche statt OID-Fläche)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Strg- oder Umschalt-Klick: mehrere Objekte wählen (Strg+A: alle), dann gemeinsam verschieben, ausrichten und verteilen&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Bild↑/↓: Bild oder Text eine Ebene nach vorne/hinten (mit Umschalt: ganz)&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen (Zoomfeld: Prozent eintippen, 20 … 1000 %)&#10;• Mittlere Maustaste ziehen: Ansicht verschieben&#10;• Pfeilkreuz („Ansicht verschieben“) an: Ziehen verschiebt, zwei Finger zoomen&#10;• Doppelpfeil: Seite in die Breite einpassen&#10;• „Testen“ (F8): Flächen antippen wie mit dem Stift" />
+                           Text="• Auf freier Stelle ziehen: neue OID-Fläche mit dem gewählten Werkzeug (Rechteck oder Kreis, Umschalt = Quadrat/Kreis; Werkzeug ausschalten: keine neuen Flächen; Farbknopf neben den Werkzeugen: Farbfläche statt OID-Fläche)&#10;• Polygon-Werkzeug: Ecken anklicken, Doppelklick/Eingabe schließt ab, Esc bricht ab&#10;• Bilder aus dem Explorer auf die Seite ziehen: einfügen&#10;• Objekt ziehen: verschieben&#10;• Strg- oder Umschalt-Klick: mehrere Objekte wählen (Strg+A: alle), dann gemeinsam verschieben, ausrichten und verteilen&#10;• Anfasser: Größe ändern (Bilder an den Ecken proportional, Umschalt = frei)&#10;• Runder Griff: drehen (Umschalt = 15°-Schritte)&#10;• „Zuschneiden“: Anfasser schneiden das Bild zu (Form des Zuschnitts: Rechteck, Kreis/Ellipse oder Polygon, bei Polygonen die Ecken ziehen)&#10;• „Nur OID-Flächen“: Bilder und Texte sperren, um darauf Flächen zu zeichnen&#10;• Pfeiltasten: verschieben (Umschalt = 5 mm)&#10;• Entf: löschen&#10;• Strg+Bild↑/↓: Bild oder Text eine Ebene nach vorne/hinten (mit Umschalt: ganz)&#10;• Strg+Z / Strg+Y: rückgängig / wiederholen&#10;• Strg+Mausrad: zoomen (Zoomfeld: Prozent eintippen, 20 … 1000 %)&#10;• Mittlere Maustaste ziehen: Ansicht verschieben&#10;• Pfeilkreuz („Ansicht verschieben“) an: Ziehen verschiebt, zwei Finger zoomen&#10;• Doppelpfeil: Seite in die Breite einpassen&#10;• „Testen“ (F8): Flächen antippen wie mit dem Stift" />
               </StackPanel>
             </ScrollViewer>
           </Border>
@@ -505,6 +505,21 @@
                                Text="Unter OID-Flächen helle Farben wählen, auf dunklem Grund erkennt der Stift die Codes schlecht." />
                   </StackPanel>
                   <TextBlock Classes="hint" Text="{Binding FileName}" ToolTip.Tip="{Binding ImagePath}" IsVisible="{Binding IsImage}" />
+                  <StackPanel IsVisible="{Binding IsImage}">
+                    <TextBlock Classes="label" Text="Zuschnitt-Form" />
+                    <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Static vm:AreaViewModel.ShapeOptions}"
+                              SelectedItem="{Binding ShapeOption}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ShapeOption">
+                          <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Classes="hint" Margin="0,4,0,0" IsVisible="{Binding HasCropShape}" TextWrapping="Wrap"
+                               Text="Das Bild wird innerhalb seines Rahmens zugeschnitten; für einen Kreis Breite und Höhe gleich setzen. „Ganzes Bild“ hebt den Zuschnitt auf." />
+                    <TextBlock Classes="hint" Margin="0,4,0,0" IsVisible="{Binding IsPolygon}" TextWrapping="Wrap"
+                               Text="Mit „Zuschneiden“: Ecken ziehen = verschieben, Kreis in der Kantenmitte ziehen = Kante biegen, Doppelklick auf eine Ecke = löschen, auf eine Kantenmitte = neue Ecke. Die Ecken bleiben innerhalb des Bilds." />
+                  </StackPanel>
                   <StackPanel IsVisible="{Binding IsText}">
                     <TextBox Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" Margin="0,4,0,0" />
                     <TextBlock Classes="label" Text="Schriftart" />

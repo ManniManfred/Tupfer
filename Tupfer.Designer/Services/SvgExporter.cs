@@ -94,7 +94,7 @@ public static class SvgExporter
         };
         var href = $"data:{mime};base64,{Convert.ToBase64String(File.ReadAllBytes(e.ImagePath))}";
         // Zuschnitt: verschachteltes svg zeigt nur den Ausschnitt (Bild in Einheiten seiner Größe)
-        return new XElement(Svg + "svg",
+        var image = new XElement(Svg + "svg",
             new XAttribute("x", N(e.X)), new XAttribute("y", N(e.Y)),
             new XAttribute("width", N(e.Width)), new XAttribute("height", N(e.Height)),
             new XAttribute("viewBox", $"{N(e.CropX)} {N(e.CropY)} {N(e.CropWidth)} {N(e.CropHeight)}"),
@@ -103,7 +103,22 @@ public static class SvgExporter
                 new XAttribute("width", "1"), new XAttribute("height", "1"),
                 new XAttribute("preserveAspectRatio", "none"),
                 new XAttribute(XLink + "href", href)));
+        if (!e.HasCropShape)
+            return image;
+        // Kreis/Ellipse oder Polygon: Umriss als clipPath (in Seitenkoordinaten wie das Bild)
+        var id = "zuschnitt-" + Interlocked.Increment(ref _clipIds);
+        XElement outline = e.Shape == AreaShape.Ellipse
+            ? new XElement(Svg + "ellipse",
+                new XAttribute("cx", N(e.Center.X)), new XAttribute("cy", N(e.Center.Y)),
+                new XAttribute("rx", N(e.Width / 2)), new XAttribute("ry", N(e.Height / 2)))
+            : new XElement(Svg + "path",
+                new XAttribute("d", PathData(e.Points.Select(p => p with { X = e.X + p.X, Y = e.Y + p.Y }).ToList())));
+        return new XElement(Svg + "g",
+            new XElement(Svg + "clipPath", new XAttribute("id", id), outline),
+            new XElement(Svg + "g", new XAttribute("clip-path", $"url(#{id})"), image));
     }
+
+    static int _clipIds;
 
     /// <summary>Farbe als #RRGGBB und Deckkraft (SVG kennt kein #AARRGGBB).</summary>
     static (string Color, double Opacity) Paint(string value)

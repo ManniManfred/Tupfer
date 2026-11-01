@@ -136,6 +136,56 @@ public class PageEditTests
     }
 
     [Fact]
+    public void BildAlsKreisUndPolygonZuschneiden()
+    {
+        var (project, page) = NewProject();
+        // Ausschnitt: mittlere Hälfte eines 80 × 20 mm großen Bilds (ganzes Bild von x = -10 bis 70)
+        var image = new ElementViewModel(project, ElementKind.Image)
+        {
+            X = 10, Y = 10, Width = 40, Height = 20, CropX = 0.25, CropWidth = 0.5,
+        };
+        page.Elements.Add(image);
+
+        image.ChangeShape(AreaShape.Ellipse);
+        Assert.True(image.HasCropShape);
+        Assert.True(image.Contains(new Point(30, 20)));
+        Assert.False(image.Contains(new Point(11, 11)));   // Ecke des Rahmens liegt außerhalb des Kreises
+
+        image.ChangeShape(AreaShape.Polygon);
+        Assert.Equal(4, image.Points.Count);
+        // Rechte obere Ecke weit nach rechts und oben ziehen: bleibt am Rand des Bilds stehen
+        var corners = image.PagePoints.ToList();
+        corners[1] = corners[1] with { X = 100, Y = 0 };
+        image.SetPolygon(corners);
+        Assert.Equal(60, image.Width, 6);
+        Assert.Equal(20, image.Height, 6);
+        Assert.Equal(10, image.X, 6);
+        Assert.Equal(0.25, image.CropX, 6);
+        Assert.Equal(0.75, image.CropWidth, 6);
+        Assert.Equal(1, image.CropHeight, 6);
+        // Das Bild selbst bleibt stehen: linker Rand des ganzen Bilds weiterhin bei x = -10
+        Assert.Equal(-10, image.X - image.CropX * image.Width / image.CropWidth, 6);
+        Assert.Equal(new AreaPoint(60, 0), image.Points[1]);
+        Assert.True(image.Contains(new Point(65, 12)));
+        Assert.False(image.Contains(new Point(65, 28)));
+
+        // Gespeichert und wieder geladen
+        var copy = ElementViewModel.FromEntry(project, image.ToEntry(null), null);
+        Assert.Equal(AreaShape.Polygon, copy.Shape);
+        Assert.Equal(image.Points, copy.Points);
+
+        // Vergrößern skaliert das Polygon mit
+        image.Width = 120;
+        Assert.Equal(120, image.Points[1].X, 6);
+
+        // „Ganzes Bild“: wieder rechteckig und vollständig
+        image.ResetCropCommand.Execute(null);
+        Assert.Equal(AreaShape.Rectangle, image.Shape);
+        Assert.Empty(image.Points);
+        Assert.Equal(1, image.CropWidth);
+    }
+
+    [Fact]
     public void TippenErgibtEinenSchritt()
     {
         var (project, page) = NewProject();

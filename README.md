@@ -120,7 +120,7 @@ Ist dann `oggenc` (vorbis-tools) installiert, werden diese Texte als OGG eingebe
 
 ## Funktionen
 
-- **Seiten:** Fotos und Bilder einfügen – auch per Drag&Drop aus dem Explorer – (drehen, zuschneiden, skalieren) und Texte setzen
+- **Seiten:** Fotos und Bilder einfügen – auch per Drag&Drop aus dem Explorer – (drehen, skalieren, zuschneiden – rechteckig, als Kreis/Ellipse oder als Polygon mit Bögen) und Texte setzen
   (Schriftart, Größe, Farbe, Ausrichtung), farbige Flächen (Rechteck, Kreis/Ellipse oder Polygon mit Bögen, mit oder ohne Rand und Füllung, auch mit den Zeichenwerkzeugen aufgezogen) als Hintergrund. Die Zeichenreihenfolge lässt sich ändern – eine Ebene
   oder ganz nach vorne/hinten (Strg+Bild↑/↓, mit Umschalt ganz); die Liste *Bilder, Texte und Farbflächen*
   zeigt die Reihenfolge, wählt auch verdeckte Elemente aus und sortiert per Drag & Drop um (mit der Maus am Eintrag, per Finger am Griff links). OID-Flächen liegen immer über

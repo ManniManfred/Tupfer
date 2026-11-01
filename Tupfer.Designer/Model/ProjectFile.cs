@@ -112,7 +112,7 @@ public class ElementEntry
     // Bild
     public string ImagePath { get; set; } = "";
 
-    /// <summary>Sichtbarer Ausschnitt des Bilds als Anteil (0–1) von Breite und Höhe.</summary>
+    /// <summary>Sichtbarer Ausschnitt des Bilds als Anteil (0–1) von Breite und Höhe; seine Form steht in <see cref="Shape"/>/<see cref="Points"/>.</summary>
     public double CropX { get; set; }
     public double CropY { get; set; }
     public double CropWidth { get; set; } = 1;
@@ -127,7 +127,7 @@ public class ElementEntry
     public bool Italic { get; set; }
     public TextAlign Align { get; set; }
 
-    // Farbfläche (Farbe wie beim Text); Form und Polygonpunkte (relativ zu X/Y, ungedreht) wie bei OID-Flächen
+    // Farbfläche (Farbe wie beim Text) bzw. Form des Bildzuschnitts; Form und Polygonpunkte (relativ zu X/Y, ungedreht) wie bei OID-Flächen
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public AreaShape Shape { get; set; }
 

@@ -155,15 +155,18 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     [NotifyPropertyChangedFor(nameof(ColorBrush))]
     string _color = "#000000";
 
-    /// <summary>Form der Farbfläche.</summary>
+    /// <summary>Form der Farbfläche bzw. des Bildzuschnitts (eingepasst in den Rahmen).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Caption), nameof(IsPolygon), nameof(ShapeOption))]
+    [NotifyPropertyChangedFor(nameof(Caption), nameof(IsPolygon), nameof(HasCropShape), nameof(ShapeOption))]
     AreaShape _shape;
 
     /// <summary>Eckpunkte eines Polygons relativ zu X/Y im ungedrehten Rahmen (wird immer als Ganzes ersetzt).</summary>
     [ObservableProperty] IReadOnlyList<AreaPoint> _points = [];
 
-    public bool IsPolygon => IsShape && Shape == AreaShape.Polygon;
+    public bool IsPolygon => (IsShape || IsImage) && Shape == AreaShape.Polygon;
+
+    /// <summary>Bild, das als Kreis/Ellipse oder Polygon zugeschnitten ist (Umriss statt Rahmen).</summary>
+    public bool HasCropShape => IsImage && Shape != AreaShape.Rectangle;
 
     public ShapeOption ShapeOption
     {
@@ -216,16 +219,31 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     /// <summary>
     /// Setzt das Polygon aus Punkten in Seitenkoordinaten. Der Rahmen wird (bei gleicher Drehung)
     /// an den Umriss einschließlich der Bögen angepasst, die Punkte bleiben auf der Seite stehen.
+    /// Bei einem Bild bleibt das Bild selbst stehen: der Ausschnitt wandert mit, die Ecken bleiben
+    /// innerhalb des Bilds.
     /// </summary>
     public void SetPolygon(IReadOnlyList<AreaPoint> pagePoints)
     {
         var e = ToEntry(null);
+        // Ganzes Bild im ungedrehten Rahmen (bei Farbflächen unbegrenzt)
+        double fw = IsImage ? Width / CropWidth : 0, fh = IsImage ? Height / CropHeight : 0;
+        double minX = IsImage ? -CropX * fw : double.NegativeInfinity, maxX = IsImage ? (1 - CropX) * fw : double.PositiveInfinity;
+        double minY = IsImage ? -CropY * fh : double.NegativeInfinity, maxY = IsImage ? (1 - CropY) * fh : double.PositiveInfinity;
         var local = pagePoints.Select(p =>
         {
             var q = ToLocal(e, new Point(p.X, p.Y));
-            return p with { X = q.X, Y = q.Y };
+            return p with { X = Math.Clamp(q.X, minX, maxX), Y = Math.Clamp(q.Y, minY, maxY) };
         }).ToList();
         var (bx, by, bw, bh) = AreaGeometry.Bounds(AreaGeometry.Outline(AreaShape.Polygon, 0, 0, 0, 0, local));
+        if (IsImage)
+        {
+            // Bögen dürfen nicht über das Bild hinausragen: Rahmen auf das Bild begrenzen
+            double r = Math.Min(bx + bw, maxX), b = Math.Min(by + bh, maxY);
+            bx = Math.Max(bx, minX);
+            by = Math.Max(by, minY);
+            bw = Math.Max(r - bx, 0.1);
+            bh = Math.Max(b - by, 0.1);
+        }
         var center = ToPage(e, new Point(bx + bw / 2, by + bh / 2));
         _settingFrame = true;
         try
@@ -235,6 +253,13 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
             Height = Math.Round(bh, 2);
             X = Math.Round(center.X - Width / 2, 2);
             Y = Math.Round(center.Y - Height / 2, 2);
+            if (IsImage)
+            {
+                CropX = Math.Clamp(CropX + bx / fw, 0, 1);
+                CropY = Math.Clamp(CropY + by / fh, 0, 1);
+                CropWidth = Width / fw;
+                CropHeight = Height / fh;
+            }
             Points = local.Select(p => p with { X = Math.Round(p.X - bx, 3), Y = Math.Round(p.Y - by, 3) }).ToList();
         }
         finally
@@ -243,7 +268,7 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
         }
     }
 
-    /// <summary>Umriss der Farbfläche im ungedrehten Rahmen, in Seitenkoordinaten (mm).</summary>
+    /// <summary>Umriss der Farbfläche bzw. des Bildzuschnitts im ungedrehten Rahmen, in Seitenkoordinaten (mm).</summary>
     public List<(double X, double Y)> Outline() => AreaGeometry.Outline(Shape, X, Y, Width, Height, Points);
 
     [ObservableProperty] bool _bold;
@@ -316,7 +341,7 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     public bool Contains(Point page, double toleranceMm = 0)
     {
         var p = ToLocal(ToEntry(null), page);
-        if (IsShape && Shape != AreaShape.Rectangle)
+        if ((IsShape || IsImage) && Shape != AreaShape.Rectangle)
             return AreaGeometry.Contains(AreaGeometry.Outline(Shape, 0, 0, Width, Height, Points), p.X, p.Y);
         return p.X >= -toleranceMm && p.Y >= -toleranceMm && p.X <= Width + toleranceMm && p.Y <= Height + toleranceMm;
     }
@@ -357,11 +382,11 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     [RelayCommand]
     void Rotate(string degrees) => Rotation = Math.Round(Rotation + double.Parse(degrees, CultureInfo.InvariantCulture), 1);
 
-    /// <summary>Zeigt wieder das ganze Bild im gleichen Maßstab, die Mitte bleibt erhalten.</summary>
+    /// <summary>Zeigt wieder das ganze Bild (als Rechteck) im gleichen Maßstab, die Mitte bleibt erhalten.</summary>
     [RelayCommand]
     void ResetCrop()
     {
-        if (!IsImage || (CropX == 0 && CropY == 0 && CropWidth == 1 && CropHeight == 1))
+        if (!IsImage || (CropX == 0 && CropY == 0 && CropWidth == 1 && CropHeight == 1 && Shape == AreaShape.Rectangle))
             return;
         var start = ToEntry(null);
         double w = Width / CropWidth, h = Height / CropHeight;
@@ -369,6 +394,8 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
         var center = ToPage(start, new Point(w * (0.5 - CropX), h * (0.5 - CropY)));
         Project.History.Change(() =>
         {
+            Shape = AreaShape.Rectangle;
+            Points = [];
             CropX = CropY = 0;
             CropWidth = CropHeight = 1;
             Width = Math.Round(w, 1);

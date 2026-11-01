@@ -161,6 +161,50 @@ public class SvgTests
     }
 
     [Fact]
+    public void BildzuschnittAlsKreisUndPolygon_ExportUndImport()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "tupfer-svg-" + Guid.NewGuid());
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var file = Path.Combine(dir, "bild.png");
+            File.WriteAllBytes(file, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+            var project = new ProjectViewModel(_ => { });
+            var page = new PageViewModel(project) { Name = "Seite", WidthMm = 120, HeightMm = 80 };
+            project.Pages.Add(page);
+            var round = new ElementViewModel(project, ElementKind.Image) { ImagePath = file, X = 10, Y = 10, Width = 30, Height = 30 };
+            round.ChangeShape(AreaShape.Ellipse);
+            var poly = new ElementViewModel(project, ElementKind.Image) { ImagePath = file, X = 50, Y = 10, Width = 40, Height = 30, Rotation = 30 };
+            poly.ChangeShape(AreaShape.Polygon);
+            poly.SetPolygon(poly.PagePoints.Select((p, i) => i == 0 ? p with { Bulge = 0.5 } : p).Take(3).ToList());
+            page.Elements.Add(round);
+            page.Elements.Add(poly);
+
+            var svg = SvgExporter.Export(page);
+            Assert.Contains("<clipPath", svg);
+
+            var r = SvgImporter.Import(svg, null, dir);
+            Assert.Equal(2, r.Elements.Count);
+            Assert.Equal(AreaShape.Ellipse, r.Elements[0].Shape);
+            Assert.Equal(30, r.Elements[0].Width, 3);
+            var p1 = r.Elements[1];
+            Assert.Equal(AreaShape.Polygon, p1.Shape);
+            Assert.Equal(30, p1.Rotation, 3);
+            Assert.Equal(poly.Points.Count, p1.Points!.Count);
+            for (int i = 0; i < poly.Points.Count; i++)
+            {
+                Assert.Equal(poly.Points[i].X, p1.Points[i].X, 2);
+                Assert.Equal(poly.Points[i].Y, p1.Points[i].Y, 2);
+                Assert.Equal(poly.Points[i].Bulge, p1.Points[i].Bulge, 3);
+            }
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void VerlaufWirdErsteFarbe()
     {
         var r = Import(Svg("""

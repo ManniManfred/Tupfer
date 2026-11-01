@@ -310,6 +310,9 @@ public class PageCanvas : Control
 
     bool Cropping(ElementViewModel e) => CropMode && e.IsImage;
 
+    /// <summary>Ecken und Kanten des Polygons lassen sich ziehen (bei Bildern nur beim Zuschneiden).</summary>
+    bool EditsPolygon(ElementViewModel e) => e.IsPolygon && (!e.IsImage || Cropping(e));
+
     public override void Render(DrawingContext ctx)
     {
         if (Page is not { } page)
@@ -419,14 +422,14 @@ public class PageCanvas : Control
         }
     }
 
-    /// <summary>Gewähltes Polygon, dessen Ecken und Kanten sich ziehen lassen: OID-Fläche oder Farbfläche.</summary>
+    /// <summary>Gewähltes Polygon, dessen Ecken und Kanten sich ziehen lassen: OID-Fläche, Farbfläche oder Bildzuschnitt.</summary>
     IPolygonShape? EditedPolygon(PageViewModel page) =>
         page.SelectedArea is { IsPolygon: true } area ? area
-        : !ElementsLocked && page.SelectedElement is { IsPolygon: true } element ? element
+        : !ElementsLocked && page.SelectedElement is { } element && EditsPolygon(element) ? element
         : null;
 
     /// <summary>Anfasser zum Skalieren; Polygone werden über ihre Ecken geformt.</summary>
-    static IEnumerable<(int X, int Y)> ScaleHandles(ElementViewModel e) => e.IsPolygon ? [] : Handles;
+    IEnumerable<(int X, int Y)> ScaleHandles(ElementViewModel e) => EditsPolygon(e) ? [] : Handles;
 
     void DrawPolygonInProgress(DrawingContext ctx, List<Point> points)
     {
@@ -473,7 +476,10 @@ public class PageCanvas : Control
         using (ctx.PushTransform(ImageConverter.RotationAround(ToPx(e.Center), e.Rotation)))
         {
             var r = LocalRectPx(e);
-            ctx.DrawRectangle(crop ? CropPen : ElementPen, r);
+            ctx.DrawRectangle(crop && !e.HasCropShape ? CropPen : ElementPen, r);
+            // Umriss eines Kreis- oder Polygonzuschnitts
+            if (e.HasCropShape)
+                ctx.DrawGeometry(null, crop ? CropPen : ElementPen, ImageConverter.CropGeometry(e, Scale));
             var top = new Point(r.Center.X, r.Y);
             ctx.DrawLine(HandlePen, top, top - new Vector(0, RotateHandleDistance - HandleSize / 2));
             ctx.DrawEllipse(Brushes.White, HandlePen, top - new Vector(0, RotateHandleDistance), HandleSize / 2, HandleSize / 2);
@@ -487,7 +493,7 @@ public class PageCanvas : Control
                     ctx.DrawRectangle(Brushes.White, HandlePen, hr);
             }
         }
-        if (e.IsPolygon)
+        if (EditsPolygon(e))
             DrawPolygonHandles(ctx, e);
     }
 

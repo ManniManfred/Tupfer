@@ -21,7 +21,9 @@ public static class ImageConverter
             {
                 var size = bmp.Size;
                 var source = new Rect(e.CropX * size.Width, e.CropY * size.Height, e.CropWidth * size.Width, e.CropHeight * size.Height);
-                ctx.DrawImage(bmp, source, rect);
+                // Kreis/Ellipse oder Polygon: nur innerhalb des Umrisses zeichnen
+                using (e.HasCropShape ? ctx.PushGeometryClip(CropGeometry(e, scale)) : default(DrawingContext.PushedState?))
+                    ctx.DrawImage(bmp, source, rect);
             }
             else if (e.IsText)
             {
@@ -38,6 +40,11 @@ public static class ImageConverter
             }
         }
     }
+
+    /// <summary>Umriss eines als Kreis/Ellipse oder Polygon zugeschnittenen Bilds (ungedreht, in Pixeln).</summary>
+    public static Geometry CropGeometry(ElementViewModel e, double scale) => e.Shape == AreaShape.Ellipse
+        ? new EllipseGeometry(new Rect(e.X * scale, e.Y * scale, e.Width * scale, e.Height * scale))
+        : new PolylineGeometry(e.Outline().Select(p => new Point(p.X * scale, p.Y * scale)), true);
 
     /// <summary>Drehung um <paramref name="center"/> im Uhrzeigersinn.</summary>
     public static Matrix RotationAround(Point center, double degrees) =>

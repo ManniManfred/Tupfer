@@ -421,7 +421,11 @@ public static class SvgImporter
                 switch (e.Name.LocalName)
                 {
                     case "g" or "a" or "switch":
+                        int before = Result.Elements.Count;
                         Walk(e.Elements(), m, s, op, areas || areaLayer, null);
+                        // Einzelnes Bild mit clip-path (Kreis/Ellipse oder Pfad): Form des Zuschnitts
+                        if (!areas && !areaLayer && Result.Elements.Count == before + 1 && Result.Elements[^1].Kind == ElementKind.Image)
+                            ClipShape(e, m, Result.Elements[^1]);
                         break;
                     case "svg":
                         NestedSvg(e, m, s, op, areas);
@@ -935,6 +939,42 @@ public static class SvgImporter
             });
             if (op < 1)
                 Result.Warnings.Add("Die Deckkraft von Bildern wird nicht übernommen.");
+        }
+
+        /// <summary>
+        /// Übernimmt einen clip-path als Zuschnitt-Form des Bilds, wie ihn der Export schreibt: der Umriss
+        /// füllt den Rahmen des Bilds (Ellipse eingepasst, Polygon mit den Ecken relativ zum Rahmen).
+        /// </summary>
+        void ClipShape(XElement group, Affine m, ElementEntry image)
+        {
+            var match = Regex.Match((string?)group.Attribute("clip-path") ?? "", @"url\(\s*#([^)\s]+)\s*\)");
+            if (!match.Success || !_ids.TryGetValue(match.Groups[1].Value, out var clip) || clip.Name.LocalName != "clipPath"
+                || clip.Elements().FirstOrDefault() is not { } outline)
+                return;
+            var cm = m.Then(ParseTransform((string?)outline.Attribute("transform")));
+            switch (outline.Name.LocalName)
+            {
+                case "circle" or "ellipse":
+                    image.Shape = AreaShape.Ellipse;
+                    break;
+                case "path":
+                    try
+                    {
+                        if (PathParser.Parse((string?)outline.Attribute("d") ?? "", cm, CurveTolerance).FirstOrDefault(p => p.Points.Count >= 3) is not { } path)
+                            return;
+                        image.Shape = AreaShape.Polygon;
+                        image.Points = path.Points.Select(v =>
+                        {
+                            var q = ViewModels.ElementViewModel.ToLocal(image, new Avalonia.Point(v.X, v.Y));
+                            return new AreaPoint(Math.Round(q.X, 3), Math.Round(q.Y, 3), Math.Round(Math.Clamp(v.Bulge, -AreaGeometry.MaxBulge, AreaGeometry.MaxBulge), 4));
+                        }).ToList();
+                    }
+                    catch (FormatException)
+                    {
+                        // Unlesbarer Umriss: Bild bleibt rechteckig
+                    }
+                    break;
+            }
         }
 
         /// <summary>Eingebettetes Bild als Datei speichern bzw. verlinkte Datei finden; null = nicht verfügbar.</summary>
