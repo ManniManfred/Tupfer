@@ -18,6 +18,11 @@ static class Program
         TextToSpeech.LoadAsync = BrowserInterop.LoadSpeechAsync;
         TextToSpeech.NaturalSynthesizer = async (voice, text) => Convert.FromBase64String(await BrowserInterop.SpeakNaturalAsync(voice, text));
         TextToSpeech.Synthesizer = BrowserInterop.Speak;
+        PersonDetector.Segmenter = async rgb =>
+        {
+            BrowserInterop.SetSegmentInput(rgb);
+            return Convert.FromBase64String(await BrowserInterop.SegmentPersonsAsync());
+        };
         Audio.Device = new BrowserAudio();
         MainWindowViewModel.AutoSaveStore = new BrowserAutoSaveStore();
         BrowserInterop.SetTitle(MainWindowViewModel.AppName);

@@ -15,15 +15,20 @@
     <NoWarn>$(NoWarn);CA1416;IL2026</NoWarn>
   </PropertyGroup>
 
-  <!-- Der Designer selbst wird aus Tupfer.Designer mitübersetzt (ohne Desktop-Start, Windows-Sprachausgabe, Piper mit ONNX Runtime und C#-Übersetzer) -->
+  <!-- Der Designer selbst wird aus Tupfer.Designer mitübersetzt (ohne Desktop-Start, Windows-Sprachausgabe, Piper und Personenerkennung mit ONNX Runtime und C#-Übersetzer) -->
   <ItemGroup>
-    <Compile Include="../Tupfer.Designer/**/*.cs" Exclude="../Tupfer.Designer/bin/**;../Tupfer.Designer/obj/**;../Tupfer.Designer/Program.cs;../Tupfer.Designer/Gme/WindowsSpeech.cs;../Tupfer.Designer/Gme/PiperSpeech.cs;../Tupfer.Designer/Compiler/ProgramCompiler.cs"
+    <Compile Include="../Tupfer.Designer/**/*.cs" Exclude="../Tupfer.Designer/bin/**;../Tupfer.Designer/obj/**;../Tupfer.Designer/Program.cs;../Tupfer.Designer/Gme/WindowsSpeech.cs;../Tupfer.Designer/Gme/PiperSpeech.cs;../Tupfer.Designer/Services/PersonSegmenter.cs;../Tupfer.Designer/Compiler/ProgramCompiler.cs"
              Link="Designer/%(RecursiveDir)%(Filename)%(Extension)" />
     <AvaloniaXaml Include="../Tupfer.Designer/**/*.axaml" Exclude="../Tupfer.Designer/bin/**;../Tupfer.Designer/obj/**"
                   Link="Designer/%(RecursiveDir)%(Filename)%(Extension)" />
     <AvaloniaResource Include="../Tupfer.Designer/Assets/Tupfer.png" Link="Assets/Tupfer.png" />
     <AvaloniaResource Include="../Tupfer.Designer/Assets/Tupfer.ico" Link="Assets/Tupfer.ico" />
     <EmbeddedResource Include="../Tupfer.Designer/Oid/KnownCodes.txt" LogicalName="KnownCodes.txt" />
+  </ItemGroup>
+
+  <!-- Modell der Personenerkennung, wird erst beim Gebrauch geladen -->
+  <ItemGroup>
+    <Content Include="../Tupfer.Designer/Assets/personen.onnx" Link="wwwroot/models/personen.onnx" />
   </ItemGroup>
 
   <!-- Beispielprojekte zum direkten Öffnen (Datei → Beispiele), Liste in Examples.cs -->

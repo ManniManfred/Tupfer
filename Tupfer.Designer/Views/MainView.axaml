@@ -638,6 +638,13 @@
                   <Button Content="Ganzes Bild" Command="{Binding Project.SelectedPage.SelectedElement.ResetCropCommand, FallbackValue={x:Null}}"
                           IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
                           ToolTip.Tip="Zuschnitt aufheben" />
+                  <Panel IsVisible="{x:Static vm:MainWindowViewModel.CanDetectPersons}">
+                    <Button Command="{Binding DetectPersonsCommand}" Margin="0,0,6,6"
+                            IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
+                            ToolTip.Tip="Personen auf dem Bild erkennen und für jede eine OID-Fläche mit eigenem Text anlegen">
+                      <StackPanel><PathIcon Data="{StaticResource IconPerson}" /><TextBlock Text="Personen erkennen" /></StackPanel>
+                    </Button>
+                  </Panel>
                   <Button Content="Auf Seite einpassen" Command="{Binding FitElementToPageCommand}" />
                   <Button Command="{Binding DuplicateElementCommand}">
                     <StackPanel><PathIcon Data="{StaticResource IconCopy}" /><TextBlock Text="Duplizieren" /></StackPanel>
@@ -687,7 +694,7 @@
                   <StackPanel IsVisible="{Binding HasSpeakEntry}" Margin="0,4,0,0">
                     <Grid ColumnDefinitions="*,4,Auto">
                       <TextBox Text="{Binding SpeakEntry.Text, FallbackValue=''}" AcceptsReturn="True" TextWrapping="Wrap"
-                               Watermark="Text, den der Stift spricht" />
+                               PlaceholderText="Text, den der Stift spricht" />
                       <Button Grid.Column="2" Classes="tool" VerticalAlignment="Top" ToolTip.Tip="Anhören"
                               Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
                               CommandParameter="{Binding SpeakEntry}">

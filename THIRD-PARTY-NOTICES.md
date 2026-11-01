@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 | Bestandteil | Ort | Lizenz |
 |---|---|---|
 | [meSpeak](https://www.masswerk.at/mespeak/) 2.0.2 (Norbert Landsteiner) mit eSpeak (Jonathan Duddington) über [speak.js](https://github.com/kripken/speak.js) | `Tupfer.Designer.Browser/wwwroot/mespeak/` | GNU GPL 3, Text in [`COPYING`](Tupfer.Designer.Browser/wwwroot/mespeak/COPYING); Quelltext: npm-Paket [`mespeak`](https://www.npmjs.com/package/mespeak) |
+| Modell DeepLab v3 (MobileNetV2, Pascal VOC) von [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/vision/image_segmenter#deeplab-v3) (Google) für die Personenerkennung | `Tupfer.Designer/Assets/personen.onnx` | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0); verändert: nach ONNX umgewandelt, Ein- und Ausgang angepasst (siehe [`tools/personen-modell`](tools/personen-modell/README.md)) |
 | Tierbilder, Lupe und Ohr aus [Twemoji](https://github.com/jdecked/twemoji) 15.0 (Copyright Twitter, Inc. und weitere Mitwirkende) | `examples/wo-ist/*.png` | [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/); verändert: als PNG gerastert, farbiger Hintergrund |
 
 Die meSpeak-Dateien sind unverändert und werden von der Browser-Version nur geladen (eigene

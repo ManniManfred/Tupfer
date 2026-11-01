@@ -223,6 +223,47 @@ public class PageEditTests
     }
 
     [Fact]
+    public void PersonenUmrisseAusMaske()
+    {
+        // Zwei Flecken (Rechteck und Kreis) und ein einzelner Pixel als Rauschen; rechts außerhalb
+        // des ausgewerteten Bereichs liegt noch ein Fleck
+        const int stride = 64, w = 50, h = 40;
+        var mask = new byte[stride * stride];
+        for (int y = 5; y < 30; y++)
+            for (int x = 4; x < 14; x++)
+                mask[y * stride + x] = 1;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                if ((x - 32) * (x - 32) + (y - 20) * (y - 20) <= 100)
+                    mask[y * stride + x] = 1;
+        mask[2 * stride + 45] = 1;
+        for (int y = 0; y < 10; y++)
+            mask[y * stride + 55] = 1;
+
+        var outlines = Services.PersonDetector.Outlines(mask, stride, w, h);
+        Assert.Equal(2, outlines.Count);
+        // Größter zuerst: der Kreis (≈ 317 Pixel) vor dem Rechteck (250 Pixel)
+        var circle = outlines[0];
+        Assert.InRange(circle.Count, 6, 40);
+        Assert.All(circle, p => Assert.InRange(Math.Sqrt((p.X - 32.5) * (p.X - 32.5) + (p.Y - 20.5) * (p.Y - 20.5)), 8, 11));
+        // Rechteck: vier Ecken in den Mitten der Eckpixel
+        var rect = outlines[1];
+        Assert.Equal(4, rect.Count);
+        Assert.Contains((4.5, 5.5), rect);
+        Assert.Contains((13.5, 29.5), rect);
+    }
+
+    [Fact]
+    public async Task PersonenerkennungAmDesktop()
+    {
+        // Das eingebettete Modell läuft und liefert eine Maske in der richtigen Größe
+        int n = Services.PersonDetector.Size;
+        var mask = await Services.PersonSegmenter.SegmentAsync(new byte[n * n * 3]);
+        Assert.Equal(n * n, mask.Length);
+        Assert.All(mask, b => Assert.True(b <= 1));
+    }
+
+    [Fact]
     public void TippenErgibtEinenSchritt()
     {
         var (project, page) = NewProject();

@@ -308,13 +308,18 @@ function voicePath(model) {
     return `${locale.split('_')[0]}/${locale}/${name}/${quality}/${model}`;
 }
 
-async function loadPiperVoice(model) {
-    const path = voicePath(model);
-    await (ortReady ??= loadScript(PIPER_ORT + 'ort.min.js').then(() => {
+/** Lädt onnxruntime-web (einmal, für Stimmen und Personenerkennung). */
+function loadOrt() {
+    return ortReady ??= loadScript(PIPER_ORT + 'ort.min.js').then(() => {
         ort.env.wasm.wasmPaths = PIPER_ORT;
         // Mehrere Threads gehen nur auf Seiten mit Cross-Origin-Isolation
         ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
-    }, e => { ortReady = null; throw e; }));
+    }, e => { ortReady = null; throw e; });
+}
+
+async function loadPiperVoice(model) {
+    const path = voicePath(model);
+    await loadOrt();
     const [config, data] = await Promise.all([
         fetchCached(PIPER_VOICES + path + '.onnx.json').then(r => r.json()),
         fetchCached(PIPER_VOICES + path + '.onnx').then(r => r.arrayBuffer()),
@@ -380,6 +385,36 @@ function toBinary(bytes) {
     for (let i = 0; i < bytes.length; i += 0x8000)
         binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
     return binary;
+}
+
+// ---------- Personenerkennung (DeepLab v3 von MediaPipe, models/personen.onnx) ----------
+
+let segmentInput = null;
+let segmentSession = null;
+
+/** Merkt sich das RGB-Bild (257 × 257 × 3) für segmentPersons. */
+export function setSegmentInput(data) {
+    segmentInput = data.slice();
+}
+
+/** Liefert die Maske (257 × 257, 1 = Person) Base64-kodiert. */
+export async function segmentPersons() {
+    const input = segmentInput;
+    segmentInput = null;
+    await loadOrt();
+    segmentSession ??= fetchModel('models/personen.onnx')
+        .then(data => ort.InferenceSession.create(data))
+        .catch(e => { segmentSession = null; throw e; });
+    const session = await segmentSession;
+    const result = await session.run({ bild: new ort.Tensor('uint8', input, [1, 257, 257, 3]) });
+    return btoa(toBinary(result.person.data));
+}
+
+async function fetchModel(url) {
+    const response = await fetch(url);
+    if (!response.ok)
+        throw new Error(`${url}: ${response.status} ${response.statusText}`);
+    return new Uint8Array(await response.arrayBuffer());
 }
 
 // ---------- Wiedergabe und Aufnahme ----------

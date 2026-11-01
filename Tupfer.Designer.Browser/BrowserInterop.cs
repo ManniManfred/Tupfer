@@ -91,6 +91,14 @@ static partial class BrowserInterop
     [JSImport("speakNatural", "tupfer")]
     public static partial Task<string> SpeakNaturalAsync(string voice, string text);
 
+    /// <summary>Übergibt das RGB-Bild für <see cref="SegmentPersonsAsync"/> (JSImport erlaubt keine Span-Parameter mit Task).</summary>
+    [JSImport("setSegmentInput", "tupfer")]
+    public static partial void SetSegmentInput([JSMarshalAs<JSType.MemoryView>] Span<byte> rgb);
+
+    /// <summary>Personenerkennung (DeepLab v3 mit onnxruntime-web) für das übergebene Bild; Maske Base64-kodiert.</summary>
+    [JSImport("segmentPersons", "tupfer")]
+    public static partial Task<string> SegmentPersonsAsync();
+
     /// <summary>Spricht den Text, liefert WAV-Daten. Vorher muss <see cref="LoadSpeechAsync"/> aufgerufen worden sein.</summary>
     [JSImport("speak", "tupfer")]
     [return: JSMarshalAs<JSType.Array<JSType.Number>>]
