@@ -2,6 +2,8 @@
 # Tag „v<Version>“ gepusht wird (Version aus dem Tag).
 # Einmalig nötig: Repository → Settings → Pages → Source: „GitHub Actions“ (für private Repositories
 # nur mit bezahltem GitHub-Plan). Ist Pages nicht eingeschaltet, wird nur gebaut und eine Warnung gezeigt.
+# Außerdem: Settings → Environments → github-pages → „Deployment branches and tags“ muss Tags „v*“
+# erlauben (Standard ist nur der Hauptzweig), sonst wird der Deploy-Schritt abgelehnt.
 name: Web-Version
 
 on:
