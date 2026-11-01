@@ -26,7 +26,6 @@ Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 | `examples/wo-ist/` | Suchspiel „Wo ist …?“ mit acht Tieren für Vorschulkinder (auch in der Web-App) |
 | `examples/tic-tac-toi-csharp/` | Dasselbe Spiel als C#-Programm (siehe „Programmieren in C#“) |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
-| `deploy/`, `captain-definition` | Web-App im Container mit nginx (z. B. für CapRover) |
 | `deploy/setup/` | Setups für Windows (Inno Setup), Linux (.deb, AppImage) und macOS (.dmg) |
 | `nextcloud/` | App für Nextcloud: die Web-App mit Dateien aus Nextcloud (siehe „Tupfer Designer in Nextcloud“) |
 
@@ -196,26 +195,6 @@ Adresse geht es auch gleich beim Start: `…/index.html?beispiel=tic-tac-toi`. W
 Der Workflow `.github/workflows/web.yml` baut die Web-Version bei jedem Push auf `master` und
 veröffentlicht sie auf GitHub Pages unter https://mannimanfred.github.io/Tupfer/ (einmalig unter
 *Settings → Pages → Source* „GitHub Actions“ wählen).
-
-**Auf eigenem Server (z. B. CapRover):** `captain-definition` und `deploy/Dockerfile` bauen die
-Web-Version in einem Container (.NET-SDK mit `wasm-tools`) und liefern sie mit nginx aus. Der Bau
-braucht einige Minuten und etwa 2–3 GB Arbeitsspeicher. Lokal testen:
-`docker build -f deploy/Dockerfile -t tupfer-web . && docker run -p 8080:80 tupfer-web`
-
-**Automatischer Deploy:** Der Workflow `.github/workflows/deploy.yml` baut das Image auf GitHub, legt
-es als `ghcr.io/mannimanfred/tupfer-web` in die GitHub Container Registry und deployt es nach
-CapRover. Er läuft bei jedem gepushten Tag `v*` und nach jedem erfolgreichen Lauf von *Setups*, also
-bei jeder neuen Version (manuell: *Actions → Deploy → Run workflow*). Einmalig einrichten:
-
-1. In CapRover eine App `tupfer` anlegen, HTTPS aktivieren und unter *Deployment* „Enable App
-   Token“ einschalten. Eine dort eingetragene GitHub-Verknüpfung (Webhook) entfernen, sonst baut
-   CapRover zusätzlich selbst.
-2. Im GitHub-Repository unter *Settings → Secrets and variables → Actions* die Secrets
-   `CAPROVER_URL` (`https://captain.<domain>`) und `CAPROVER_APP_TOKEN` anlegen, optional die
-   Variable `CAPROVER_APP`, falls die App nicht `tupfer` heißt.
-3. In CapRover unter *Cluster → Remote Registries* `ghcr.io` mit GitHub-Benutzername und einem
-   Token (classic) mit `read:packages` eintragen (Image Prefix `mannimanfred`), damit CapRover das
-   private Image laden kann.
 
 **Auf dem Handy:** Bei schmalen Bildschirmen (unter etwa 760 Pixel) schaltet die Oberfläche auf ein
 kompaktes Layout um: Im Tab *Seiten* wechselt man oben zwischen *Seite* (Zeichenfläche), *Seiten*
