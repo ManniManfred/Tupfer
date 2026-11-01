@@ -925,6 +925,8 @@
                 <TextBlock Classes="hint" Margin="0,4,0,0"
                            Text="Jeder Text kann eine eigene Stimme bekommen, z. B. für verschiedene Figuren. Jede Stimme wird beim ersten Gebrauch geladen (20–110 MB) und danach im Browser gespeichert." />
               </StackPanel>
+              <CheckBox Content="Rauschen bei Aufnahmen unterdrücken" IsChecked="{Binding Project.DenoiseRecordings}"
+                        ToolTip.Tip="Senkt gleichmäßiges Hintergrundrauschen (Lüfter, Mikrofon, Brummen) in neuen Mikrofonaufnahmen ab. Übernommene Audiodateien bleiben unverändert." />
               <WrapPanel Classes="buttons">
                 <Button Command="{Binding AddSpeakCommand}">
                   <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Neuer Text" /></StackPanel>

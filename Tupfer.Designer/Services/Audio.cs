@@ -110,10 +110,13 @@ public static class Audio
     /// Wandelt eine WAV-Datei (PCM 8/16/24/32 Bit oder Float, beliebige Abtastrate und Kanäle) in
     /// Ogg Vorbis mono mit <see cref="SampleRate"/> um, wie es der Stift erwartet.
     /// Das Ergebnis ist bei gleicher Eingabe immer gleich (feste Seriennummer).
+    /// Mit <paramref name="denoise"/> wird vorher das Hintergrundrauschen unterdrückt (<see cref="NoiseReduction"/>).
     /// </summary>
-    public static byte[] WavToOgg(byte[] wav, float quality = OggQuality)
+    public static byte[] WavToOgg(byte[] wav, float quality = OggQuality, bool denoise = false)
     {
         var samples = Resample(ReadWav(wav, out int rate), rate, SampleRate);
+        if (denoise)
+            samples = NoiseReduction.Apply(samples, SampleRate);
         var info = VorbisInfo.InitVariableBitRate(1, SampleRate, quality);
         var ogg = new OggStream(0x54757066); // „Tupf“
         using var output = new MemoryStream();

@@ -28,6 +28,9 @@ public class ProjectFile
 
     /// <summary>GME mit dem externen tttool statt mit dem eingebauten Builder erstellen.</summary>
     public bool UseTttool { get; set; }
+
+    /// <summary>Bei neuen Mikrofonaufnahmen das Hintergrundrauschen unterdrücken.</summary>
+    public bool DenoiseRecordings { get; set; } = true;
     public int Dpi { get; set; } = 1200;
     public int PixelSize { get; set; } = 2;
 

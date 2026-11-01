@@ -1136,8 +1136,10 @@ public partial class MainWindowViewModel : ObservableObject
             _recordingSpeak = null;
             current.IsRecording = false;
             var wav = await Audio.Device.StopRecordingAsync();
-            // Als Ogg Vorbis speichern: etwa ein Zehntel der WAV-Größe, wie es auch tttool einbettet
-            var ogg = await Task.Run(() => Audio.WavToOgg(wav));
+            // Als Ogg Vorbis speichern: etwa ein Zehntel der WAV-Größe, wie es auch tttool einbettet.
+            // Übernommene Dateien bleiben unbearbeitet (evtl. schon bearbeitet), nur Mikrofonaufnahmen werden entrauscht.
+            bool denoise = Project.DenoiseRecordings;
+            var ogg = await Task.Run(() => Audio.WavToOgg(wav, denoise: denoise));
             var path = RecordingPath(current, ".ogg");
             await File.WriteAllBytesAsync(path, ogg);
             current.Recording = path;

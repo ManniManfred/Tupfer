@@ -43,6 +43,7 @@ public partial class ProjectViewModel : ObservableObject
 
     [ObservableProperty] string _tttoolPath = "tttool";
     [ObservableProperty] bool _useTttool;
+    [ObservableProperty] bool _denoiseRecordings = true;
     [ObservableProperty] int _dpi = 1200;
     [ObservableProperty] int _pixelSize = 2;
 
@@ -262,6 +263,7 @@ public partial class ProjectViewModel : ObservableObject
         Stop = Stop,
         TttoolPath = TttoolPath,
         UseTttool = UseTttool,
+        DenoiseRecordings = DenoiseRecordings,
         Dpi = Dpi,
         PixelSize = PixelSize,
         Scripts = Scripts.Select(s => s.ToEntry()).ToList(),
@@ -293,6 +295,7 @@ public partial class ProjectViewModel : ObservableObject
             Stop = f.Stop,
             TttoolPath = string.IsNullOrWhiteSpace(f.TttoolPath) ? "tttool" : f.TttoolPath,
             UseTttool = f.UseTttool,
+            DenoiseRecordings = f.DenoiseRecordings,
             Dpi = f.Dpi,
             PixelSize = f.PixelSize,
         };
