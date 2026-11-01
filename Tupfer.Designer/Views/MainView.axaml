@@ -274,10 +274,7 @@
             <PathIcon Data="{StaticResource IconPen}" />
           </Button>
           <Button Classes="accent" Command="{Binding BuildGmeCommand}" ToolTip.Tip="GME-Datei bauen (F5)" Margin="6,0,0,0">
-            <StackPanel>
-              <PathIcon Data="{StaticResource IconPlay}" />
-              <TextBlock x:Name="GmeLabel" Text="GME bauen" />
-            </StackPanel>
+            <PathIcon Data="{StaticResource IconPlay}" />
           </Button>
         </StackPanel>
       </Grid>
