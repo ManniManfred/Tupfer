@@ -59,7 +59,7 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>false in Browsern ohne Speichern-Dialog (z. B. auf dem Handy): Dort gibt es „Auf den Stift speichern“ nicht.</summary>
     public static bool CanSaveToPen { get; set; } = true;
 
-    /// <summary>Stimmen lassen sich wählen (nur mit der natürlichen Sprachausgabe im Browser).</summary>
+    /// <summary>Stimmen lassen sich wählen (mit der natürlichen Sprachausgabe, im Browser und am Desktop).</summary>
     public static bool HasVoices => TextToSpeech.NaturalSynthesizer != null;
 
     [ObservableProperty] ProjectViewModel _project;

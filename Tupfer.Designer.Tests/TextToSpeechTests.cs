@@ -79,4 +79,20 @@ public class TextToSpeechTests
         Assert.Equal("de:de_DE-karlsson-low", Voices.SpeechKey(back, back.Speak[0]));
         Assert.Equal("de:de_DE-kerstin-low", Voices.SpeechKey(back, back.Speak[1]));
     }
+
+    [Fact]
+    public void Piper_Pfade_und_Wav()
+    {
+        Assert.Equal("de/de_DE/kerstin/low/de_DE-kerstin-low", PiperSpeech.VoicePath("de_DE-kerstin-low"));
+        Assert.Equal("de/de_DE/thorsten_emotional/medium/de_DE-thorsten_emotional-medium", PiperSpeech.VoicePath("de_DE-thorsten_emotional-medium"));
+        Assert.All(Voices.All, v => PiperSpeech.VoicePath(v.Id.Split('#')[0]));
+        Assert.Throws<ArgumentException>(() => PiperSpeech.VoicePath("kaputt"));
+
+        var wav = PiperSpeech.WavFromSamples([0f, 1f, -2f], 22050);
+        Assert.Equal(44 + 6, wav.Length);
+        Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(wav, 0, 4));
+        Assert.Equal(22050, BitConverter.ToInt32(wav, 24));
+        Assert.Equal(6, BitConverter.ToInt32(wav, 40));
+        Assert.Equal([0, 0x7fff, -0x7fff], new[] { BitConverter.ToInt16(wav, 44), BitConverter.ToInt16(wav, 46), BitConverter.ToInt16(wav, 48) }.Select(v => (int)v));
+    }
 }

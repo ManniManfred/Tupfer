@@ -6,7 +6,7 @@ namespace Tupfer.Designer.Gme;
 public record VoiceOption(string Id, string Name);
 
 /// <summary>
-/// Stimmen der natürlichen Sprachausgabe (Piper, nur im Browser). Ein Text wird mit seiner eigenen
+/// Stimmen der natürlichen Sprachausgabe (Piper, im Browser und am Desktop). Ein Text wird mit seiner eigenen
 /// Stimme gesprochen, sonst mit der des Projekts, sonst mit der Standardstimme der Sprache.
 /// </summary>
 public static class Voices

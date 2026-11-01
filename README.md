@@ -106,9 +106,17 @@ dotnet run --project Tupfer.Designer -- examples/tic-tac-toi/tic-tac-toi.tupfer.
 ```
 
 Voraussetzung: .NET 10 SDK. **tttool wird nicht benötigt** – der Designer erzeugt OID-Codes und
-GME-Dateien selbst. Für die Sprachausgabe nutzt er unter Windows die eingebaute Stimme, unter
-Linux/macOS `pico2wave`, `espeak` oder `say`. Ist `oggenc` (vorbis-tools) installiert, werden
-die Texte als OGG eingebettet, sonst als WAV (größere Datei, der Stift spielt beides).
+GME-Dateien selbst. Die Sprachausgabe ist dieselbe wie im Browser: natürlich klingende
+[Piper](https://github.com/rhasspy/piper)-Stimmen, im Tab *Sprachausgabe* wählbar (siehe
+[im Browser](#tupfer-designer-im-browser)). Beim ersten Gebrauch lädt der Designer die Lautschrift
+[piper-phonemize](https://github.com/rhasspy/piper-phonemize) (mit espeak-ng, 25–60 MB) von GitHub
+und jede Stimme (20–110 MB) von Hugging Face und legt sie im Benutzerverzeichnis ab
+(Windows: `%LOCALAPPDATA%\Tupfer\piper`, Linux: `~/.local/share/Tupfer/piper`, macOS:
+`~/Library/Application Support/Tupfer/piper`); gesprochen wird danach ohne Netz, die Stimmen laufen
+mit ONNX Runtime auf dem eigenen Rechner. Ohne Netz beim ersten Mal spricht die Sprachausgabe des
+Systems: unter Windows die eingebaute Stimme, unter Linux/macOS `pico2wave`, `espeak` oder `say`.
+Ist dann `oggenc` (vorbis-tools) installiert, werden diese Texte als OGG eingebettet, sonst als WAV
+(größere Datei, der Stift spielt beides); die Piper-Stimmen werden als WAV eingebettet.
 
 ## Funktionen
 
@@ -231,8 +239,7 @@ Unterschiede zur Desktop-Version:
   cdnjs, jsDelivr und Hugging Face geladen, danach kommen sie aus dem Browser-Cache. Die Texte
   bleiben dabei im Browser. Ist das Laden nicht möglich, spricht
   [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als JavaScript, klingt deutlich künstlicher).
-  Die Texte werden als WAV eingebettet. In der Desktop-Version gibt es die Auswahl nicht; dort
-  spricht die Sprachausgabe des Systems.
+  Die Texte werden als WAV eingebettet. Die Desktop-Version hat dieselben Stimmen.
 - **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
   fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als WAV (mono, 22 kHz).
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.

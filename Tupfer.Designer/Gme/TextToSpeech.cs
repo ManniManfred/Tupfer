@@ -6,8 +6,9 @@ using System.Text;
 namespace Tupfer.Designer.Gme;
 
 /// <summary>
-/// Erzeugt Sprachausgaben für die GME-Datei. Wie tttool werden pico2wave, espeak oder (macOS)
-/// say genutzt; unter Windows die eingebaute Sprachausgabe. Ist oggenc vorhanden, wird nach
+/// Erzeugt Sprachausgaben für die GME-Datei. Zuerst mit der natürlichen Stimme (Piper, im Browser
+/// und am Desktop, siehe <see cref="NaturalSynthesizer"/>); geht das nicht, wie tttool mit pico2wave,
+/// espeak oder (macOS) say, unter Windows mit der eingebauten Sprachausgabe. Ist oggenc vorhanden, wird nach
 /// Ogg/Vorbis umgewandelt, sonst wird die WAV-Datei direkt eingebettet (der Stift spielt beides).
 /// Ergebnisse werden in einem Cache-Verzeichnis abgelegt.
 /// </summary>
@@ -24,6 +25,7 @@ public class TextToSpeech
 
     /// <summary>
     /// Natürlich klingende Sprachausgabe (Stimme aus <see cref="Voices"/>, Text → WAV-Daten), asynchron.
+    /// Im Browser über tupfer.js, am Desktop PiperSpeech (gleiche Stimmen).
     /// Wird in <see cref="PrepareAsync"/> vorab für alle Texte benutzt; wirft sie (z. B. kein Netz),
     /// spricht <see cref="Synthesizer"/>.
     /// </summary>

@@ -24,7 +24,17 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
     <PackageReference Include="System.Speech" Version="10.0.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
   </ItemGroup>
+
+
+  <!-- ONNX Runtime (Piper-Stimmen) legt seine Windows-DLLs immer bei; für Linux und macOS weglassen -->
+  <Target Name="OnnxRuntimeNurFuerWindows" BeforeTargets="AssignTargetPaths"
+          Condition="'$(RuntimeIdentifier)' != '' AND !$(RuntimeIdentifier.StartsWith('win'))">
+    <ItemGroup>
+      <None Remove="@(None)" Condition="'%(None.Link)' == 'onnxruntime.dll' OR '%(None.Link)' == 'onnxruntime_providers_shared.dll'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

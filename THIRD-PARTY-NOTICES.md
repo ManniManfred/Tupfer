@@ -51,19 +51,21 @@ Dateien, Aufruf über JavaScript). Sie behalten ihre GPL-Lizenz.
 | Avalonia.Fonts.Inter – Schrift [Inter](https://github.com/rsms/inter) | MIT (Paket), SIL Open Font License 1.1 (Schrift) |
 | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | MIT |
 | [Microsoft.CodeAnalysis.CSharp](https://github.com/dotnet/roslyn) (Roslyn) | MIT |
+| [Microsoft.ML.OnnxRuntime](https://github.com/microsoft/onnxruntime) (Piper-Stimmen, nur Desktop) | MIT |
 | [System.Speech](https://github.com/dotnet/runtime) | MIT |
 | [YamlDotNet](https://github.com/aaubry/YamlDotNet) | MIT |
 | xunit, Microsoft.NET.Test.Sdk (nur Tests) | Apache 2.0 bzw. MIT |
 
-## Zur Laufzeit aus dem Netz geladen (nur Browser-Version)
+## Zur Laufzeit aus dem Netz geladen
 
-Diese Dateien werden nicht mit dem Designer verteilt. Der Browser lädt sie beim ersten Gebrauch
-direkt von den genannten Servern.
+Diese Dateien werden nicht mit dem Designer verteilt. Der Browser bzw. die Desktop-Version lädt sie
+beim ersten Gebrauch direkt von den genannten Servern.
 
 | Bestandteil | Quelle | Lizenz |
 |---|---|---|
-| [onnxruntime-web](https://github.com/microsoft/onnxruntime) 1.18.0 | cdnjs | MIT |
-| piper_phonemize aus [@diffusionstudio/piper-wasm](https://www.npmjs.com/package/@diffusionstudio/piper-wasm) 1.0.0 (mit espeak-ng) | jsDelivr | GNU GPL 3 |
+| [onnxruntime-web](https://github.com/microsoft/onnxruntime) 1.18.0 (Browser) | cdnjs | MIT |
+| piper_phonemize aus [@diffusionstudio/piper-wasm](https://www.npmjs.com/package/@diffusionstudio/piper-wasm) 1.0.0 (mit espeak-ng, Browser) | jsDelivr | GNU GPL 3 |
+| [piper-phonemize](https://github.com/rhasspy/piper-phonemize) 2023.11.14-4 (mit espeak-ng und onnxruntime, Desktop; eigenes Programm, wird nur gestartet) | GitHub-Releases | GNU GPL 3 |
 | [Piper](https://github.com/rhasspy/piper)-Stimmen | [Hugging Face, rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) | je Stimme verschieden, siehe unten |
 
 ### Lizenzen der Piper-Stimmen
