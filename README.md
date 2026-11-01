@@ -190,11 +190,24 @@ veröffentlicht sie auf GitHub Pages unter https://mannimanfred.github.io/Tupfer
 *Settings → Pages → Source* „GitHub Actions“ wählen).
 
 **Auf eigenem Server (z. B. CapRover):** `captain-definition` und `deploy/Dockerfile` bauen die
-Web-Version in einem Container (.NET-SDK mit `wasm-tools`) und liefern sie mit nginx aus. In
-CapRover eine App anlegen, HTTPS aktivieren und unter *Deployment* das GitHub-Repository
-(Branch `master`) eintragen – oder lokal `caprover deploy` ausführen. Der Bau braucht einige
-Minuten und etwa 2–3 GB Arbeitsspeicher. Lokal testen:
+Web-Version in einem Container (.NET-SDK mit `wasm-tools`) und liefern sie mit nginx aus. Der Bau
+braucht einige Minuten und etwa 2–3 GB Arbeitsspeicher. Lokal testen:
 `docker build -f deploy/Dockerfile -t tupfer-web . && docker run -p 8080:80 tupfer-web`
+
+**Automatischer Deploy:** Der Workflow `.github/workflows/deploy.yml` baut das Image auf GitHub, legt
+es als `ghcr.io/mannimanfred/tupfer-web` in die GitHub Container Registry und deployt es nach
+CapRover. Er läuft bei jedem gepushten Tag `v*` und nach jedem erfolgreichen Lauf von *Setups*, also
+bei jeder neuen Version (manuell: *Actions → Deploy → Run workflow*). Einmalig einrichten:
+
+1. In CapRover eine App `tupfer` anlegen, HTTPS aktivieren und unter *Deployment* „Enable App
+   Token“ einschalten. Eine dort eingetragene GitHub-Verknüpfung (Webhook) entfernen, sonst baut
+   CapRover zusätzlich selbst.
+2. Im GitHub-Repository unter *Settings → Secrets and variables → Actions* die Secrets
+   `CAPROVER_URL` (`https://captain.<domain>`) und `CAPROVER_APP_TOKEN` anlegen, optional die
+   Variable `CAPROVER_APP`, falls die App nicht `tupfer` heißt.
+3. In CapRover unter *Cluster → Remote Registries* `ghcr.io` mit GitHub-Benutzername und einem
+   Token (classic) mit `read:packages` eintragen (Image Prefix `mannimanfred`), damit CapRover das
+   private Image laden kann.
 
 **Auf dem Handy:** Bei schmalen Bildschirmen (unter etwa 760 Pixel) schaltet die Oberfläche auf ein
 kompaktes Layout um: Im Tab *Seiten* wechselt man oben zwischen *Seite* (Zeichenfläche), *Seiten*
