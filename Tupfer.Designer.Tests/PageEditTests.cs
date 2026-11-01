@@ -217,6 +217,32 @@ public class PageEditTests
         Assert.Equal("hallo1", third.Script);
         Assert.Equal(2, project.Scripts.Count);
 
+        // Ziel „Sprachausgabe“ wird aus dem Skript abgeleitet
+        var speakOption = AreaViewModel.TargetOptions.Single(o => o.Speak);
+        var scriptOption = AreaViewModel.TargetOptions.First(o => o.Value == AreaTarget.Script && !o.Speak);
+        Assert.Same(speakOption, second.TargetOption);
+        Assert.True(second.IsSpeakMode);
+
+        // Auf „Skript“ umstellen behält das Skript, zeigt aber die Skriptauswahl
+        second.TargetOption = scriptOption;
+        Assert.True(second.IsScriptMode);
+        Assert.Equal("hallo", second.Script);
+
+        // „Sprachausgabe“ bei einer Fläche mit anderem Skript: erst einen Text wählen
+        var fourth = new AreaViewModel(project) { Script = "hallo" }; // spielt mehr als nur einen Text
+        Assert.Same(scriptOption, fourth.TargetOption);
+        fourth.TargetOption = speakOption;
+        Assert.True(fourth.IsSpeakMode);
+        Assert.Equal("", fourth.Script);
+        Assert.Null(fourth.Oid);
+        fourth.SpeakEntry = hallo;
+        Assert.Equal("hallo1", fourth.Script);
+
+        // Anderes Ziel setzt die Ansicht zurück
+        fourth.TargetOption = AreaViewModel.TargetOptions.Single(o => o.Value == AreaTarget.Stop);
+        Assert.False(fourth.IsSpeakMode);
+        Assert.False(fourth.IsScriptMode);
+
         // Neuer Name, wenn es den Text schon gibt
         Assert.Equal("hallo2", project.AddSpeak("hallo").Name);
         Assert.Equal("text3", project.AddSpeak().Name);

@@ -126,10 +126,10 @@ Ist dann `oggenc` (vorbis-tools) installiert, werden diese Texte als OGG eingebe
   zeigt die Reihenfolge, wählt auch verdeckte Elemente aus und sortiert per Drag & Drop um (mit der Maus am Eintrag, per Finger am Griff links). OID-Flächen liegen immer über
   Bildern und Texten. Mit der Maus OID-Flächen aufziehen,
   verschieben und in der Größe ändern – als Rechteck, Kreis/Ellipse oder beliebiges Polygon, dessen
-  Kanten sich zu Kreisbögen biegen lassen. Jede Fläche wird einem Skript oder einem Sondercode
-  (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet. Soll eine Fläche nur etwas sagen, wählt man
-  unter *Sprachausgabe (direkt abspielen)* einen Text oder legt mit **+** gleich einen neuen an und
-  tippt ihn dort ein (mit Knopf zum Anhören); das Skript `P(name)` legt der Designer selbst an.
+  Kanten sich zu Kreisbögen biegen lassen. Jede Fläche wird einem Skript, einer Sprachausgabe oder
+  einem Sondercode (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet. Soll eine Fläche nur etwas
+  sagen, wählt man als Ziel *Sprachausgabe* und dann einen Text oder legt mit **+** gleich einen
+  neuen an und tippt ihn dort ein (mit Knopf zum Anhören); das Skript `P(name)` legt der Designer selbst an.
 - **Personen erkennen:** Bild wählen und *Personen erkennen* klicken – für jede Person auf dem Foto
   entsteht eine OID-Fläche als Polygon entlang ihres Umrisses, mit eigenem Text („Person 1“ …, von
   links nach rechts), den man danach ändert oder aufnimmt. Jede Person bekommt ihre eigene Fläche,

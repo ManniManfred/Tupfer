@@ -3,7 +3,8 @@ using Tupfer.Designer.Model;
 
 namespace Tupfer.Designer.ViewModels;
 
-public record TargetOption(AreaTarget Value, string Name);
+/// <summary>Auswahl für das Ziel einer Fläche. „Sprachausgabe“ ist ein Skript, das nur einen Text abspielt.</summary>
+public record TargetOption(AreaTarget Value, string Name, bool Speak = false);
 
 public record ShapeOption(AreaShape Value, string Name);
 
@@ -17,6 +18,7 @@ public partial class AreaViewModel : ObservableObject, IPolygonShape
     public static IReadOnlyList<TargetOption> TargetOptions { get; } = new[]
     {
         new TargetOption(AreaTarget.Script, "Skript"),
+        new TargetOption(AreaTarget.Script, "Sprachausgabe", Speak: true),
         new TargetOption(AreaTarget.Product, "Produkt (Anmelden)"),
         new TargetOption(AreaTarget.Replay, "Wiederholen"),
         new TargetOption(AreaTarget.Stop, "Stopp"),
@@ -123,8 +125,21 @@ public partial class AreaViewModel : ObservableObject, IPolygonShape
         IsRectangle ? x >= X && x <= X + Width && y >= Y && y <= Y + Height : AreaGeometry.Contains(Outline(), x, y);
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TargetOption), nameof(IsScript), nameof(Oid), nameof(Caption), nameof(SpeakEntry), nameof(HasSpeakEntry))]
+    [NotifyPropertyChangedFor(nameof(TargetOption), nameof(IsScript), nameof(Oid), nameof(Caption), nameof(SpeakEntry), nameof(HasSpeakEntry),
+        nameof(IsSpeakMode), nameof(IsScriptMode))]
     AreaTarget _target;
+
+    partial void OnTargetChanged(AreaTarget value)
+    {
+        if (value != AreaTarget.Script)
+            _speakMode = null;
+    }
+
+    /// <summary>
+    /// Im Eigenschaftsfeld gewählte Ansicht (Skript oder Sprachausgabe); null: aus dem Skript ableiten.
+    /// Wird nicht gespeichert.
+    /// </summary>
+    bool? _speakMode;
 
     string _script = "";
 
@@ -154,20 +169,35 @@ public partial class AreaViewModel : ObservableObject, IPolygonShape
                 return;
             var name = Project.ScriptForSpeak(value);
             Target = AreaTarget.Script;
+            _speakMode = true;
             Script = name;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(TargetOption));
         }
     }
 
     public bool HasSpeakEntry => SpeakEntry != null;
 
+    /// <summary>Ziel „Sprachausgabe“: die Fläche spielt einen Text ab.</summary>
+    public bool IsSpeakMode => IsScript && (_speakMode ?? HasSpeakEntry);
+
+    /// <summary>Ziel „Skript“: beliebiges Skript wählen.</summary>
+    public bool IsScriptMode => IsScript && !IsSpeakMode;
+
     public TargetOption TargetOption
     {
-        get => TargetOptions.First(o => o.Value == Target);
+        get => TargetOptions.First(o => o.Value == Target && o.Speak == IsSpeakMode);
         set
         {
-            if (value != null)
-                Target = value.Value;
+            if (value == null || value == TargetOption)
+                return;
+            if (value.Speak && Project.SpeakOfScript(_script) == null)
+                Script = ""; // Erst einen Text wählen; das alte Skript gilt nicht mehr
+            _speakMode = value.Value == AreaTarget.Script ? value.Speak : null;
+            if (Target == value.Value)
+                RefreshOid();
+            Target = value.Value;
+            OnPropertyChanged();
         }
     }
 
@@ -198,6 +228,9 @@ public partial class AreaViewModel : ObservableObject, IPolygonShape
         OnPropertyChanged(nameof(Caption));
         OnPropertyChanged(nameof(SpeakEntry));
         OnPropertyChanged(nameof(HasSpeakEntry));
+        OnPropertyChanged(nameof(IsSpeakMode));
+        OnPropertyChanged(nameof(IsScriptMode));
+        OnPropertyChanged(nameof(TargetOption));
     }
 
     public AreaEntry ToEntry() => new()

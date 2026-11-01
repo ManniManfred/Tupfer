@@ -669,40 +669,42 @@
                       </DataTemplate>
                     </ComboBox.ItemTemplate>
                   </ComboBox>
-                  <StackPanel IsVisible="{Binding IsScript}">
+                  <StackPanel IsVisible="{Binding IsScriptMode}">
                     <TextBlock Classes="label" Text="Skript" />
                     <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Project.ScriptNames}" SelectedItem="{Binding Script}" />
                   </StackPanel>
-                  <TextBlock Classes="label" Text="Sprachausgabe (direkt abspielen)" />
-                  <Grid ColumnDefinitions="*,4,Auto">
-                    <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding SpeakEntry}"
-                              PlaceholderText="– Text wählen –"
-                              ToolTip.Tip="Die Fläche spielt diesen Text ab (Skript „P(name)“ wird angelegt bzw. verwendet)">
-                      <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:SpeakViewModel">
-                          <TextBlock TextTrimming="CharacterEllipsis">
-                            <Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text=": " /><Run Text="{Binding Text}" />
-                          </TextBlock>
-                        </DataTemplate>
-                      </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Button Grid.Column="2" Classes="tool" ToolTip.Tip="Neuer Text für diese Fläche"
-                            Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).NewSpeakForAreaCommand}">
-                      <PathIcon Data="{StaticResource IconAdd}" />
-                    </Button>
-                  </Grid>
-                  <StackPanel IsVisible="{Binding HasSpeakEntry}" Margin="0,4,0,0">
+                  <StackPanel IsVisible="{Binding IsSpeakMode}">
+                    <TextBlock Classes="label" Text="Text (wird direkt abgespielt)" />
                     <Grid ColumnDefinitions="*,4,Auto">
-                      <TextBox Text="{Binding SpeakEntry.Text, FallbackValue=''}" AcceptsReturn="True" TextWrapping="Wrap"
-                               PlaceholderText="Text, den der Stift spricht" />
-                      <Button Grid.Column="2" Classes="tool" VerticalAlignment="Top" ToolTip.Tip="Anhören"
-                              Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
-                              CommandParameter="{Binding SpeakEntry}">
-                        <PathIcon Data="{StaticResource IconPlay}" />
+                      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Project.Speak}" SelectedItem="{Binding SpeakEntry}"
+                                PlaceholderText="– Text wählen –"
+                                ToolTip.Tip="Die Fläche spielt diesen Text ab (Skript „P(name)“ wird angelegt bzw. verwendet)">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate x:DataType="vm:SpeakViewModel">
+                            <TextBlock TextTrimming="CharacterEllipsis">
+                              <Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text=": " /><Run Text="{Binding Text}" />
+                            </TextBlock>
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+                      <Button Grid.Column="2" Classes="tool" ToolTip.Tip="Neuer Text für diese Fläche"
+                              Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).NewSpeakForAreaCommand}">
+                        <PathIcon Data="{StaticResource IconAdd}" />
                       </Button>
                     </Grid>
-                    <TextBlock Classes="hint" TextWrapping="Wrap" Margin="0,4,0,0"
-                               Text="Name, Stimme und eigene Aufnahme im Tab „Sprachausgabe“." />
+                    <StackPanel IsVisible="{Binding HasSpeakEntry}" Margin="0,4,0,0">
+                      <Grid ColumnDefinitions="*,4,Auto">
+                        <TextBox Text="{Binding SpeakEntry.Text, FallbackValue=''}" AcceptsReturn="True" TextWrapping="Wrap"
+                                 PlaceholderText="Text, den der Stift spricht" />
+                        <Button Grid.Column="2" Classes="tool" VerticalAlignment="Top" ToolTip.Tip="Anhören"
+                                Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
+                                CommandParameter="{Binding SpeakEntry}">
+                          <PathIcon Data="{StaticResource IconPlay}" />
+                        </Button>
+                      </Grid>
+                      <TextBlock Classes="hint" TextWrapping="Wrap" Margin="0,4,0,0"
+                                 Text="Name, Stimme und eigene Aufnahme im Tab „Sprachausgabe“." />
+                    </StackPanel>
                   </StackPanel>
                   <TextBlock Classes="label" Text="OID-Code" />
                   <TextBlock Classes="value" Text="{Binding Oid, TargetNullValue='– (Skript fehlt)'}" />
