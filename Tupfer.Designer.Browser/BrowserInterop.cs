@@ -98,7 +98,10 @@ static partial class BrowserInterop
     [JSImport("setModelInput", "tupfer")]
     public static partial void SetModelInput([JSMarshalAs<JSType.MemoryView>] Span<byte> rgb);
 
-    /// <summary>Personenerkennung (DeepLab v3 mit onnxruntime-web) für das übergebene Bild; Wahrscheinlichkeiten Base64-kodiert.</summary>
+    /// <summary>
+    /// Personenerkennung (RF-DETR-Seg mit onnxruntime-web) für das übergebene Bild; Base64-kodiert erst
+    /// die Werte (float32), dann die Masken (Bytes).
+    /// </summary>
     [JSImport("segmentPersons", "tupfer")]
     public static partial Task<string> SegmentPersonsAsync();
 

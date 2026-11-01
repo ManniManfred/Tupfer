@@ -2,7 +2,6 @@ using Avalonia;
 using Tupfer.Designer.Model;
 using Tupfer.Designer.Services;
 using Xunit;
-using Face = Tupfer.Designer.Services.PersonDetector.Face;
 
 namespace Tupfer.Designer.Tests;
 
@@ -42,80 +41,81 @@ public class PersonDetectorTests
         Assert.Equal(36, faces[1].Height, 3);
     }
 
-    [Fact]
-    public void MaskeAufGesichterAufteilen()
+    /// <summary>Kandidat mit rechteckiger Maske (Logit 200 innen, 60 außen) im Rechteck x, y, w × h.</summary>
+    static PersonDetector.Candidate Box(double score, int x, int y, int w, int h, int x0, int y0, int x1, int y1, byte inside = 200)
     {
-        // Zwei Personen nebeneinander, die sich berühren (eine Fläche in der Maske), mit
-        // unterschiedlicher Kleidung; unter der linken ein abgetrennter Teil (Beine hinter etwas),
-        // rechts außen eine große Fläche ohne Gesicht (Person von hinten), dazu ein kleiner Fleck
-        const int w = 120, h = 100;
-        var mask = new bool[w * h];
-        var rgb = new byte[w * h * 3];
-        void Fill(int x0, int y0, int x1, int y1, byte gray)
-        {
-            for (int y = y0; y < y1; y++)
-                for (int x = x0; x < x1; x++)
-                {
-                    mask[y * w + x] = true;
-                    rgb[3 * (y * w + x)] = rgb[3 * (y * w + x) + 1] = rgb[3 * (y * w + x) + 2] = gray;
-                }
-        }
-        Fill(10, 10, 30, 60, 200);
-        Fill(30, 15, 50, 70, 40);
-        Fill(12, 66, 28, 90, 200);
-        Fill(80, 20, 110, 80, 120);
-        Fill(60, 90, 63, 93, 120);
-        var faces = new List<Face> { new(15, 10, 10, 10, 1), new(35, 15, 10, 10, 1) };
+        var logits = new byte[w * h];
+        for (int j = 0; j < h; j++)
+            for (int i = 0; i < w; i++)
+                logits[j * w + i] = x + i >= x0 && x + i < x1 && y + j >= y0 && y + j < y1 ? inside : (byte)60;
+        return new PersonDetector.Candidate(score, x, y, w, h, logits);
+    }
 
-        var label = PersonDetector.Partition(mask, rgb, w, h, faces);
-        Assert.Equal(0, label[40 * w + 20]);
-        Assert.Equal(1, label[40 * w + 40]);
-        Assert.Equal(-1, label[80 * w + 20]);
-        // Die Grenze liegt an der Farbkante
-        Assert.Equal(0, label[50 * w + 29]);
-        Assert.Equal(1, label[50 * w + 30]);
+    [Fact]
+    public void PersonenAuswaehlenUndZuteilen()
+    {
+        // Erwachsener mit Kind auf dem Arm (Kind liegt ganz in seiner Maske, Logits dort höher),
+        // dieselbe Person nochmal aus einer Kachel, ein schwacher Kandidat mit Gesicht und einer ohne
+        var adult = Box(0.9, 0, 0, 40, 80, 5, 5, 35, 75);
+        var child = Box(0.7, 10, 30, 20, 20, 10, 30, 30, 50, inside: 250);
+        var duplicate = Box(0.8, 0, 0, 40, 80, 6, 6, 35, 76);
+        var withFace = Box(0.2, 50, 0, 30, 80, 55, 5, 75, 75);
+        var weak = Box(0.2, 90, 0, 20, 40, 92, 2, 108, 38);
+        var persons = PersonDetector.Select([weak, child, duplicate, adult, withFace], [(65, 10)]);
+        Assert.Equal([adult, child, withFace], persons);
 
-        int persons = PersonDetector.AssignRest(mask, label, w, h, faces);
-        Assert.Equal(3, persons);
-        Assert.Equal(0, label[80 * w + 20]);
-        Assert.Equal(2, label[50 * w + 95]);
-        Assert.Equal(-1, label[91 * w + 61]);
+        var label = PersonDetector.Assign(persons, 120, 80);
+        Assert.Equal(0, label[10 * 120 + 20]);
+        Assert.Equal(1, label[40 * 120 + 20]);
+        Assert.Equal(2, label[40 * 120 + 65]);
+        Assert.Equal(-1, label[40 * 120 + 100]);
+        Assert.Equal(-1, label[2 * 120 + 2]);
     }
 
     [Fact]
     public async Task PersonenAufEinemBildErkennen()
     {
-        // Bild 640 × 480: zwei helle „Personen“, die sich berühren; die Segmentierung sieht helle
-        // Pixel als Person. Erwartet: zwei Personen von links nach rechts, jede mit ihrem Umriss
-        // (unten darf die kürzere linke etwas in die rechte greifen).
-        const double width = 640, height = 480;
-        var people = new[] { new Rect(200, 100, 100, 300), new Rect(300, 120, 120, 320) };
+        // Bild 1200 × 800 mit zwei „Personen“, die sich berühren, und kleinen Gesichtern, so dass auch in
+        // Kacheln gesucht wird. Die Segmentierung findet jede Person, die ganz oder teilweise im
+        // Ausschnitt liegt. Erwartet: zwei Personen von links nach rechts, keine doppelt, auch nicht
+        // die in Kacheln abgeschnittenen (ein Maskenpixel des ganzen Bilds sind 12,5 Bildpixel).
+        const double width = 1200, height = 800;
+        var people = new[] { new Rect(400, 200, 100, 300), new Rect(500, 220, 120, 320) };
+        var regions = new List<Rect>();
         byte[] Render(Rect region, int w, int h)
         {
-            var rgb = new byte[w * h * 3];
-            for (int y = 0; y < h; y++)
-                for (int x = 0; x < w; x++)
-                {
-                    var p = new Point(region.X + (x + 0.5) * region.Width / w, region.Y + (y + 0.5) * region.Height / h);
-                    if (p.X >= width || p.Y >= height)
-                        continue;
-                    int i = people.ToList().FindIndex(r => r.Contains(p));
-                    if (i >= 0)
-                        rgb[3 * (y * w + x)] = rgb[3 * (y * w + x) + 1] = rgb[3 * (y * w + x) + 2] = (byte)(i == 0 ? 220 : 160);
-                }
-            return rgb;
+            regions.Add(region); // die Segmentierung bekommt die Bereiche in derselben Reihenfolge
+            return new byte[w * h * 3];
         }
         var segmenter = PersonDetector.Segmenter;
         var detector = PersonDetector.FaceDetector;
         try
         {
-            PersonDetector.Segmenter = rgb => Task.FromResult(Enumerable.Range(0, rgb.Length / 3).Select(i => (byte)(rgb[3 * i] > 100 ? 255 : 0)).ToArray());
+            int n = PersonDetector.MaskSize, run = 0;
+            PersonDetector.Segmenter = rgb =>
+            {
+                var region = regions[run++ + 1]; // der erste Bereich war für die Gesichter
+                var scores = new float[PersonDetector.Candidates];
+                var masks = new byte[PersonDetector.Candidates * n * n];
+                for (int k = 0; k < people.Length; k++)
+                {
+                    scores[k] = 0.9f;
+                    for (int y = 0; y < n; y++)
+                        for (int x = 0; x < n; x++)
+                        {
+                            var p = new Point(region.X + (x + 0.5) * region.Width / n, region.Y + (y + 0.5) * region.Height / n);
+                            masks[k * n * n + y * n + x] = (byte)(people[k].Contains(p) ? 200 : 60);
+                        }
+                }
+                return Task.FromResult((scores, masks));
+            };
             PersonDetector.FaceDetector = (rgb, w, h) =>
             {
                 double s = w / width; // Gesichter in Pixeln des Eingangs
-                return Task.FromResult(FaceOutput(w, h, (330 * s, 125 * s, 40 * s, 40 * s, 0.9f), (230 * s, 105 * s, 40 * s, 40 * s, 0.95f)));
+                return Task.FromResult(FaceOutput(w, h, (540 * s, 225 * s, 20 * s, 20 * s, 0.9f), (440 * s, 205 * s, 20 * s, 20 * s, 0.95f)));
             };
             var persons = await PersonDetector.DetectAsync(Render, width, height);
+            Assert.True(regions.Count > 2, "auch Kacheln");
             Assert.Equal(2, persons.Count);
             for (int k = 0; k < 2; k++)
             {
@@ -123,10 +123,8 @@ public class PersonDetectorTests
                 Assert.InRange(outline.Min(p => p.X), people[k].X - 8, people[k].X + 8);
                 Assert.InRange(outline.Max(p => p.X), people[k].Right - 8, people[k].Right + 8);
                 Assert.InRange(outline.Min(p => p.Y), people[k].Y - 8, people[k].Y + 8);
-                Assert.True(AreaGeometry.Contains(outline, people[k].Center.X, people[k].Center.Y));
-                Assert.False(AreaGeometry.Contains(outline, people[1 - k].Center.X, people[1 - k].Center.Y));
+                Assert.InRange(outline.Max(p => p.Y), people[k].Bottom - 8, people[k].Bottom + 8);
             }
-            Assert.InRange(persons[1][0].Max(p => p.Y), 432, 448);
         }
         finally
         {

@@ -132,14 +132,14 @@ Ist dann `oggenc` (vorbis-tools) installiert, werden diese Texte als OGG eingebe
   tippt ihn dort ein (mit Knopf zum Anhören); das Skript `P(name)` legt der Designer selbst an.
 - **Personen erkennen:** Bild wählen und *Personen erkennen* klicken – für jede Person auf dem Foto
   entsteht eine OID-Fläche als Polygon entlang ihres Umrisses, mit eigenem Text („Person 1“ …, von
-  links nach rechts), den man danach ändert oder aufnimmt. Auch auf Gruppenfotos, auf denen sich alle
-  berühren, bekommt jede Person ihre eigene Fläche: Erst werden die Gesichter gesucht (YuNet), dann
-  die Personen passend zur Gesichtsgröße in Ausschnitten erkannt (DeepLab v3 von MediaPipe) und die
-  Fläche zwischen den Gesichtern aufgeteilt. Verdeckt etwas eine Person (z. B. ein Schild vor dem
-  Bauch), bekommt jeder sichtbare Teil eine Fläche mit demselben Text. Die Erkennung läuft auf dem
-  eigenen Rechner bzw. im Browser (beide Modelle zusammen 3 MB, werden mitgeliefert); das Foto
-  verlässt ihn nicht. Personen ohne sichtbares Gesicht werden nur erkannt, wenn sie frei stehen.
-  Die Ecken lassen sich wie bei jedem Polygon nachbessern.
+  links nach rechts), den man danach ändert oder aufnimmt. Jede Person bekommt ihre eigene Fläche,
+  auch wenn sich alle berühren, jemand ein Kind auf dem Arm hat oder von hinten zu sehen ist
+  (Instanz-Segmentierung RF-DETR-Seg von Roboflow). Bei großen Gruppen wird zusätzlich in
+  Ausschnitten passend zur Gesichtsgröße gesucht (Gesichter mit YuNet). Verdeckt etwas eine Person
+  (z. B. ein Schild vor dem Bauch), bekommt jeder sichtbare Teil eine Fläche mit demselben Text. Die
+  Erkennung läuft auf dem eigenen Rechner bzw. im Browser (Modelle zusammen 39 MB, werden
+  mitgeliefert); das Foto verlässt ihn nicht. Sie dauert am Desktop wenige Sekunden, im Browser bei
+  großen Gruppen bis etwa eine halbe Minute. Die Ecken lassen sich wie bei jedem Polygon nachbessern.
 - **Mehrere Objekte anordnen:** Mit Strg- oder Umschalt-Klick (auf dem Handy: *Mehrere wählen*)
   bzw. Strg+A mehrere Flächen, Bilder und Texte wählen. Sie lassen sich gemeinsam verschieben (Ziehen,
   Pfeiltasten) und löschen, links/rechts/oben/unten bündig oder mittig **ausrichten** und ab drei

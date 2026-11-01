@@ -6,31 +6,35 @@ namespace Tupfer.Designer.Services;
 
 /// <summary>
 /// Erkennt Personen auf einem Bild und liefert ihre Umrisse als Polygone in Seitenkoordinaten (mm).
-/// Ablauf: Gesichter finden (YuNet über <see cref="FaceDetector"/>), dann die Personen in Kacheln
-/// passend zur Gesichtsgröße segmentieren (DeepLab v3 über <see cref="Segmenter"/>) und die Maske auf
-/// die Gesichter aufteilen: Jede Person wächst von ihrem Gesicht aus über die Maske, Farbkanten und
-/// waagerechte Wege kosten mehr. So bekommen auch Personen, die sich berühren, je eine eigene Fläche.
-/// Beide Modelle laufen am Desktop mit ONNX Runtime, im Browser mit onnxruntime-web.
+/// Die Instanz-Segmentierung RF-DETR-Seg (über <see cref="Segmenter"/>) liefert jede Person mit eigener
+/// Maske, auch wenn sich Personen berühren oder verdecken. Bei großen Gruppen sind die Personen auf dem
+/// ganzen Bild zu klein; dann wird zusätzlich in Kacheln gesucht, deren Größe sich nach den Gesichtern
+/// richtet (YuNet über <see cref="FaceDetector"/>). Gesichter ohne gefundene Person holen schwächere
+/// Treffer dazu. Beide Modelle laufen am Desktop mit ONNX Runtime, im Browser mit onnxruntime-web.
 /// </summary>
 public static class PersonDetector
 {
     /// <summary>Kantenlänge des Eingangs der Segmentierung (Pixel).</summary>
-    public const int Size = 257;
+    public const int Size = 384;
+
+    /// <summary>Kantenlänge einer Maske der Segmentierung (Pixel).</summary>
+    public const int MaskSize = Size / 4;
+
+    /// <summary>Zahl der Kandidaten je Lauf der Segmentierung.</summary>
+    public const int Candidates = 100;
 
     /// <summary>
-    /// Segmentierung: RGB-Bild (Size × Size × 3 Byte, Zeile für Zeile) → Wahrscheinlichkeit „Person“
-    /// (Size × Size Byte, 0 … 255). null = auf dieser Plattform nicht verfügbar.
+    /// Segmentierung: RGB-Bild (Size × Size × 3 Byte, Zeile für Zeile) → je Kandidat der Wert „Person“
+    /// (0 … 1) und seine Maske (MaskSize × MaskSize Byte: Logit · 16 + 128, über 128 = gehört dazu).
+    /// null = auf dieser Plattform nicht verfügbar.
     /// </summary>
-    public static Func<byte[], Task<byte[]>>? Segmenter { get; set; }
+    public static Func<byte[], Task<(float[] Scores, byte[] Masks)>>? Segmenter { get; set; }
 
     /// <summary>
     /// Gesichtserkennung: RGB-Bild, Breite, Höhe (Vielfache von 32) → je Ankerpunkt fünf Werte, siehe
-    /// <see cref="DecodeFaces"/>. null = nicht verfügbar (dann ohne Trennung der Personen).
+    /// <see cref="DecodeFaces"/>. null = nicht verfügbar (dann nur auf dem ganzen Bild).
     /// </summary>
     public static Func<byte[], int, int, Task<float[]>>? FaceDetector { get; set; }
-
-    /// <summary>Kleinste Person als Anteil am Bild, wenn ohne Gesichter gesucht wird.</summary>
-    public const double MinShare = 0.003;
 
     /// <summary>Größte Abweichung des vereinfachten Umrisses von der Maske (Pixel der Maske).</summary>
     public const double Tolerance = 1.2;
@@ -41,23 +45,52 @@ public static class PersonDetector
     /// <summary>Mindestwert eines Gesichts (0 … 1).</summary>
     public const float MinFaceScore = 0.8f;
 
-    /// <summary>Kantenlänge einer Kachel der Segmentierung in Gesichtshöhen.</summary>
-    const double TileFaces = 10;
+    /// <summary>Mindestwert einer Person (0 … 1).</summary>
+    public const double MinScore = 0.4;
+
+    /// <summary>Mindestwert einer Person, deren Gesicht erkannt wurde, wenn sonst niemand dort ist.</summary>
+    public const double MinScoreWithFace = 0.15;
+
+    /// <summary>Kantenlänge einer Kachel in Gesichtshöhen (eine stehende Person hat etwa acht).</summary>
+    const double TileFaces = 12;
+
+    /// <summary>Kacheln nur, wenn sie höchstens diesen Anteil der längeren Bildseite haben.</summary>
+    const double MaxTileShare = 0.6;
 
     /// <summary>Höchstens so viele Kacheln (sonst werden sie größer).</summary>
-    const int MaxTiles = 48;
+    const int MaxTiles = 16;
 
-    /// <summary>Höchstens so viele Pixel hat die längere Seite der Maske.</summary>
-    const int MaxCanvas = 1600;
+    /// <summary>Höchstens so viele Pixel hat die längere Seite der Masken im ganzen Bild.</summary>
+    const int MaxCanvas = 1200;
 
-    /// <summary>Ab dieser mittleren Wahrscheinlichkeit gehört ein Pixel zu einer Person.</summary>
-    const double MinProbability = 0.3;
+    /// <summary>
+    /// Zwei Masken, deren Schnitt mindestens diesen Anteil ihrer Vereinigung hat, sind dieselbe Person
+    /// (aus zwei Läufen). Ein Kind auf dem Arm liegt ganz in der Maske des Erwachsenen, bleibt aber eigene Person.
+    /// </summary>
+    const double SamePerson = 0.5;
+
+    /// <summary>Anteil ihrer Maske, den eine Person nach der Zuteilung der Pixel mindestens behalten muss.</summary>
+    const double MinVisible = 0.5;
 
     /// <summary>Ein Gesicht (Rahmen in Pixeln).</summary>
     public readonly record struct Face(double X, double Y, double Width, double Height, double Score)
     {
         public double CenterX => X + Width / 2;
+        public double CenterY => Y + Height / 2;
         public double Bottom => Y + Height;
+    }
+
+    /// <summary>
+    /// Eine gefundene Person: Wert und Maske als Logits (Logit · 16 + 128) im Rechteck
+    /// <see cref="X"/>, <see cref="Y"/>, <see cref="Width"/> × <see cref="Height"/> (Pixel der Maske des ganzen Bilds).
+    /// </summary>
+    public sealed record Candidate(double Score, int X, int Y, int Width, int Height, byte[] Logits)
+    {
+        /// <summary>Pixel, die zur Person gehören.</summary>
+        public int Area { get; } = Logits.Count(v => v > 128);
+
+        public bool Covers(int x, int y) =>
+            x >= X && y >= Y && x < X + Width && y < Y + Height && Logits[(y - Y) * Width + x - X] > 128;
     }
 
     /// <summary>
@@ -113,77 +146,179 @@ public static class PersonDetector
     {
         var segment = Segmenter ?? throw new PlatformNotSupportedException("Die Personenerkennung ist hier nicht verfügbar.");
         var faces = FaceDetector is { } detect ? await FindFacesAsync(detect, render, width, height) : [];
-        if (faces.Count == 0)
-            return await WithoutFacesAsync(segment, render, width, height);
 
-        // Kacheln über den Bereich der Personen; Personen sind darin etwa 10 Gesichtshöhen groß
-        double faceHeight = Median(faces.Select(f => f.Height));
-        double x0 = Math.Max(0, faces.Min(f => f.X - 2 * f.Width)), x1 = Math.Min(width, faces.Max(f => f.X + 3 * f.Width));
-        double y0 = Math.Max(0, faces.Min(f => f.Y - f.Height)), y1 = Math.Min(height, faces.Max(f => f.Y + 9 * f.Height));
-        double tile = TileFaces * faceHeight;
-        static int Count(double length, double tile) => length <= tile ? 1 : (int)Math.Ceiling((length - tile) / (tile / 2)) + 1;
-        while (Count(x1 - x0, tile) * Count(y1 - y0, tile) > MaxTiles)
-            tile *= 1.25;
-        int nx = Count(x1 - x0, tile), ny = Count(y1 - y0, tile);
-        static double Position(double start, double length, double tile, int i, int n) =>
-            n == 1 ? start + (length - tile) / 2 : start + i * (length - tile) / (n - 1);
-
-        // Maske: Wahrscheinlichkeiten der Kacheln gemittelt; ein Pixel der Maske = cell Pixel des Bilds
-        double cell = Math.Max(tile / Size, Math.Max(width, height) / MaxCanvas);
-        int w = Math.Max(1, (int)Math.Ceiling(width / cell)), h = Math.Max(1, (int)Math.Ceiling(height / cell));
-        var sum = new int[w * h];
-        var count = new int[w * h];
-        for (int j = 0; j < ny; j++)
-            for (int i = 0; i < nx; i++)
+        // Das ganze Bild (auf das Quadrat gestreckt, so ist das Modell trainiert) und bei kleinen
+        // Personen Kacheln über den Bereich um die Gesichter
+        var regions = new List<Rect> { new(0, 0, width, height) };
+        if (faces.Count > 0)
+        {
+            double faceHeight = Median(faces.Select(f => f.Height));
+            double x0 = Math.Max(0, faces.Min(f => f.X - 2 * f.Width)), x1 = Math.Min(width, faces.Max(f => f.X + 3 * f.Width));
+            double y0 = Math.Max(0, faces.Min(f => f.Y - f.Height)), y1 = Math.Min(height, faces.Max(f => f.Y + 9 * f.Height));
+            double tile = TileFaces * faceHeight;
+            static int Count(double length, double tile) => length <= tile ? 1 : (int)Math.Ceiling((length - tile) / (tile / 2)) + 1;
+            while (Count(x1 - x0, tile) * Count(y1 - y0, tile) > MaxTiles)
+                tile *= 1.25;
+            static double Position(double start, double length, double tile, int i, int n) =>
+                n == 1 ? start + (length - tile) / 2 : start + i * (length - tile) / (n - 1);
+            if (tile <= MaxTileShare * Math.Max(width, height))
             {
-                double tx = Position(x0, x1 - x0, tile, i, nx), ty = Position(y0, y1 - y0, tile, j, ny);
-                var probability = await segment(render(new Rect(tx, ty, tile, tile), Size, Size));
-                double step = tile / Size;
-                for (int py = 0; py < Size; py++)
-                {
-                    int cy = (int)Math.Floor((ty + (py + 0.5) * step) / cell);
-                    if (cy < 0 || cy >= h)
-                        continue;
-                    for (int px = 0; px < Size; px++)
-                    {
-                        int cx = (int)Math.Floor((tx + (px + 0.5) * step) / cell);
-                        if (cx < 0 || cx >= w)
-                            continue;
-                        sum[cy * w + cx] += probability[py * Size + px];
-                        count[cy * w + cx]++;
-                    }
-                }
+                int nx = Count(x1 - x0, tile), ny = Count(y1 - y0, tile);
+                for (int j = 0; j < ny; j++)
+                    for (int i = 0; i < nx; i++)
+                        regions.Add(new Rect(Position(x0, x1 - x0, tile, i, nx), Position(y0, y1 - y0, tile, j, ny), tile, tile));
             }
-        var mask = new bool[w * h];
-        for (int i = 0; i < mask.Length; i++)
-            mask[i] = count[i] > 0 && sum[i] >= MinProbability * 255 * count[i];
-        var rgb = render(new Rect(0, 0, w * cell, h * cell), w, h);
-        var scaled = faces.Select(f => new Face(f.X / cell, f.Y / cell, f.Width / cell, f.Height / cell, f.Score)).ToList();
+        }
+
+        // Masken aller Läufe im gemeinsamen Raster; ein Pixel = cell Pixel des Bilds
+        double cell = Math.Max(width, height) / MaxCanvas;
+        int w = Math.Max(1, (int)Math.Ceiling(width / cell)), h = Math.Max(1, (int)Math.Ceiling(height / cell));
+        var centers = faces.Select(f => ((int)(f.CenterX / cell), (int)(f.CenterY / cell))).ToList();
+        var candidates = new List<Candidate>();
+        for (int r = 0; r < regions.Count; r++)
+        {
+            var (scores, masks) = await segment(render(regions[r], Size, Size));
+            candidates.AddRange(ToCandidates(scores, masks, regions[r], r > 0, width, height, cell, w, h, centers));
+        }
 
         return await Task.Run(() =>
         {
-            var label = Partition(mask, rgb, w, h, scaled);
-            int persons = AssignRest(mask, label, w, h, scaled);
-            return PersonOutlines(label, w, h, persons)
+            var persons = Select(candidates, centers);
+            var label = Assign(persons, w, h);
+            // Wer nach der Zuteilung weniger als die Hälfte seiner Maske behält, war nur ein Stück
+            // einer anderen Person
+            var kept = new int[persons.Count];
+            foreach (int k in label)
+                if (k >= 0)
+                    kept[k]++;
+            if (Enumerable.Range(0, persons.Count).Any(k => kept[k] < MinVisible * persons[k].Area))
+            {
+                persons = persons.Where((p, k) => kept[k] >= MinVisible * p.Area).ToList();
+                label = Assign(persons, w, h);
+            }
+            return PersonOutlines(label, w, h, persons.Count)
                 .Select(person => person.Select(o => o.Select(p => (p.X * cell, p.Y * cell)).ToList()).ToList())
-                .Where(person => person.Count > 0)
                 .ToList();
         });
     }
 
-    /// <summary>Ohne Gesichter: das ganze Bild auf einmal segmentieren; jede Fläche ist eine Person.</summary>
-    static async Task<List<List<List<(double X, double Y)>>>> WithoutFacesAsync(
-        Func<byte[], Task<byte[]>> segment, Renderer render, double width, double height)
+    /// <summary>
+    /// Kandidaten eines Laufs als Masken im gemeinsamen Raster (<paramref name="cell"/> Pixel des Bilds je
+    /// Pixel, <paramref name="width"/> × <paramref name="height"/> Pixel des Bilds). Schwache Kandidaten
+    /// bleiben nur, wenn sie ein Gesicht bedecken; aus Kacheln fallen Personen weg, die an einer Kante
+    /// im Bild abgeschnitten sind (sie liegen ganz in einer anderen Kachel oder im ganzen Bild).
+    /// </summary>
+    static IEnumerable<Candidate> ToCandidates(float[] scores, byte[] masks, Rect region, bool tile,
+        double width, double height, double cell, int canvasWidth, int canvasHeight, IReadOnlyList<(int X, int Y)> faces)
     {
-        // Oben links in das Quadrat eingepasst
-        double aspect = width / height;
-        int w = aspect >= 1 ? Size : Math.Max(1, (int)Math.Round(Size * aspect));
-        int h = aspect >= 1 ? Math.Max(1, (int)Math.Round(Size / aspect)) : Size;
-        var probability = await segment(render(new Rect(0, 0, width * Size / w, height * Size / h), Size, Size));
-        var mask = probability.Select(p => (byte)(p >= 128 ? 1 : 0)).ToArray();
-        return Outlines(mask, Size, w, h)
-            .Select(o => new List<List<(double X, double Y)>> { o.Select(p => (p.X / w * width, p.Y / h * height)).ToList() })
-            .ToList();
+        const int n = MaskSize;
+        for (int q = 0; q < Math.Min(Candidates, scores.Length); q++)
+        {
+            if (scores[q] < MinScoreWithFace)
+                continue;
+            int offset = q * n * n;
+            int minX = n, maxX = -1, minY = n, maxY = -1;
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                    if (masks[offset + y * n + x] > 128)
+                    {
+                        minX = Math.Min(minX, x);
+                        maxX = Math.Max(maxX, x);
+                        minY = Math.Min(minY, y);
+                        maxY = Math.Max(maxY, y);
+                    }
+            if (maxX < 0 || (maxX - minX + 1) * (maxY - minY + 1) < 4)
+                continue;
+            if (tile && ((minX <= 1 && region.X > 1) || (maxX >= n - 2 && region.Right < width - 1)
+                || (minY <= 1 && region.Y > 1) || (maxY >= n - 2 && region.Bottom < height - 1)))
+                continue;
+
+            // Rechteck im Raster, Logits bilinear
+            double sx = region.Width / n, sy = region.Height / n;
+            int x0 = Math.Max(0, (int)((region.X + minX * sx) / cell) - 1), x1 = Math.Min(canvasWidth, (int)Math.Ceiling((region.X + (maxX + 1) * sx) / cell) + 1);
+            int y0 = Math.Max(0, (int)((region.Y + minY * sy) / cell) - 1), y1 = Math.Min(canvasHeight, (int)Math.Ceiling((region.Y + (maxY + 1) * sy) / cell) + 1);
+            if (x1 <= x0 || y1 <= y0)
+                continue;
+            var logits = new byte[(x1 - x0) * (y1 - y0)];
+            for (int y = y0; y < y1; y++)
+            {
+                double my = Math.Clamp(((y + 0.5) * cell - region.Y) / sy - 0.5, 0, n - 1);
+                int ya = (int)my, yb = Math.Min(ya + 1, n - 1);
+                double fy = my - ya;
+                for (int x = x0; x < x1; x++)
+                {
+                    double mx = Math.Clamp(((x + 0.5) * cell - region.X) / sx - 0.5, 0, n - 1);
+                    int xa = (int)mx, xb = Math.Min(xa + 1, n - 1);
+                    double fx = mx - xa;
+                    double v = (masks[offset + ya * n + xa] * (1 - fx) + masks[offset + ya * n + xb] * fx) * (1 - fy)
+                        + (masks[offset + yb * n + xa] * (1 - fx) + masks[offset + yb * n + xb] * fx) * fy;
+                    logits[(y - y0) * (x1 - x0) + x - x0] = (byte)Math.Round(v);
+                }
+            }
+            var candidate = new Candidate(scores[q], x0, y0, x1 - x0, y1 - y0, logits);
+            if (candidate.Area > 0 && (scores[q] >= MinScore || faces.Any(f => candidate.Covers(f.X, f.Y))))
+                yield return candidate;
+        }
+    }
+
+    /// <summary>
+    /// Wählt die Personen aus: Kandidaten ab <see cref="MinScore"/>, der stärkste zuerst, Doppelte
+    /// (dieselbe Person aus mehreren Läufen) fallen weg. Bedeckt keine Person ein Gesicht
+    /// (<paramref name="faces"/>, Pixel der Maske), kommt der stärkste schwächere Kandidat dort dazu.
+    /// </summary>
+    public static List<Candidate> Select(IEnumerable<Candidate> candidates, IReadOnlyList<(int X, int Y)> faces)
+    {
+        var sorted = candidates.OrderByDescending(c => c.Score).ToList();
+        var kept = new List<Candidate>();
+        foreach (var c in sorted)
+            if (c.Score >= MinScore && kept.All(k => Overlap(c, k) < SamePerson))
+                kept.Add(c);
+        foreach (var (x, y) in faces)
+        {
+            if (kept.Any(k => k.Covers(x, y)))
+                continue;
+            if (sorted.FirstOrDefault(c => c.Score < MinScore && c.Covers(x, y) && kept.All(k => Overlap(c, k) < SamePerson)) is { } found)
+                kept.Add(found);
+        }
+        return kept;
+    }
+
+    /// <summary>Gemeinsame Pixel zweier Masken im Verhältnis zu ihrer Vereinigung.</summary>
+    static double Overlap(Candidate a, Candidate b)
+    {
+        int x0 = Math.Max(a.X, b.X), x1 = Math.Min(a.X + a.Width, b.X + b.Width);
+        int y0 = Math.Max(a.Y, b.Y), y1 = Math.Min(a.Y + a.Height, b.Y + b.Height);
+        int common = 0;
+        for (int y = y0; y < y1; y++)
+            for (int x = x0; x < x1; x++)
+                if (a.Logits[(y - a.Y) * a.Width + x - a.X] > 128 && b.Logits[(y - b.Y) * b.Width + x - b.X] > 128)
+                    common++;
+        return common / (double)Math.Max(1, a.Area + b.Area - common);
+    }
+
+    /// <summary>Je Pixel die Person mit dem höchsten Logit (−1 = keine).</summary>
+    public static int[] Assign(IReadOnlyList<Candidate> persons, int width, int height)
+    {
+        var label = new int[width * height];
+        var best = new byte[width * height];
+        Array.Fill(label, -1);
+        Array.Fill(best, (byte)128);
+        for (int k = 0; k < persons.Count; k++)
+        {
+            var c = persons[k];
+            for (int y = 0; y < c.Height; y++)
+                for (int x = 0; x < c.Width; x++)
+                {
+                    int i = (c.Y + y) * width + c.X + x;
+                    byte v = c.Logits[y * c.Width + x];
+                    if (v > best[i])
+                    {
+                        best[i] = v;
+                        label[i] = k;
+                    }
+                }
+        }
+        return label;
     }
 
     /// <summary>Gesichter auf dem Bild (Rahmen in Pixeln des Bilds).</summary>
@@ -241,158 +376,17 @@ public static class PersonDetector
         return sorted[sorted.Count / 2];
     }
 
-    /// <summary>Senkrechte Schritte kosten so viel wie waagerechte mal diesem Faktor (Körper stehen aufrecht).</summary>
-    const double VerticalCost = 0.5;
+    /// <summary>Kleinster eigener Teil einer Person als Anteil an ihrer Fläche.</summary>
+    const double MinPart = 0.05;
 
-    /// <summary>Weiter als so viele Gesichtsbreiten neben der Mitte des Gesichts wird es teurer …</summary>
-    const double BodyWidth = 1.5;
-
-    /// <summary>… und zwar um diesen Faktor.</summary>
-    const double OutsideCost = 4;
-
-    /// <summary>Farbunterschied (Mittel über R, G, B), der einen Schritt doppelt so teuer macht.</summary>
-    const double ColorStep = 8;
-
-    /// <summary>
-    /// Teilt die Maske auf die Gesichter auf (Rahmen in Pixeln der Maske): Von jedem Gesicht aus wächst
-    /// eine Fläche über die Maske, jeder Pixel geht an das Gesicht mit dem billigsten Weg (Dijkstra).
-    /// Ein Schritt kostet mehr über Farbkanten, waagerecht und seitlich neben dem Körper; über den Kopf
-    /// hinaus nach oben geht es nicht. Die Wege werden in Gesichtshöhen gemessen, damit kleine und
-    /// große Personen gleich weit reichen. Liefert je Pixel die Nummer des Gesichts, −1 = keine Person.
-    /// </summary>
-    public static int[] Partition(bool[] mask, byte[] rgb, int width, int height, IReadOnlyList<Face> faces)
-    {
-        int n = width * height;
-        var inside = (bool[])mask.Clone();
-        var label = new int[n];
-        var cost = new double[n];
-        Array.Fill(label, -1);
-        Array.Fill(cost, double.PositiveInfinity);
-        var queue = new PriorityQueue<int, double>();
-        for (int k = 0; k < faces.Count; k++)
-        {
-            var f = faces[k];
-            for (int y = Math.Max(0, (int)f.Y); y < Math.Min(height, (int)Math.Ceiling(f.Bottom)); y++)
-                for (int x = Math.Max(0, (int)f.X); x < Math.Min(width, (int)Math.Ceiling(f.X + f.Width)); x++)
-                {
-                    int i = y * width + x;
-                    inside[i] = true;
-                    cost[i] = 0;
-                    label[i] = k;
-                    queue.Enqueue(i, 0);
-                }
-        }
-        double diagonal = Math.Sqrt(1 + VerticalCost * VerticalCost);
-        while (queue.TryDequeue(out int i, out double d))
-        {
-            if (d > cost[i])
-                continue;
-            int k = label[i], x = i % width, y = i / width;
-            var f = faces[k];
-            double top = f.Y - f.Height / 2;
-            foreach (var (dx, dy) in Ring)
-            {
-                int nx = x + dx, ny = y + dy;
-                if (nx < 0 || ny < 0 || nx >= width || ny >= height || ny < top)
-                    continue;
-                int j = ny * width + nx;
-                if (!inside[j])
-                    continue;
-                double step = dx == 0 ? VerticalCost : dy == 0 ? 1 : diagonal;
-                int color = Math.Abs(rgb[3 * i] - rgb[3 * j]) + Math.Abs(rgb[3 * i + 1] - rgb[3 * j + 1]) + Math.Abs(rgb[3 * i + 2] - rgb[3 * j + 2]);
-                double c = step * (1 + color / (3 * ColorStep)) / f.Height;
-                if (Math.Abs(nx + 0.5 - f.CenterX) > BodyWidth * f.Width)
-                    c *= OutsideCost;
-                if (d + c < cost[j])
-                {
-                    cost[j] = d + c;
-                    label[j] = k;
-                    queue.Enqueue(j, d + c);
-                }
-            }
-        }
-        return label;
-    }
-
-    /// <summary>
-    /// Teile der Maske, die keinem Gesicht zugeteilt wurden (etwa Beine unter einem Schild), gehen an
-    /// das Gesicht darüber, das waagerecht am besten passt. Große Teile ohne passendes Gesicht werden
-    /// eigene Personen (von hinten), kleine fallen weg. Liefert die Zahl der Personen.
-    /// </summary>
-    public static int AssignRest(bool[] mask, int[] label, int width, int height, IReadOnlyList<Face> faces)
-    {
-        int persons = faces.Count;
-        if (faces.Count == 0)
-            return 0;
-        double faceArea = Median(faces.Select(f => f.Width * f.Height));
-        var seen = new bool[mask.Length];
-        var queue = new Queue<int>();
-        var pixels = new List<int>();
-        for (int start = 0; start < mask.Length; start++)
-        {
-            if (!mask[start] || label[start] >= 0 || seen[start])
-                continue;
-            pixels.Clear();
-            seen[start] = true;
-            queue.Enqueue(start);
-            int minX = width, maxX = 0, minY = height, maxY = 0;
-            double sumX = 0;
-            while (queue.Count > 0)
-            {
-                int i = queue.Dequeue(), x = i % width, y = i / width;
-                pixels.Add(i);
-                sumX += x + 0.5;
-                minX = Math.Min(minX, x);
-                maxX = Math.Max(maxX, x);
-                minY = Math.Min(minY, y);
-                maxY = Math.Max(maxY, y);
-                foreach (var (dx, dy) in Ring)
-                {
-                    int nx = x + dx, ny = y + dy;
-                    if (nx < 0 || ny < 0 || nx >= width || ny >= height)
-                        continue;
-                    int j = ny * width + nx;
-                    if (mask[j] && label[j] < 0 && !seen[j])
-                    {
-                        seen[j] = true;
-                        queue.Enqueue(j);
-                    }
-                }
-            }
-            if (pixels.Count < Math.Max(12, faceArea / 2))
-                continue;
-            double center = sumX / pixels.Count;
-            int best = -1;
-            double bestScore = double.PositiveInfinity;
-            for (int k = 0; k < faces.Count; k++)
-            {
-                var f = faces[k];
-                double offset = Math.Abs(f.CenterX - center);
-                if (f.Y + f.Height / 2 > maxY || offset > (maxX - minX + 1) / 2.0 + BodyWidth * f.Width)
-                    continue;
-                double score = offset / f.Width + 0.25 * Math.Max(0, minY - f.Bottom) / f.Height;
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    best = k;
-                }
-            }
-            if (best < 0 && pixels.Count >= 3 * faceArea)
-                best = persons++;
-            if (best >= 0)
-                foreach (int i in pixels)
-                    label[i] = best;
-        }
-        return persons;
-    }
-
-    /// <summary>Umrisse je Person (Pixel der Maske), von links nach rechts.</summary>
+    /// <summary>Umrisse je Person (Pixel der Maske), von links nach rechts; kleine Splitter fallen weg.</summary>
     static List<List<List<(double X, double Y)>>> PersonOutlines(int[] label, int width, int height, int persons)
     {
         var minX = Enumerable.Repeat(width, persons).ToArray();
         var minY = Enumerable.Repeat(height, persons).ToArray();
         var maxX = new int[persons];
         var maxY = new int[persons];
+        var area = new int[persons];
         for (int i = 0; i < label.Length; i++)
             if (label[i] is int k and >= 0)
             {
@@ -401,6 +395,7 @@ public static class PersonDetector
                 maxX[k] = Math.Max(maxX[k], x);
                 minY[k] = Math.Min(minY[k], y);
                 maxY[k] = Math.Max(maxY[k], y);
+                area[k]++;
             }
         var result = new List<(double Center, List<List<(double X, double Y)>> Outlines)>();
         for (int k = 0; k < persons; k++)
@@ -413,7 +408,7 @@ public static class PersonDetector
                 for (int x = 0; x < w; x++)
                     if (label[(minY[k] + y) * width + minX[k] + x] == k)
                         mask[y * w + x] = 1;
-            var outlines = Outlines(mask, w, w, h, minShare: 0)
+            var outlines = Outlines(mask, w, w, h, minShare: MinPart * area[k] / (w * h))
                 .Select(o => o.Select(p => (p.X + minX[k], p.Y + minY[k])).ToList()).ToList();
             if (outlines.Count > 0)
                 result.Add(((minX[k] + maxX[k]) / 2.0, outlines));
@@ -429,7 +424,7 @@ public static class PersonDetector
     /// <paramref name="height"/> oben links; Löcher werden mitgefüllt, die größte Fläche kommt zuerst.
     /// </summary>
     public static List<List<(double X, double Y)>> Outlines(byte[] mask, int stride, int width, int height,
-        double minShare = MinShare, double tolerance = Tolerance)
+        double minShare = 0, double tolerance = Tolerance)
     {
         var label = new int[width * height];
         bool In(int x, int y) => x >= 0 && y >= 0 && x < width && y < height && mask[y * stride + x] != 0;

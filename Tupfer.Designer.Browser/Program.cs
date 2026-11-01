@@ -22,7 +22,9 @@ static class Program
         PersonDetector.Segmenter = async rgb =>
         {
             BrowserInterop.SetModelInput(rgb);
-            return Convert.FromBase64String(await BrowserInterop.SegmentPersonsAsync());
+            var data = Convert.FromBase64String(await BrowserInterop.SegmentPersonsAsync());
+            int scores = PersonDetector.Candidates * sizeof(float);
+            return (MemoryMarshal.Cast<byte, float>(data.AsSpan(0, scores)).ToArray(), data[scores..]);
         };
         PersonDetector.FaceDetector = async (rgb, width, height) =>
         {

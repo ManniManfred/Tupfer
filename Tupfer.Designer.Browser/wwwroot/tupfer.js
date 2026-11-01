@@ -387,7 +387,7 @@ function toBinary(bytes) {
     return binary;
 }
 
-// ---------- Personenerkennung (DeepLab v3 von MediaPipe, models/personen.onnx;
+// ---------- Personenerkennung (RF-DETR-Seg von Roboflow, models/personen.onnx;
 //            Gesichter mit YuNet von OpenCV Zoo, models/gesichter.onnx) ----------
 
 let modelInput = null;
@@ -410,13 +410,17 @@ async function loadSession(url) {
     return ort.InferenceSession.create(await fetchModel(url));
 }
 
-/** Liefert die Wahrscheinlichkeit „Person“ (257 × 257, 0 … 255) Base64-kodiert. */
+/** Liefert Werte (float32) und Masken (Bytes) der Kandidaten hintereinander Base64-kodiert (Eingang 384 × 384). */
 export async function segmentPersons() {
     const input = takeModelInput();
     segmentSession ??= loadSession('models/personen.onnx').catch(e => { segmentSession = null; throw e; });
     const session = await segmentSession;
-    const result = await session.run({ bild: new ort.Tensor('uint8', input, [1, 257, 257, 3]) });
-    return btoa(toBinary(result.person.data));
+    const result = await session.run({ bild: new ort.Tensor('uint8', input, [1, 384, 384, 3]) });
+    const scores = result.werte.data, masks = result.masken.data;
+    const data = new Uint8Array(scores.byteLength + masks.byteLength);
+    data.set(new Uint8Array(scores.buffer, scores.byteOffset, scores.byteLength));
+    data.set(masks, scores.byteLength);
+    return btoa(toBinary(data));
 }
 
 /** Liefert die Gesichter je Ankerpunkt (float32, siehe PersonDetector.DecodeFaces) Base64-kodiert. */

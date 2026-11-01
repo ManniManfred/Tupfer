@@ -4,7 +4,7 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 namespace Tupfer.Designer.Services;
 
 /// <summary>
-/// Personenerkennung am Desktop mit ONNX Runtime: DeepLab v3 (Assets/personen.onnx) und YuNet
+/// Personenerkennung am Desktop mit ONNX Runtime: RF-DETR-Seg (Assets/personen.onnx) und YuNet
 /// (Assets/gesichter.onnx), beide eingebettet. Im Browser übernimmt das wwwroot/tupfer.js mit onnxruntime-web.
 /// </summary>
 public static class PersonSegmenter
@@ -21,13 +21,14 @@ public static class PersonSegmenter
         return new InferenceSession(buffer.ToArray());
     }
 
-    /// <summary>RGB (257 × 257 × 3) → Wahrscheinlichkeit „Person“ (257 × 257, 0 … 255), siehe <see cref="PersonDetector.Segmenter"/>.</summary>
-    public static Task<byte[]> SegmentAsync(byte[] rgb) => Task.Run(() =>
+    /// <summary>RGB (384 × 384 × 3) → Werte und Masken der Kandidaten, siehe <see cref="PersonDetector.Segmenter"/>.</summary>
+    public static Task<(float[] Scores, byte[] Masks)> SegmentAsync(byte[] rgb) => Task.Run(() =>
     {
         int n = PersonDetector.Size;
         var input = NamedOnnxValue.CreateFromTensor("bild", new DenseTensor<byte>(rgb, [1, n, n, 3]));
         using var results = Persons.Value.Run([input]);
-        return results.First(r => r.Name == "person").AsEnumerable<byte>().ToArray();
+        return (results.First(r => r.Name == "werte").AsEnumerable<float>().ToArray(),
+            results.First(r => r.Name == "masken").AsEnumerable<byte>().ToArray());
     });
 
     /// <summary>RGB (Breite × Höhe × 3) → Gesichter je Ankerpunkt, siehe <see cref="PersonDetector.FaceDetector"/>.</summary>

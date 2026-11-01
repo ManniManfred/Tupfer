@@ -2,23 +2,24 @@
 
 ## Personen: `personen.onnx`
 
-`Tupfer.Designer/Assets/personen.onnx` ist das Modell **DeepLab v3** (MobileNetV2, Pascal VOC, 21 Klassen)
-von [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/vision/image_segmenter#deeplab-v3),
-Lizenz [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0), umgewandelt nach ONNX.
+`Tupfer.Designer/Assets/personen.onnx` ist das Modell **RF-DETR-Seg Small** (Instanz-Segmentierung, COCO)
+von [Roboflow](https://github.com/roboflow/rf-detr), Lizenz
+[Apache 2.0](https://github.com/roboflow/rf-detr/blob/develop/LICENSE), exportiert nach ONNX.
 
 Änderungen gegenüber dem Original:
 
-- Format TFLite → ONNX (tf2onnx, Opset 17), Gewichte unverändert.
-- Eingang `bild`: RGB als Bytes `[1, 257, 257, 3]`; die Normierung auf −1 … 1 steckt im Modell.
-- Ausgang `person`: Wahrscheinlichkeit der Klasse „person“ (Index 15, Softmax über alle Klassen)
-  `[1, 257, 257]` als Bytes 0 … 255. Der Designer mittelt sie über überlappende Kacheln.
+- Export mit dem Paket `rfdetr` (1.11.2) nach ONNX; Gewichte dynamisch als int8 quantisiert
+  (130 → 39 MB, erkennt praktisch gleich gut).
+- Eingang `bild`: RGB als Bytes `[1, 384, 384, 3]`; die ImageNet-Normierung steckt im Modell.
+- Ausgang `werte` `[1, 100]`: je Kandidat die Wahrscheinlichkeit der Klasse „person“.
+- Ausgang `masken` `[1, 100, 96, 96]`: je Kandidat die Maske als Logit · 16 + 128 in Bytes
+  (über 128 = gehört zur Person). Rahmen und die übrigen Klassen werden nicht gebraucht.
 
-So erzeugt (Python mit `tensorflow-cpu`, `tf2onnx`, `onnx`):
+So erzeugt (Python mit `rfdetr`, `torch` (CPU genügt), `onnx`, `onnxruntime`; die Gewichte lädt
+`rfdetr` selbst herunter):
 
 ```bash
-curl -O https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite
-python -m tf2onnx.convert --tflite deeplab_v3.tflite --output deeplab_raw.onnx --opset 17
-python umwandeln.py deeplab_raw.onnx personen.onnx
+python rfdetr_personen.py personen.onnx
 ```
 
 ## Gesichter: `gesichter.onnx`

@@ -258,10 +258,11 @@ public class PageEditTests
     {
         // Die eingebetteten Modelle laufen und liefern Ausgaben in der richtigen Größe; auf einem
         // schwarzen Bild sind weder Personen noch Gesichter
-        int n = Services.PersonDetector.Size;
-        var probability = await Services.PersonSegmenter.SegmentAsync(new byte[n * n * 3]);
-        Assert.Equal(n * n, probability.Length);
-        Assert.All(probability, p => Assert.True(p < 128));
+        int n = Services.PersonDetector.Size, m = Services.PersonDetector.MaskSize, c = Services.PersonDetector.Candidates;
+        var (scores, masks) = await Services.PersonSegmenter.SegmentAsync(new byte[n * n * 3]);
+        Assert.Equal(c, scores.Length);
+        Assert.Equal(c * m * m, masks.Length);
+        Assert.All(scores, s => Assert.True(s < Services.PersonDetector.MinScore));
         var faces = await Services.PersonSegmenter.DetectFacesAsync(new byte[96 * 64 * 3], 96, 64);
         Assert.Equal((12 * 8 + 6 * 4 + 3 * 2) * 5, faces.Length);
         Assert.Empty(Services.PersonDetector.DecodeFaces(faces, 96, 64, Services.PersonDetector.MinFaceScore));
