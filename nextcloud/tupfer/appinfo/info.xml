@@ -6,7 +6,7 @@
 	<summary>Eigene tiptoi-Seiten gestalten – direkt in Nextcloud</summary>
 	<description><![CDATA[Der Tupfer Designer in Nextcloud: Bilder und Texte gestalten, OID-Codes drucken, Sprachausgabe und Spiele programmieren und die GME-Datei für den tiptoi-Stift bauen.
 
-Projekte (*.tupfer.json) öffnet man in der Dateien-App per Klick, Bilder und Audiodateien kommen aus Nextcloud, gespeichert wird zurück nach Nextcloud. Der Designer läuft vollständig im Browser (WebAssembly).]]></description>
+Projekte (*.tupfer, mit allen Bildern und Aufnahmen) öffnet man in der Dateien-App per Klick, Bilder und Audiodateien kommen aus Nextcloud, gespeichert wird zurück nach Nextcloud. Der Designer läuft vollständig im Browser (WebAssembly).]]></description>
 	<version>0.0.0</version>
 	<licence>mit</licence>
 	<author>Manfred Roßkamp</author>

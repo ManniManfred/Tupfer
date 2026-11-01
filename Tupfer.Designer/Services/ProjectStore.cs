@@ -1,12 +1,30 @@
+using System.IO.Compression;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Tupfer.Designer.Gme;
 using Tupfer.Designer.Model;
 
 namespace Tupfer.Designer.Services;
 
+/// <summary>
+/// Projektdateien. Gespeichert wird als <c>*.tupfer</c>: ein ZIP mit dem Projekt (<see cref="ArchiveEntry"/>)
+/// und allen Bildern, Aufnahmen und Audiodateien, auf die es verweist. Ältere Projekte (<c>*.tupfer.json</c>)
+/// enthalten nur das Projekt und verweisen auf Dateien daneben; sie lassen sich weiter öffnen.
+/// </summary>
 public static class ProjectStore
 {
-    public const string Extension = ".tupfer.json";
+    public const string Extension = ".tupfer";
+
+    /// <summary>Endung des alten Formats (nur das Projekt, ohne Bilder und Aufnahmen).</summary>
+    public const string LegacyExtension = ".tupfer.json";
+
+    /// <summary>Name des Projekts im ZIP.</summary>
+    public const string ArchiveEntry = "projekt.json";
+
+    /// <summary>Ordner im ZIP für Dateien, die außerhalb des Projektverzeichnisses lagen.</summary>
+    const string OutsideDir = "dateien";
 
     static readonly JsonSerializerOptions Options = new()
     {
@@ -14,8 +32,27 @@ public static class ProjectStore
         Converters = { new JsonStringEnumConverter() },
     };
 
+    /// <summary>
+    /// Verzeichnis, in das ein <c>*.tupfer</c> zum Bearbeiten entpackt wird. Desktop: ein leeres Verzeichnis
+    /// im Benutzerprofil (je Projektdatei immer dasselbe); im Browser wird es ersetzt (dort neben die Datei).
+    /// </summary>
+    public static Func<string, string> ArchiveWorkDir { get; set; } = DefaultArchiveWorkDir;
+
+    static string DefaultArchiveWorkDir(string path)
+    {
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(path))))[..12].ToLowerInvariant();
+        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "TupferDesigner", "projekte", $"{BaseName(path)}-{hash}");
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, true);
+        Directory.CreateDirectory(dir);
+        return dir;
+    }
+
+    /// <summary>Liest eine JSON-Projektdatei (altes Format).</summary>
     public static ProjectFile Load(string path) => FromJson(File.ReadAllText(path));
 
+    /// <summary>Schreibt nur das Projekt als JSON (altes Format, z. B. für Tests).</summary>
     public static void Save(ProjectFile project, string path) => File.WriteAllText(path, ToJson(project));
 
     public static ProjectFile FromJson(string json) =>
@@ -23,12 +60,133 @@ public static class ProjectStore
 
     public static string ToJson(ProjectFile project) => JsonSerializer.Serialize(project, Options);
 
-    /// <summary>Basisname ohne ".tupfer.json", z. B. "tic-tac-toi".</summary>
+    /// <summary>true, wenn die Datei ein ZIP ist (<c>*.tupfer</c>), unabhängig von der Endung.</summary>
+    public static bool IsArchive(string path)
+    {
+        Span<byte> head = stackalloc byte[4];
+        using var stream = File.OpenRead(path);
+        return stream.ReadAtLeast(head, 4, throwOnEndOfStream: false) == 4 && head.SequenceEqual("PK\x03\x04"u8);
+    }
+
+    /// <summary>
+    /// Speichert das Projekt als ZIP. Pfade im Projekt sind relativ zu <paramref name="baseDir"/>; Dateien darin
+    /// behalten ihren relativen Pfad, Dateien außerhalb kommen nach <c>dateien/</c> (bzw. <c>medien/</c> für das
+    /// Medienverzeichnis), die Verweise werden angepasst. Fehlende Dateien werden übergangen.
+    /// Liefert zu jeder aufgenommenen Datei (voller Pfad) ihren Pfad im ZIP und das Medienverzeichnis im ZIP.
+    /// </summary>
+    public static (Dictionary<string, string> Entries, string MediaPath) SaveArchive(ProjectFile project, string baseDir, string path)
+    {
+        var file = FromJson(ToJson(project));
+        var entries = new Dictionary<string, string>(StringComparer.Ordinal);
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ArchiveEntry };
+
+        string Unique(string entry)
+        {
+            var dir = Path.GetDirectoryName(entry)!.Replace('\\', '/');
+            var stem = Path.GetFileNameWithoutExtension(entry);
+            var ext = Path.GetExtension(entry);
+            for (int i = 2; used.Contains(entry); i++)
+                entry = $"{dir}/{stem}-{i}{ext}";
+            used.Add(entry);
+            return entry;
+        }
+
+        string? Add(string reference, string? entry = null)
+        {
+            var full = Path.GetFullPath(reference, baseDir);
+            if (entries.TryGetValue(full, out var known))
+                return known;
+            if (!File.Exists(full))
+                return null;
+            entry ??= Inside(baseDir, full) is { } inside && !used.Contains(inside)
+                ? inside
+                : Unique($"{OutsideDir}/{Path.GetFileName(full)}");
+            used.Add(entry);
+            return entries[full] = entry;
+        }
+
+        string Rewrite(string reference) =>
+            string.IsNullOrEmpty(reference) ? reference : Add(reference) ?? reference;
+
+        // Audiodateien im Medienverzeichnis zuerst: Liegt es außerhalb, kommt es als Ganzes nach medien/
+        var media = GmeBuilder.MediaFiles(file, baseDir);
+        if (media.Any(f => Inside(baseDir, f) == null))
+        {
+            var pattern = string.IsNullOrWhiteSpace(file.MediaPath) ? "%s" : file.MediaPath;
+            file.MediaPath = "medien/" + Path.GetFileName(pattern);
+            foreach (var f in media)
+                Add(f, "medien/" + Path.GetFileName(f));
+        }
+        else
+        {
+            foreach (var f in media)
+                Add(f);
+        }
+
+        foreach (var page in file.Pages)
+        {
+            if (page.BackgroundImage != null)
+                page.BackgroundImage = Rewrite(page.BackgroundImage);
+            foreach (var e in page.Elements.Where(e => e.Kind == ElementKind.Image))
+                e.ImagePath = Rewrite(e.ImagePath);
+        }
+        foreach (var s in file.Speak.Where(s => !string.IsNullOrEmpty(s.Recording)))
+            s.Recording = Rewrite(s.Recording!);
+
+        // Erst vollständig schreiben, dann ersetzen: Ein Fehler beim Schreiben zerstört die alte Datei nicht
+        var temp = path + ".tmp";
+        using (var stream = File.Create(temp))
+        using (var zip = new ZipArchive(stream, ZipArchiveMode.Create))
+        {
+            var json = zip.CreateEntry(ArchiveEntry);
+            using (var writer = new StreamWriter(json.Open(), new UTF8Encoding(false)))
+                writer.Write(ToJson(file));
+            foreach (var (source, entry) in entries)
+                zip.CreateEntryFromFile(source, entry);
+        }
+        File.Move(temp, path, overwrite: true);
+        return (entries, file.MediaPath);
+    }
+
+    /// <summary>Pfad von <paramref name="full"/> relativ zu <paramref name="dir"/> (mit „/“), null, wenn sie außerhalb liegt.</summary>
+    static string? Inside(string dir, string full)
+    {
+        var relative = Path.GetRelativePath(dir, full).Replace('\\', '/');
+        return Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith("../", StringComparison.Ordinal) ? null : relative;
+    }
+
+    /// <summary>
+    /// Entpackt ein <c>*.tupfer</c> nach <paramref name="dir"/> und liest das Projekt. Liefert es zusammen mit dem
+    /// Verzeichnis, relativ zu dem seine Pfade gelten. Auch ein ZIP mit einer <c>*.tupfer.json</c> wird gelesen.
+    /// </summary>
+    public static (ProjectFile Project, string BaseDir) LoadArchive(string path, string dir)
+    {
+        string entry;
+        using (var zip = ZipFile.OpenRead(path))
+        {
+            entry = zip.Entries.Select(e => e.FullName).FirstOrDefault(n => n == ArchiveEntry)
+                    ?? zip.Entries.Select(e => e.FullName)
+                        .Where(n => n.EndsWith(LegacyExtension, StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(n => n.Count(c => c == '/')).ThenBy(n => n, StringComparer.Ordinal)
+                        .FirstOrDefault()
+                    ?? throw new InvalidDataException("Die Datei enthält kein Tupfer-Projekt.");
+        }
+        // Schützt auch vor Einträgen, die aus dem Verzeichnis hinausführen (../)
+        ZipFile.ExtractToDirectory(path, dir, overwriteFiles: true);
+        var json = Path.GetFullPath(entry, dir);
+        return (Load(json), Path.GetDirectoryName(json)!);
+    }
+
+    /// <summary>true für Projektdateien im alten Format (<c>*.tupfer.json</c>).</summary>
+    public static bool IsLegacy(string path) => path.EndsWith(LegacyExtension, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Basisname ohne ".tupfer" bzw. ".tupfer.json", z. B. "tic-tac-toi".</summary>
     public static string BaseName(string projectPath)
     {
         var name = Path.GetFileName(projectPath);
-        return name.EndsWith(Extension, StringComparison.OrdinalIgnoreCase)
-            ? name[..^Extension.Length]
-            : Path.GetFileNameWithoutExtension(name);
+        foreach (var ext in new[] { LegacyExtension, Extension })
+            if (name.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+                return name[..^ext.Length];
+        return Path.GetFileNameWithoutExtension(name);
     }
 }

@@ -11,8 +11,9 @@ namespace Tupfer.Designer;
 /// Dateidialoge in der Nextcloud-App: Projekte, Bilder und Audiodateien werden mit der Dateiauswahl von Nextcloud
 /// gewählt und in das Arbeitsverzeichnis geladen, beim Speichern wird zurück nach Nextcloud geschrieben.
 /// Ein aus Nextcloud geöffnetes Projekt liegt im Arbeitsverzeichnis unter demselben Pfad wie in Nextcloud
-/// (/tupfer/projekt3/Tiptoi/buch/buch.tupfer.json für /Tiptoi/buch/buch.tupfer.json), damit relative Pfade
-/// wie ../bilder/… stimmen. Drucken und „Auf den Stift“ laufen wie im Browser.
+/// (/tupfer/projekt3/Tiptoi/buch/buch.tupfer für /Tiptoi/buch/buch.tupfer) und wird dort entpackt; bei alten
+/// Projekten (*.tupfer.json) werden Bilder und Aufnahmen daneben geladen, damit relative Pfade wie ../bilder/…
+/// stimmen. Gespeichert wird immer als *.tupfer. Drucken und „Auf den Stift“ laufen wie im Browser.
 /// </summary>
 class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
 {
@@ -144,10 +145,17 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
         if (!await DownloadAsync(remote, local))
             throw new FileNotFoundException($"„{remote}“ gibt es in Nextcloud nicht (mehr).");
 
+        // *.tupfer enthält Bilder und Aufnahmen schon selbst
+        if (ProjectStore.IsArchive(local))
+        {
+            Environment.CurrentDirectory = Path.GetDirectoryName(local)!;
+            return local;
+        }
+
         var remoteDir = RemoteParent(remote);
         var references = new List<string>();
         ProjectFile file;
-        if (local.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
+        if (ProjectStore.IsLegacy(local))
         {
             file = ProjectStore.Load(local);
             references.AddRange(file.Pages.SelectMany(p => p.Elements).Select(e => e.ImagePath));
@@ -196,7 +204,7 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
         var local = LocalPath(workDir, remote)!;
         Directory.CreateDirectory(Path.GetDirectoryName(local)!);
         Environment.CurrentDirectory = Path.GetDirectoryName(local)!;
-        ProjectStore.Save(MainWindowViewModel.DefaultProjectFile(), local);
+        ProjectStore.SaveArchive(MainWindowViewModel.DefaultProjectFile(), Path.GetDirectoryName(local)!, local);
         await UploadAsync(local, remote, always: true);
         NextcloudInterop.Notify($"In Nextcloud angelegt: {remote}");
         return local;
@@ -268,8 +276,9 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
             if (name.Length == 0)
                 return null;
         }
-        if (name.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
-            name = name[..^ProjectStore.Extension.Length];
+        foreach (var ext in new[] { ProjectStore.LegacyExtension, ProjectStore.Extension })
+            if (name.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+                name = name[..^ext.Length];
         name = string.Concat(name.Select(c => c is '/' or '\\' ? '_' : c)) + ProjectStore.Extension;
         var remote = Normalize(folder + "/" + name)!;
         if (await NextcloudInterop.ExistsAsync(remote) && !NextcloudInterop.Confirm($"„{remote}“ gibt es schon. Überschreiben?"))
@@ -298,19 +307,10 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
                 continue;
             }
 
-            if (project)
-            {
-                // Erst Bilder und Audiodateien, dann das Projekt, das auf sie verweist
-                foreach (var media in BrowserFileDialogs.MediaFiles(BrowserFileDialogs.WorkDirOf(path)))
-                    if (RemotePath(media) is { } target && await UploadAsync(media, target))
-                        uploaded.Add(target);
-                await UploadAsync(path, remote, always: true);
-            }
-            else
-            {
-                await UploadAsync(path, remote, always: true);
+            // Das Projekt enthält Bilder und Aufnahmen selbst und bleibt als geöffnete Datei liegen
+            await UploadAsync(path, remote, always: true);
+            if (!project)
                 File.Delete(path);
-            }
             uploaded.Insert(0, remote);
         }
         if (uploaded.Count > 0)

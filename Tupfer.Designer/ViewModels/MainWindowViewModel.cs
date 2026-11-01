@@ -162,7 +162,11 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Name der Projektdatei für die Titelleiste.</summary>
     public string FileName => FilePath == null ? "Neues Projekt" : Path.GetFileName(FilePath);
 
-    string BaseDir => FilePath != null ? Path.GetDirectoryName(FilePath)! : Environment.CurrentDirectory;
+    /// <summary>Verzeichnis, in das das geöffnete *.tupfer entpackt wurde (null bei alten bzw. neuen Projekten).</summary>
+    string? _archiveDir;
+
+    /// <summary>Verzeichnis, relativ zu dem Pfade im Projekt gelten und in dem Aufnahmen abgelegt werden.</summary>
+    string BaseDir => _archiveDir ?? (FilePath != null ? Path.GetDirectoryName(FilePath)! : Environment.CurrentDirectory);
 
     /// <summary>Zwischenspeicher der Sprachausgabe beim Anhören; ungespeicherte Projekte haben noch kein Verzeichnis.</summary>
     string TtsCacheDir => FilePath == null && IsDesktop
@@ -215,6 +219,7 @@ public partial class MainWindowViewModel : ObservableObject
     void NewProject()
     {
         Project = CreateDefaultProject(Log);
+        _archiveDir = null;
         FilePath = null;
         Dialogs?.ProjectCreated();
         ProgramErrors = ProgramOutput = "";
@@ -326,7 +331,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand(AllowConcurrentExecutions = true)]
     Task OpenProject() => Guard("Öffnen", async () =>
     {
-        var path = await Dialogs!.OpenAsync("Projekt öffnen", "Tupfer-Projekt", "*" + ProjectStore.Extension);
+        var path = await Dialogs!.OpenAsync("Projekt öffnen", "Tupfer-Projekt", "*" + ProjectStore.Extension, "*" + ProjectStore.LegacyExtension);
         if (path != null)
             LoadProject(path);
     });
@@ -360,8 +365,19 @@ public partial class MainWindowViewModel : ObservableObject
 
     void LoadProject(string path)
     {
-        var file = ProjectStore.Load(path);
-        Project = ProjectViewModel.FromFile(file, Path.GetDirectoryName(path)!, Log);
+        if (ProjectStore.IsArchive(path))
+        {
+            // *.tupfer: Bilder und Aufnahmen werden zum Bearbeiten in ein Arbeitsverzeichnis entpackt
+            var (file, baseDir) = ProjectStore.LoadArchive(path, ProjectStore.ArchiveWorkDir(path));
+            Project = ProjectViewModel.FromFile(file, baseDir, Log);
+            _archiveDir = baseDir;
+        }
+        else
+        {
+            // Altes Format (*.tupfer.json): Bilder und Aufnahmen liegen neben der Datei
+            Project = ProjectViewModel.FromFile(ProjectStore.Load(path), Path.GetDirectoryName(path)!, Log);
+            _archiveDir = null;
+        }
         FilePath = path;
         Log($"Projekt geladen: {path}");
         AfterLoad();
@@ -371,6 +387,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         var file = TttoolYaml.Import(path);
         Project = ProjectViewModel.FromFile(file, Path.GetDirectoryName(path)!, Log);
+        _archiveDir = null;
         FilePath = null;
         AfterLoad();
         Log($"Importiert: {path} ({file.Scripts.Count} Skripte, {file.Speak.Count} Texte).");
@@ -386,25 +403,70 @@ public partial class MainWindowViewModel : ObservableObject
             await SaveProjectAs();
             return;
         }
-        Project.AssignCodes();
-        ProjectStore.Save(Project.ToFile(BaseDir), FilePath);
-        await Dialogs!.SavedAsync(FilePath);
-        Log($"Gespeichert: {FilePath}");
+        var path = FilePath;
+        if (ProjectStore.IsLegacy(path))
+        {
+            // Altes Format: als *.tupfer daneben speichern, die alte Datei bleibt unverändert
+            path = Path.Combine(Path.GetDirectoryName(path)!, ProjectStore.BaseName(path) + ProjectStore.Extension);
+            if (File.Exists(path))
+            {
+                await SaveProjectAs();
+                return;
+            }
+        }
+        WriteProject(path);
+        await Dialogs!.SavedAsync(path);
+        Log($"Gespeichert: {path}");
     });
 
     [RelayCommand]
     Task SaveProjectAs() => Guard("Speichern", async () =>
     {
-        var path = await Dialogs!.SaveAsync("Projekt speichern", "projekt" + ProjectStore.Extension, "Tupfer-Projekt", ProjectStore.Extension);
+        var name = (FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt") + ProjectStore.Extension;
+        var path = await Dialogs!.SaveAsync("Projekt speichern", name, "Tupfer-Projekt", ProjectStore.Extension);
         if (path == null) return;
         if (!path.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
-            path = Path.ChangeExtension(path, null) + ProjectStore.Extension;
-        Project.AssignCodes();
-        ProjectStore.Save(Project.ToFile(Path.GetDirectoryName(path)!), path);
-        FilePath = path;
+            path = Path.Combine(Path.GetDirectoryName(path)!, ProjectStore.BaseName(path) + ProjectStore.Extension);
+        WriteProject(path);
         await Dialogs!.SavedAsync(path);
         Log($"Gespeichert: {path}");
     });
+
+    /// <summary>
+    /// Speichert das Projekt als *.tupfer mit allen Bildern und Aufnahmen. War es noch keins (neu oder altes
+    /// Format), wird danach wie nach dem Öffnen im Arbeitsverzeichnis weitergearbeitet: Die Dateien werden
+    /// dorthin kopiert und neue Aufnahmen landen dort.
+    /// </summary>
+    void WriteProject(string path)
+    {
+        Project.AssignCodes();
+        var (entries, mediaPath) = ProjectStore.SaveArchive(Project.ToFile(BaseDir), BaseDir, path);
+        if (_archiveDir == null)
+        {
+            var dir = ProjectStore.ArchiveWorkDir(path);
+            if (!string.Equals(Path.GetFullPath(dir), Path.GetFullPath(BaseDir), StringComparison.Ordinal))
+                MoveToWorkDir(entries, mediaPath, dir);
+            _archiveDir = dir;
+        }
+        FilePath = path;
+    }
+
+    void MoveToWorkDir(Dictionary<string, string> entries, string mediaPath, string dir)
+    {
+        foreach (var (source, entry) in entries)
+        {
+            var target = Path.GetFullPath(entry, dir);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(source, target, overwrite: true);
+        }
+        string Moved(string path) =>
+            entries.TryGetValue(Path.GetFullPath(path, BaseDir), out var entry) ? Path.GetFullPath(entry, dir) : path;
+        foreach (var e in Project.Pages.SelectMany(p => p.Elements).Where(e => e.IsImage && !string.IsNullOrEmpty(e.ImagePath)))
+            e.ImagePath = Moved(e.ImagePath);
+        foreach (var s in Project.Speak.Where(s => s.HasRecording))
+            s.Recording = Moved(s.Recording!);
+        Project.MediaPath = mediaPath;
+    }
 
     // Im Browser kehrt die Dateiauswahl nach Abbrechen teils nie zurück: Befehl trotzdem freigeben
     [RelayCommand(AllowConcurrentExecutions = true)]
@@ -488,13 +550,17 @@ public partial class MainWindowViewModel : ObservableObject
         bool ok;
         if (Project.UseTttool)
         {
-            var yaml = Path.ChangeExtension(gme, ".yaml");
+            // Im Projektverzeichnis, damit tttool das Medienverzeichnis findet
+            var yaml = Path.Combine(BaseDir, ProjectStore.BaseName(FilePath) + ".yaml");
             WriteYaml(yaml);
             ok = await RunTttoolAssemble(yaml);
+            var built = Path.ChangeExtension(yaml, ".gme");
+            if (ok && !string.Equals(built, gme, StringComparison.Ordinal))
+                File.Move(built, gme, overwrite: true);
         }
         else
         {
-            ok = await BuildGmeInternal(Project.ToFile(dir), dir, gme);
+            ok = await BuildGmeInternal(Project.ToFile(BaseDir), BaseDir, gme);
         }
         return ok ? gme : null;
     }
@@ -1130,7 +1196,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (FilePath != null || !IsDesktop)
             return true;
-        Notice("Bitte das Projekt zuerst speichern – Aufnahmen werden neben der Projektdatei abgelegt.");
+        Notice("Bitte das Projekt zuerst speichern – Aufnahmen werden mit dem Projekt gespeichert.");
         await SaveProjectAs();
         return FilePath != null;
     }

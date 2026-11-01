@@ -1,4 +1,4 @@
-// Dateien-App: Tupfer-Projekte (*.tupfer.json) per Klick im Tupfer Designer öffnen und über das Menü
+// Dateien-App: Tupfer-Projekte (*.tupfer, ältere *.tupfer.json) per Klick im Tupfer Designer öffnen und über das Menü
 // „Neu“ anlegen.
 // Ohne Build-Schritt: Die Aktion wird so angemeldet wie mit registerFileAction aus @nextcloud/files –
 // Version 3 (Nextcloud bis 32) und Version 4 (ab 33), die Funktionen verstehen beide Aufrufarten.
@@ -12,7 +12,7 @@
 		iconSvgInline: () => icon,
 		enabled: (arg) => {
 			const nodes = nodesOf(arg)
-			return nodes.length === 1 && nodes[0].type === 'file' && /\.tupfer\.json$/i.test(nodes[0].basename)
+			return nodes.length === 1 && nodes[0].type === 'file' && /\.tupfer(\.json)?$/i.test(nodes[0].basename)
 		},
 		exec: async (arg) => {
 			const node = nodesOf(arg)[0]
@@ -55,11 +55,11 @@
 			if (!name) {
 				return
 			}
-			const stem = name.replace(/\.tupfer\.json$/i, '').replace(/[\\/]/g, '_')
+			const stem = name.replace(/\.tupfer(\.json)?$/i, '').replace(/[\\/]/g, '_')
 			const taken = new Set((content || []).map((node) => node.basename.toLowerCase()))
-			let file = stem + '.tupfer.json'
+			let file = stem + '.tupfer'
 			for (let i = 2; taken.has(file.toLowerCase()); i++) {
-				file = `${stem} (${i}).tupfer.json`
+				file = `${stem} (${i}).tupfer`
 			}
 			const path = (folder.path || '/').replace(/\/$/, '') + '/' + file
 			// Der Designer legt das Projekt an (Inhalt wie „Datei → Neu“) und speichert es gleich

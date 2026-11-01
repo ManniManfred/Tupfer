@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Tupfer.Designer.Model;
 
-/// <summary>Speicherformat eines Designer-Projekts (*.tupfer.json).</summary>
+/// <summary>Speicherformat eines Designer-Projekts (projekt.json in *.tupfer, früher *.tupfer.json).</summary>
 public class ProjectFile
 {
     public int Version { get; set; } = 1;

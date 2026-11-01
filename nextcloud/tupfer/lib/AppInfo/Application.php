@@ -19,7 +19,7 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function register(IRegistrationContext $context): void {
-		// Dateien-App: „Mit Tupfer Designer öffnen“ für *.tupfer.json
+		// Dateien-App: „Mit Tupfer Designer öffnen“ für *.tupfer (und ältere *.tupfer.json)
 		$context->registerEventListener(LoadAdditionalScriptsEvent::class, LoadFilesScripts::class);
 	}
 

@@ -11,8 +11,9 @@ namespace Tupfer.Designer;
 /// <summary>
 /// Dateidialoge im Browser. Die App arbeitet auf dem Speicher-Dateisystem von WebAssembly:
 /// Ausgewählte Dateien werden ins Arbeitsverzeichnis des Projekts kopiert, gespeicherte
-/// Dateien werden anschließend heruntergeladen. Ein Projekt mit Bildern oder Audiodateien
-/// wird als ZIP heruntergeladen und kann so auch wieder geöffnet werden.
+/// Dateien werden anschließend heruntergeladen. Projekte (*.tupfer) werden in das Verzeichnis
+/// entpackt, in dem sie liegen; alte Projekte (*.tupfer.json) lassen sich mit ihren Bildern
+/// (Mehrfachauswahl) oder als ZIP öffnen.
 /// </summary>
 class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
 {
@@ -34,6 +35,7 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
 
     public static bool IsProjectPattern(string pattern) =>
         pattern.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase)
+        || pattern.EndsWith(ProjectStore.LegacyExtension, StringComparison.OrdinalIgnoreCase)
         || pattern.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)
         || pattern.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
 
@@ -73,6 +75,7 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
         }
         var result = copied.Where(p => patterns.Any(pattern => Matches(p, pattern)))
             .OrderBy(p => p.EndsWith(".codes.yaml", StringComparison.OrdinalIgnoreCase))
+            .ThenBy(p => !p.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
             .FirstOrDefault();
         // Neue Bilder sollen neben der Projektdatei landen, auch wenn sie im ZIP in einem Unterordner lag
         if (project && result != null)
@@ -94,7 +97,8 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
         {
             if (path.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
             {
-                DownloadProject(path);
+                // Bleibt liegen: Es ist die geöffnete Projektdatei
+                BrowserInterop.Download(Path.GetFileName(path), File.ReadAllBytes(path), "application/zip");
             }
             else
             {
@@ -126,27 +130,6 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
         return Task.FromResult(BrowserInterop.PrintPdf(data)
             ? "Druckdialog geöffnet."
             : "Das PDF wurde in einem neuen Tab geöffnet – bitte dort drucken.");
-    }
-
-    /// <summary>
-    /// Lädt die Projektdatei herunter, zusammen mit Bildern und Audiodateien als ZIP. Das ZIP enthält das
-    /// ganze Arbeitsverzeichnis, damit auch Pfade wie ../bilder/… beim erneuten Öffnen stimmen.
-    /// </summary>
-    static void DownloadProject(string path)
-    {
-        var dir = WorkDirOf(path);
-        var media = MediaFiles(dir);
-        if (media.Count == 0)
-        {
-            BrowserInterop.Download(Path.GetFileName(path), File.ReadAllBytes(path), "application/json");
-            return;
-        }
-
-        using var ms = new MemoryStream();
-        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
-            foreach (var file in media.Prepend(path))
-                zip.CreateEntryFromFile(file, Path.GetRelativePath(dir, file).Replace('\\', '/'));
-        BrowserInterop.Download(ProjectStore.BaseName(path) + ".zip", ms.ToArray(), "application/zip");
     }
 
     /// <summary>Das Arbeitsverzeichnis (/tupfer/projektN), in dem die Datei liegt.</summary>

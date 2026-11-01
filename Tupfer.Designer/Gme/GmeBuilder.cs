@@ -178,6 +178,45 @@ public static class GmeBuilder
         }
     }
 
+    /// <summary>
+    /// Audiodateien im Medienverzeichnis, die die Skripte und die Begrüßung abspielen (Namen ohne Text
+    /// in der Sprachausgabe). Zeilen mit Fehlern werden übergangen, fehlende Dateien ebenso.
+    /// </summary>
+    public static List<string> MediaFiles(ProjectFile project, string baseDir)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var line in project.Scripts.SelectMany(s => s.Lines))
+        {
+            try
+            {
+                names.UnionWith(ScriptParser.ParseLine(line).Media);
+            }
+            catch (ScriptParseException)
+            {
+            }
+        }
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(project.Welcome))
+                names.UnionWith(ScriptParser.ParsePlayList(project.Welcome));
+        }
+        catch (ScriptParseException)
+        {
+        }
+
+        var pattern = string.IsNullOrWhiteSpace(project.MediaPath) ? "%s" : project.MediaPath;
+        return names.Where(n => project.Speak.All(s => s.Name != n))
+            .Order(StringComparer.Ordinal)
+            .SelectMany(n =>
+            {
+                var basePath = Path.GetFullPath(pattern.Replace("%s", n), baseDir);
+                return new[] { basePath }.Concat(MediaExtensions.Select(e => basePath + e));
+            })
+            .Where(File.Exists)
+            .Distinct()
+            .ToList();
+    }
+
     /// <summary>Audiodaten für einen Namen: Aufnahme, Sprachausgabe des Textes oder Datei im Medienverzeichnis.</summary>
     public static byte[] LoadAudio(ProjectFile project, string baseDir, string name, Func<string, string, byte[]> speak)
     {

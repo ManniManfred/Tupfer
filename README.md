@@ -221,9 +221,9 @@ Seite in die Breite ein. Am bequemsten ist trotzdem ein Tablet oder das Handy im
 Unterschiede zur Desktop-Version:
 
 - **Dateien:** Der Browser darf nicht direkt auf die Festplatte schreiben. Gespeicherte Projekte,
-  PDFs, PNGs, YAML- und GME-Dateien werden **heruntergeladen**. Ein Projekt mit Bildern oder
-  Audiodateien wird als `.zip` heruntergeladen; zum Öffnen das ZIP wählen – oder die
-  `.tupfer.json` zusammen mit ihren Bildern (Mehrfachauswahl).
+  PDFs, PNGs, YAML- und GME-Dateien werden **heruntergeladen**. Das Projekt (`.tupfer`) enthält
+  Bilder und Aufnahmen und lässt sich so wieder öffnen. Ältere Projekte öffnet man als `.zip`
+  oder als `.tupfer.json` zusammen mit ihren Bildern (Mehrfachauswahl).
 - **Sprachausgabe:** natürlich klingende Stimmen mit [Piper](https://github.com/rhasspy/piper)
   (neuronale Sprachausgabe, läuft im Browser). Im Tab *Sprachausgabe* wählt man die Stimme des
   Projekts und bei Bedarf für jeden Text eine eigene, z. B. für verschiedene Figuren: Deutsch mit
@@ -267,16 +267,17 @@ Ordner `editor/`, die Nextcloud über PHP ausliefert. So braucht der Webserver k
 **Benutzen:**
 
 - Im App-Menü erscheint **Tupfer**. Dort startet der Designer mit dem zuletzt bearbeiteten Stand.
-- In der Dateien-App öffnet ein Klick auf eine `*.tupfer.json` das Projekt im Designer, ebenso
+- In der Dateien-App öffnet ein Klick auf eine `*.tupfer` (oder ältere `*.tupfer.json`) das Projekt im Designer, ebenso
   der Eintrag *Mit Tupfer Designer öffnen* im Menü der Datei.
 - Über **+ Neu → Tupfer-Projekt** in der Dateien-App entsteht im aktuellen Ordner ein neues
   Projekt (Inhalt wie *Datei → Neu*), das sich gleich im Designer öffnet.
 - **Öffnen und Einfügen:** *Projekt öffnen*, *Bild einfügen*, *SVG importieren* und
-  *Aufnahme laden* zeigen die Dateiauswahl von Nextcloud. Bilder und Audiodateien, auf die ein
-  Projekt verweist (auch in Nachbarordnern wie `../bilder/`), lädt der Designer mit dem Projekt.
+  *Aufnahme laden* zeigen die Dateiauswahl von Nextcloud. Ein `*.tupfer` enthält Bilder und
+  Aufnahmen selbst; bei älteren `*.tupfer.json` lädt der Designer die Bilder und Audiodateien,
+  auf die sie verweisen (auch in Nachbarordnern wie `../bilder/`), mit dem Projekt.
   Bilder vom eigenen Rechner lassen sich weiter auf die Seite ziehen.
-- **Speichern:** Das Projekt wird an seinen Platz in Nextcloud geschrieben, zusammen mit neuen oder
-  geänderten Bildern und Aufnahmen. Unveränderte Dateien werden nicht erneut übertragen. Ein neues
+- **Speichern:** Das Projekt wird als `*.tupfer` (mit Bildern und Aufnahmen) an seinen Platz in
+  Nextcloud geschrieben; eine ältere `*.tupfer.json` bleibt dabei unverändert liegen. Ein neues
   Projekt (oder ein Beispiel) fragt beim ersten Speichern nach Ordner und Namen.
 - **Exporte** (GME, PDF, SVG, YAML) landen neben dem Projekt in Nextcloud. Bei einem noch nicht
   gespeicherten Projekt werden sie wie im Browser heruntergeladen. *Drucken* und *Auf den Stift*
@@ -295,7 +296,12 @@ Server vom Internet abgeschnitten, spricht meSpeak.
 5. *Erstellen → Auf den Stift speichern* (oder *GME-Datei bauen* und die `.gme` selbst auf den Stift kopieren).
 6. *Erstellen → Seiten drucken* (oder *Seiten als PDF*) – mit 1200 dpi in Originalgröße drucken.
 
-Projekte werden als `*.tupfer.json` gespeichert; Pfade zu Bildern relativ zur Projektdatei.
+Projekte werden als `*.tupfer` gespeichert: eine ZIP-Datei mit dem Projekt (`projekt.json`) und
+allen Bildern, Aufnahmen und Audiodateien, auf die es verweist – man kann sie also einfach
+weitergeben. Zum Bearbeiten entpackt der Designer sie in ein Arbeitsverzeichnis im Benutzerprofil
+(Windows: `%LocalAppData%\TupferDesigner\projekte`, Linux: `~/.local/share/TupferDesigner/projekte`);
+die GME-Datei entsteht neben der Projektdatei. Ältere Projekte (`*.tupfer.json`, Pfade relativ zur
+Projektdatei) lassen sich weiter öffnen und werden beim Speichern als `*.tupfer` daneben abgelegt.
 Hintergrundbilder älterer Projekte werden beim Öffnen zu einem seitenfüllenden Bild.
 
 ## Programmieren in C#

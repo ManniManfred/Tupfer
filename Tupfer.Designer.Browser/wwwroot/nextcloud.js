@@ -17,12 +17,12 @@ export function available() {
     return host() !== null;
 }
 
-/** Beim Start zu öffnende Datei (?datei=/Ordner/projekt.tupfer.json), sonst leer. */
+/** Beim Start zu öffnende Datei (?datei=/Ordner/projekt.tupfer), sonst leer. */
 export function startFile() {
     return new URLSearchParams(location.search).get('datei') ?? '';
 }
 
-/** Beim Start neu anzulegendes Projekt (?neu=/Ordner/name.tupfer.json, aus dem Menü „Neu“ der Dateien-App). */
+/** Beim Start neu anzulegendes Projekt (?neu=/Ordner/name.tupfer, aus dem Menü „Neu“ der Dateien-App). */
 export function startNew() {
     return new URLSearchParams(location.search).get('neu') ?? '';
 }

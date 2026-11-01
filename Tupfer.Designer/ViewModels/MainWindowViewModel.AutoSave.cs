@@ -41,6 +41,8 @@ public partial class MainWindowViewModel
             if (Directory.Exists(s.CurrentDirectory))
                 Environment.CurrentDirectory = s.CurrentDirectory;
             Project = ProjectViewModel.FromFile(ProjectStore.FromJson(s.ProjectJson), s.BaseDir, Log);
+            // Ein *.tupfer wurde in ein Arbeitsverzeichnis entpackt: dort weiterarbeiten
+            _archiveDir = s.FilePath != null && !ProjectStore.IsLegacy(s.FilePath) ? s.BaseDir : null;
             FilePath = s.FilePath;
             Log(s.FilePath != null
                 ? $"Letzten Bearbeitungsstand wiederhergestellt ({Path.GetFileName(s.FilePath)})."
