@@ -95,10 +95,12 @@
     <Border x:Name="HeaderBar" Grid.Row="0" Background="{StaticResource CardBackground}"
             BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,0,1" Padding="12,6">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0"
+                    ToolTip.Tip="{x:Static vm:MainWindowViewModel.AppName}">
           <Image Source="/Assets/Tupfer.png" Width="28" Height="28" />
           <StackPanel VerticalAlignment="Center">
-            <TextBlock x:Name="AppTitle" Text="{x:Static vm:MainWindowViewModel.AppName}" FontSize="16" FontWeight="Bold"
+            <!-- Version steht im Tooltip und im Fenstertitel -->
+            <TextBlock x:Name="AppTitle" Text="Tupfer Designer" FontSize="16" FontWeight="Bold"
                        Foreground="{StaticResource TextPrimary}" />
             <!-- Desktop mit eigener Titelleiste: Dateiname statt im Fenstertitel -->
             <TextBlock x:Name="FileTitle" IsVisible="False" Text="{Binding FileName}" FontSize="11"
@@ -261,24 +263,15 @@
           </Button>
           <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
           <Button Classes="tool" Command="{Binding PrintPagesCommand}" ToolTip.Tip="Seiten drucken (Strg+P)">
-            <StackPanel>
-              <PathIcon Data="{StaticResource IconPrint}" />
-              <TextBlock Text="Drucken" />
-            </StackPanel>
+            <PathIcon Data="{StaticResource IconPrint}" />
           </Button>
           <Button Classes="tool" Command="{Binding ExportPdfCommand}" ToolTip.Tip="Seiten als PDF">
-            <StackPanel>
-              <PathIcon Data="{StaticResource IconPdf}" />
-              <TextBlock Text="PDF" />
-            </StackPanel>
+            <PathIcon Data="{StaticResource IconPdf}" />
           </Button>
           </StackPanel>
           <Button Classes="tool" Command="{Binding SaveToPenCommand}" ToolTip.Tip="GME bauen und auf den Stift speichern (Umschalt+F5)"
                   IsVisible="{x:Static vm:MainWindowViewModel.CanSaveToPen}" Margin="6,0,0,0">
-            <StackPanel>
-              <PathIcon Data="{StaticResource IconPen}" />
-              <TextBlock x:Name="PenLabel" Text="Auf den Stift" />
-            </StackPanel>
+            <PathIcon Data="{StaticResource IconPen}" />
           </Button>
           <Button Classes="accent" Command="{Binding BuildGmeCommand}" ToolTip.Tip="GME-Datei bauen (F5)" Margin="6,0,0,0">
             <StackPanel>

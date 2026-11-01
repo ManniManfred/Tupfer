@@ -14,7 +14,7 @@
 
 ## Projekt
 
-- **Versionsnummer:** wird im Titel angezeigt und kommt beim Release aus dem Tag: Ein gepushtes Tag
+- **Versionsnummer:** steht im Fenstertitel und im Tooltip des Programmnamens und kommt beim Release aus dem Tag: Ein gepushtes Tag
   `v1.2.3` baut Setups, Nextcloud-App und Web-Version (GitHub Pages) mit Version `1.2.3`.
   `Directory.Build.props` (`<Version>`) gilt nur für lokale Builds und wird nicht mehr hochgezählt.
   Tags nur setzen, wenn der Benutzer es verlangt (Fehlerbehebung → dritte Stelle, neue Funktion → zweite Stelle).

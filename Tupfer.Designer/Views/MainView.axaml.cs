@@ -275,7 +275,6 @@ public partial class MainView : UserControl
         CompactVersion.IsVisible = compact;
         HeaderFileButtons.IsVisible = !compact;
         GmeLabel.IsVisible = !compact;
-        PenLabel.IsVisible = !compact;
         CompactBar.IsVisible = compact;
         UpdateLogRow(compact ? 80 : 140);
 
