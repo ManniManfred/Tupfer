@@ -120,6 +120,24 @@ public class RecordingTests : IDisposable
     }
 
     [Fact]
+    public void OggBehaeltAnfangUndLaenge()
+    {
+        // Kurzer Ton nach 100 ms: nach Hin- und Rückweg an gleicher Stelle, Länge auf das Sample gleich
+        // (der Encoder verbraucht sonst den ersten halben Block)
+        int rate = Audio.SampleRate, start = rate / 10;
+        var samples = new short[rate];
+        for (int i = start; i < start + 220; i++)
+            samples[i] = (short)(20000 * Math.Sin(2 * Math.PI * 1000 * (i - start) / rate));
+        var back = Audio.OggToWav(Audio.WavToOgg(Audio.Wav(samples)));
+        var decoded = Enumerable.Range(0, (back.Length - 44) / 2).Select(i => BitConverter.ToInt16(back, 44 + i * 2)).ToArray();
+        Assert.Equal(samples.Length, decoded.Length);
+        // Einsatz des Tons (erster deutlich lauter Wert); ohne Ausgleich läge er 512 Samples zu früh
+        int onset = Array.FindIndex(samples, v => Math.Abs((int)v) > 10000);
+        int decodedOnset = Array.FindIndex(decoded, v => Math.Abs((int)v) > 10000);
+        Assert.InRange(decodedOnset - onset, -5, 5);
+    }
+
+    [Fact]
     public void AndereAbtastrateUndStereo()
     {
         // 44,1 kHz Stereo, 1,5 s → mono 22050 Hz

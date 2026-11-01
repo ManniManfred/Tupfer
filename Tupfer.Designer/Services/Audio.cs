@@ -139,6 +139,10 @@ public static class Audio
         Flush(true);
 
         var state = ProcessingState.Create(info);
+        // Der Encoder verbraucht den ersten halben langen Block als Überlappung ohne Vorgänger (Decoder geben
+        // ihn nicht aus): so viel Stille voranstellen, sonst fehlen die ersten 23 ms der Aufnahme
+        int delay = info.CodecSetup.BlockSizes[1] / 2;
+        samples = [.. new float[delay], .. samples];
         const int block = 1024;
         var buffer = new[] { new float[block] };
         for (int pos = 0; pos < samples.Length; pos += block)
