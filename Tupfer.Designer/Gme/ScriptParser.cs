@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Tupfer.Designer.Gme;
 
 /// <summary>Register vor der Auflösung: entweder Nummer ($3) oder Name ($zug).</summary>
@@ -177,28 +175,33 @@ public class ScriptParser
     {
         if (AtEnd || !char.IsAsciiDigit(Peek))
             return null;
-        int start = _pos;
-        long value;
+        int radix = 10;
         if (Peek == '0' && _pos + 1 < _s.Length && (_s[_pos + 1] is 'x' or 'X' or 'o' or 'O'))
         {
-            bool hex = _s[_pos + 1] is 'x' or 'X';
+            radix = _s[_pos + 1] is 'x' or 'X' ? 16 : 8;
             _pos += 2;
-            int digitsStart = _pos;
-            while (!AtEnd && (hex ? char.IsAsciiHexDigit(Peek) : Peek is >= '0' and <= '7'))
-                _pos++;
-            if (_pos == digitsStart)
-                throw Error("Ziffern erwartet");
-            value = Convert.ToInt64(_s[digitsStart.._pos], hex ? 16 : 8);
         }
-        else
-        {
-            while (!AtEnd && char.IsAsciiDigit(Peek))
-                _pos++;
-            value = long.Parse(_s[start.._pos], CultureInfo.InvariantCulture);
-        }
+        int digitsStart = _pos;
+        while (!AtEnd && DigitValue(Peek) is { } d && d < radix)
+            _pos++;
+        if (_pos == digitsStart)
+            throw Error("Ziffern erwartet");
+        // tttool wandelt mit fromIntegral, d. h. modulo 2^16 (auch bei sehr langen Zahlen)
+        var value = (ushort)Modulo(_s[digitsStart.._pos], radix, 1 << 16);
         SkipWs();
-        // tttool wandelt mit fromIntegral, d. h. modulo 2^16
-        return unchecked((ushort)value);
+        return value;
+    }
+
+    static int? DigitValue(char c) =>
+        char.IsAsciiDigit(c) ? c - '0' : char.IsAsciiHexDigitLower(c) ? c - 'a' + 10 : char.IsAsciiHexDigitUpper(c) ? c - 'A' + 10 : null;
+
+    /// <summary>Wert der Ziffernfolge modulo <paramref name="modulus"/>, ohne Überlauf bei beliebiger Länge.</summary>
+    static int Modulo(string digits, int radix, int modulus)
+    {
+        int value = 0;
+        foreach (var c in digits)
+            value = (value * radix + DigitValue(c)!.Value) % modulus;
+        return value;
     }
 
     Register? Reg()
@@ -309,7 +312,7 @@ public class ScriptParser
                     int start = _pos;
                     while (!AtEnd && char.IsAsciiHexDigit(Peek))
                         _pos++;
-                    bytes.Add(unchecked((byte)Convert.ToInt64(_s[start.._pos], 16)));
+                    bytes.Add((byte)Modulo(_s[start.._pos], 16, 256));
                     SkipWs();
                 }
                 if (bytes.Count == 0)

@@ -82,7 +82,7 @@ public class TextToSpeech
             try
             {
                 _log($"Spreche „{text}“");
-                await File.WriteAllBytesAsync(path, await natural(voice, text));
+                WriteCache(path, await natural(voice, text));
             }
             catch (Exception ex)
             {
@@ -111,7 +111,7 @@ public class TextToSpeech
                 return File.ReadAllBytes(wav);
             _log($"Spreche „{text}“");
             var data = synthesize(language, text);
-            File.WriteAllBytes(wav, data);
+            WriteCache(wav, data);
             return data;
         }
         if (File.Exists(ogg))
@@ -121,7 +121,9 @@ public class TextToSpeech
             return cached;
 
         _log($"Spreche „{text}“");
-        var tmp = Path.Combine(_cacheDir, $"tmp-{key}.wav");
+        // Eigene Namen je Aufruf: Derselbe Text kann gleichzeitig gesprochen werden (zweimal schnell Anhören)
+        var tmp = Path.Combine(_cacheDir, $"tmp-{key}-{Guid.NewGuid():N}.wav");
+        var tmpOgg = Path.ChangeExtension(tmp, ".ogg");
         try
         {
             if (!Synthesize(language, text, tmp) || !File.Exists(tmp) || new FileInfo(tmp).Length <= 44)
@@ -129,19 +131,48 @@ public class TextToSpeech
                     "Keine Sprachausgabe gefunden. Bitte pico2wave (libttspico-utils) oder espeak installieren " +
                     "oder Audiodateien im Medienverzeichnis ablegen.");
 
-            if (Run("oggenc", "-Q", "-o", ogg, tmp))
-                return File.ReadAllBytes(ogg);
+            if (Run("oggenc", "-Q", "-o", tmpOgg, tmp))
+            {
+                var encoded = File.ReadAllBytes(tmpOgg);
+                WriteCache(ogg, encoded);
+                return encoded;
+            }
 
             var data = File.ReadAllBytes(tmp);
-            if (ToOgg(data, ogg) is { } encoded)
-                return encoded;
-            File.Copy(tmp, wav, true);
+            if (ToOgg(data, ogg) is { } converted)
+                return converted;
+            WriteCache(wav, data);
             return data;
         }
         finally
         {
             if (File.Exists(tmp))
                 File.Delete(tmp);
+            if (File.Exists(tmpOgg))
+                File.Delete(tmpOgg);
+        }
+    }
+
+    /// <summary>
+    /// Schreibt eine Datei in den Cache: erst unter eigenem Namen, dann umbenannt. Zwei gleichzeitige Aufrufe für
+    /// denselben Text (z. B. zweimal schnell Anhören) stören sich so nicht, und es bleibt keine halbe Datei liegen.
+    /// </summary>
+    static void WriteCache(string path, byte[] data)
+    {
+        var temp = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            File.WriteAllBytes(temp, data);
+            File.Move(temp, path, overwrite: true);
+        }
+        catch (IOException) when (File.Exists(path))
+        {
+            // Ein gleichzeitiger Aufruf hat die Datei schon abgelegt
+        }
+        finally
+        {
+            if (File.Exists(temp))
+                File.Delete(temp);
         }
     }
 
@@ -151,7 +182,7 @@ public class TextToSpeech
         try
         {
             var ogg = Audio.WavToOgg(wav);
-            File.WriteAllBytes(oggPath, ogg);
+            WriteCache(oggPath, ogg);
             return ogg;
         }
         catch (InvalidDataException)
@@ -162,6 +193,9 @@ public class TextToSpeech
 
     bool Synthesize(string lang, string text, string wavPath)
     {
+        // Ein Text wie „-5 Punkte“ würde sonst als Option des Programms gelesen
+        if (text.StartsWith('-'))
+            text = " " + text;
         if (OperatingSystem.IsWindows() && WindowsSpeech.TrySpeak(lang, text, wavPath))
             return true;
 

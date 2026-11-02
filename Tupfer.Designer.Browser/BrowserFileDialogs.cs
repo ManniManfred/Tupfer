@@ -111,6 +111,8 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
 
     public void ProjectCreated() => NewWorkDir();
 
+    public Task<bool> ConfirmAsync(string message) => Task.FromResult(BrowserInterop.Confirm(message));
+
     public async Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create)
     {
         // Den Dialog sofort öffnen: Der Browser erlaubt ihn nur kurz nach dem Klick, das Bauen kann dauern

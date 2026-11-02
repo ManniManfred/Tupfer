@@ -538,6 +538,19 @@ public class PageCanvas : Control
     async void OnDrop(object? sender, DragEventArgs e)
     {
         e.Handled = true;
+        // async void: Ein Fehler hier würde die App beenden
+        try
+        {
+            await DropImages(e);
+        }
+        catch (Exception ex)
+        {
+            Page?.Project.Log($"Bilder konnten nicht eingefügt werden: {ex.Message}");
+        }
+    }
+
+    async Task DropImages(DragEventArgs e)
+    {
         if (Page is not { } page || e.DataTransfer.TryGetFiles() is not { } files)
             return;
         var pos = ToMm(e.GetPosition(this) - _origin);
@@ -549,9 +562,10 @@ public class PageCanvas : Control
             {
                 paths.Add(file.TryGetLocalPath() ?? await WorkFiles.CopyAsync(file, Environment.CurrentDirectory));
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 // Nicht lesbare Datei überspringen
+                page.Project.Log($"Bild „{file.Name}“ konnte nicht gelesen werden: {ex.Message}");
             }
         }
         if (paths.Count == 0)

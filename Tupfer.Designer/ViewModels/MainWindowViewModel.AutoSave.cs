@@ -14,15 +14,23 @@ public partial class MainWindowViewModel
     bool _autoSaveFailed;
 
     /// <summary>
-    /// Startet die App: öffnet das Beispiel oder stellt den zuletzt gesicherten Stand wieder her
-    /// (wenn <paramref name="restore"/>) und sichert danach jede Sekunde, falls sich etwas geändert hat.
+    /// Startet die App: öffnet das Beispiel bzw. die Datei <paramref name="path"/> oder stellt den zuletzt gesicherten
+    /// Stand wieder her (wenn <paramref name="restore"/>) und sichert danach jede Sekunde, falls sich etwas geändert hat.
+    /// Ein gesicherter Stand mit ungespeicherten Änderungen wird auch vor einem Beispiel oder einer Datei
+    /// wiederhergestellt; dann wird gefragt, ob er verworfen werden darf, statt ihn still zu überschreiben.
     /// </summary>
-    public async Task StartAsync(ExampleProject? example, bool restore)
+    public async Task StartAsync(ExampleProject? example, bool restore, string? path = null)
     {
+        if (AutoSaveStore != null && (restore || example != null || path != null))
+        {
+            bool open = example != null || path != null;
+            if (await LoadAutoSave(AutoSaveStore) is { } snapshot && (!open || snapshot.Modified))
+                RestoreAutoSave(snapshot);
+        }
         if (example != null)
             await OpenExampleCommand.ExecuteAsync(example);
-        else if (restore && AutoSaveStore != null)
-            await RestoreAutoSave(AutoSaveStore);
+        else if (path != null && await ConfirmDiscardAsync())
+            Load(path);
 
         // Erst jetzt, sonst würde der gesicherte Stand gleich mit dem leeren Projekt überschrieben
         if (AutoSaveStore != null)
@@ -32,22 +40,40 @@ public partial class MainWindowViewModel
         }
     }
 
-    async Task RestoreAutoSave(IAutoSaveStore store)
+    async Task<AutoSaveSnapshot?> LoadAutoSave(IAutoSaveStore store)
     {
         try
         {
-            if (await store.LoadAsync() is not { } s)
-                return;
+            return await store.LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Notice($"Der automatisch gesicherte Stand ließ sich nicht wiederherstellen: {ex.Message}");
+            return null;
+        }
+    }
+
+    void RestoreAutoSave(AutoSaveSnapshot s)
+    {
+        try
+        {
             if (Directory.Exists(s.CurrentDirectory))
                 Environment.CurrentDirectory = s.CurrentDirectory;
             Project = ProjectViewModel.FromFile(ProjectStore.FromJson(s.ProjectJson), s.BaseDir, Log);
             // Ein *.tupfer wurde in ein Arbeitsverzeichnis entpackt: dort weiterarbeiten
             _archiveDir = s.FilePath != null && !ProjectStore.IsLegacy(s.FilePath) ? s.BaseDir : null;
             FilePath = s.FilePath;
+            // Desktop: Das Arbeitsverzeichnis gehört wieder dieser Instanz (nicht leeren, darin liegen die Dateien)
+            if (IsDesktop && _archiveDir != null && Directory.Exists(_archiveDir))
+                ProjectStore.ClaimWorkDir(_archiveDir, clear: false);
             Log(s.FilePath != null
                 ? $"Letzten Bearbeitungsstand wiederhergestellt ({Path.GetFileName(s.FilePath)})."
                 : "Letzten Bearbeitungsstand wiederhergestellt (noch nicht gespeichertes Projekt).");
             AfterLoad();
+            if (s.Modified)
+                _saved = null;
+            else
+                MarkSaved();
         }
         catch (Exception ex)
         {
@@ -63,7 +89,9 @@ public partial class MainWindowViewModel
         try
         {
             var json = ProjectStore.ToJson(Project.ToFile(BaseDir));
-            await AutoSaveStore.SaveAsync(new AutoSaveSnapshot(FilePath, BaseDir, Environment.CurrentDirectory, json));
+            bool modified = _saved is not { } saved
+                            || (saved.Base == BaseDir ? json : ProjectStore.ToJson(Project.ToFile(saved.Base))) != saved.Json;
+            await AutoSaveStore.SaveAsync(new AutoSaveSnapshot(FilePath, BaseDir, Environment.CurrentDirectory, json, modified));
             _autoSaveFailed = false;
         }
         catch (Exception ex)

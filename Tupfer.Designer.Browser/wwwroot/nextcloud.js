@@ -22,9 +22,22 @@ export function startFile() {
     return new URLSearchParams(location.search).get('datei') ?? '';
 }
 
-/** Beim Start neu anzulegendes Projekt (?neu=/Ordner/name.tupfer, aus dem Menü „Neu“ der Dateien-App). */
+/**
+ * Beim Start neu anzulegendes Projekt (?neu=/Ordner/name.tupfer, aus dem Menü „Neu“ der Dateien-App).
+ * Die Dateien-App merkt sich den Pfad in sessionStorage; fehlt er dort (z. B. ein fremder Link), wird gefragt.
+ */
 export function startNew() {
-    return new URLSearchParams(location.search).get('neu') ?? '';
+    const path = new URLSearchParams(location.search).get('neu') ?? '';
+    if (!path)
+        return '';
+    let expected = null;
+    try {
+        expected = sessionStorage.getItem('tupfer-neu');
+        sessionStorage.removeItem('tupfer-neu');
+    } catch { }
+    if (expected === path || window.confirm(`Neues Tupfer-Projekt „${path}“ in Nextcloud anlegen?`))
+        return path;
+    return '';
 }
 
 function user() {
@@ -106,7 +119,7 @@ export function setPending(data) {
  * Schreibt die übergebenen Daten in die Datei; fehlende Ordner werden angelegt.
  * mode: 'neu' – nur, wenn es die Datei noch nicht gibt; 'ersetzen' – nur, wenn sie seit dem letzten Lesen
  * oder Schreiben unverändert ist; 'immer' – auf jeden Fall.
- * Liefert 'ok', 'vorhanden' (bei 'neu') oder 'geaendert' (bei 'ersetzen').
+ * Liefert 'ok', 'vorhanden' (bei 'neu'), 'geaendert' oder 'unbekannt' (bei 'ersetzen': Stand der Datei nicht bekannt).
  */
 export async function write(path, mode) {
     const body = pending;
@@ -116,6 +129,10 @@ export async function write(path, mode) {
         headers['If-None-Match'] = '*';
     else if (mode === 'ersetzen' && etags.has(path))
         headers['If-Match'] = etags.get(path);
+    else if (mode === 'ersetzen' && await exists(path)) {
+        // Stand unbekannt (z. B. Browserdaten gelöscht): nicht ungefragt überschreiben
+        return 'unbekannt';
+    }
     let response = await dav('PUT', path, { body, headers });
     if (response.status === 409 || response.status === 404) {
         await makeFolders(path);
@@ -146,23 +163,43 @@ async function makeFolders(path) {
  * Liefert den Pfad, leer bei Abbruch.
  */
 export function pick(title, extensions, folder, start) {
-    const dialogs = host().OC.dialogs;
+    const nc = host();
+    const dialogs = nc.OC.dialogs;
     const endings = extensions ? extensions.toLowerCase().split(',') : [];
     return new Promise(resolve => {
         let done = false;
+        let timer = 0;
         const finish = path => {
             if (!done) {
                 done = true;
+                clearInterval(timer);
                 resolve(path || '');
             }
         };
         const options = folder
             ? { allowDirectoryChooser: true }
             : { filter: f => f.mimetype === 'httpd/unix-directory' || endings.some(e => f.name.toLowerCase().endsWith(e)) };
-        // Liefert ein Promise, das beim Schließen ohne Auswahl abgelehnt wird
         const result = dialogs.filepicker(title, path => finish(path), false,
             folder ? ['httpd/unix-directory'] : undefined, true, dialogs.FILEPICKER_TYPE_CHOOSE, start || '/', options);
-        Promise.resolve(result).then(() => finish(''), () => finish(''));
+        // OC.dialogs.filepicker liefert (Nextcloud 28 bis 33) nichts zurück, auch kein Promise: Würde man auf
+        // Promise.resolve(undefined) warten, käme sofort „abgebrochen“, noch bevor der Benutzer etwas wählt.
+        // Nur ein echtes Promise abwarten (die Auswahl kommt über den Rückruf davor).
+        if (result && typeof result.then === 'function') {
+            const later = () => setTimeout(() => finish(''), 0);
+            result.then(later, later);
+        }
+        // Abbrechen erkennen: Der Dialog erscheint und verschwindet ohne Auswahl. Die Auswahl selbst kommt über
+        // den Rückruf, bevor sich der Dialog schließt; zur Sicherheit erst etwas später „abgebrochen“ melden.
+        let seen = false;
+        let gone = 0;
+        timer = setInterval(() => {
+            if (nc.document.querySelector('.file-picker__main, .file-picker')) {
+                seen = true;
+                gone = 0;
+            } else if (seen && ++gone >= 3) {
+                finish('');
+            }
+        }, 250);
     });
 }
 

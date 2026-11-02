@@ -52,6 +52,10 @@ static partial class BrowserInterop
     [JSImport("autosaveLoadMedia", "tupfer")]
     public static partial Task<string> AutoSaveLoadMediaAsync();
 
+    /// <summary>Rückfrage mit OK und Abbrechen; true = OK.</summary>
+    [JSImport("confirmMessage", "tupfer")]
+    public static partial bool Confirm(string text);
+
     /// <summary>Setzt den Titel des Browser-Tabs.</summary>
     [JSImport("setTitle", "tupfer")]
     public static partial void SetTitle(string title);

@@ -95,7 +95,7 @@ public static class Audio
                 BitConverter.TryWriteBytes(wav.AsSpan(pos + 4), wav.Length - pos - 8);
                 break;
             }
-            if (size < 0 || pos + 8 + size > wav.Length)
+            if (size < 0 || pos + 8L + size > wav.Length)
                 break;
             pos += 8 + size + (size & 1);
         }
@@ -223,7 +223,7 @@ public static class Audio
                 if (channels < 1 || sampleRate < 1 || !(format == 1 && bits is 8 or 16 or 24 or 32 || format == 3 && bits == 32))
                     throw new InvalidDataException("Nicht unterstütztes WAV-Format (erwartet PCM oder Float).");
                 // Längenangabe kann nach einem abgebrochenen Aufnahmeprogramm falsch sein
-                int length = size < 0 || start + size > wav.Length ? wav.Length - start : size;
+                int length = size < 0 || (long)start + size > wav.Length ? wav.Length - start : size;
                 int bytes = bits / 8, frame = bytes * channels;
                 var samples = new float[length / frame];
                 for (int i = 0; i < samples.Length; i++)
@@ -235,7 +235,7 @@ public static class Audio
                 }
                 return samples;
             }
-            if (size < 0)
+            if (size < 0 || (long)start + size > wav.Length)
                 break;
             pos = start + size + (size & 1);
         }
@@ -388,9 +388,20 @@ public class DesktopAudio : IAudioDevice
             File.Delete(_recordFile);
         if (OperatingSystem.IsWindows())
         {
-            Mci("open new type waveaudio alias tupferrec");
-            Mci($"set tupferrec bitspersample 16 channels 1 samplespersec {Audio.SampleRate} alignment 2 bytespersec {Audio.SampleRate * 2}");
-            Mci("record tupferrec");
+            // Ein von einer abgebrochenen Aufnahme offenes Gerät würde jede weitere Aufnahme verhindern
+            Mci("close tupferrec", throwOnError: false);
+            try
+            {
+                Mci("open new type waveaudio alias tupferrec");
+                Mci($"set tupferrec bitspersample 16 channels 1 samplespersec {Audio.SampleRate} alignment 2 bytespersec {Audio.SampleRate * 2}");
+                Mci("record tupferrec");
+            }
+            catch
+            {
+                Mci("close tupferrec", throwOnError: false);
+                _recordFile = null;
+                throw;
+            }
             return Task.CompletedTask;
         }
         string rate = Audio.SampleRate.ToString();
@@ -414,9 +425,15 @@ public class DesktopAudio : IAudioDevice
         _recordFile = null;
         if (OperatingSystem.IsWindows())
         {
-            Mci("stop tupferrec");
-            Mci($"save tupferrec \"{file}\"");
-            Mci("close tupferrec");
+            try
+            {
+                Mci("stop tupferrec");
+                Mci($"save tupferrec \"{file}\"");
+            }
+            finally
+            {
+                Mci("close tupferrec", throwOnError: false);
+            }
         }
         else if (_recorder is { } recorder)
         {

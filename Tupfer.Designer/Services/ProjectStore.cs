@@ -38,15 +38,64 @@ public static class ProjectStore
     /// </summary>
     public static Func<string, string> ArchiveWorkDir { get; set; } = DefaultArchiveWorkDir;
 
+    /// <summary>Sperrdatei im Arbeitsverzeichnis: zeigt, dass eine laufende Programminstanz es benutzt.</summary>
+    public const string LockFileName = ".tupfer-in-benutzung";
+
+    static FileStream? _workDirLock;
+    static string? _lockedWorkDir;
+
     static string DefaultArchiveWorkDir(string path)
     {
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(path))))[..12].ToLowerInvariant();
-        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "TupferDesigner", "projekte", $"{BaseName(path)}-{hash}");
-        if (Directory.Exists(dir))
-            Directory.Delete(dir, true);
+        var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TupferDesigner", "projekte");
+        // Benutzt eine andere Instanz (z. B. ein zweites Fenster mit demselben Projekt) das Verzeichnis, ein anderes nehmen:
+        // Leeren würde dort Bilder und Aufnahmen löschen, die noch nicht gespeichert sind
+        for (int i = 1; ; i++)
+        {
+            var dir = Path.Combine(root, i == 1 ? $"{BaseName(path)}-{hash}" : $"{BaseName(path)}-{hash}-{i}");
+            if (ClaimWorkDir(dir, clear: true))
+                return dir;
+        }
+    }
+
+    /// <summary>
+    /// Belegt ein Arbeitsverzeichnis für diese Programminstanz (Sperrdatei, das vorher belegte wird frei).
+    /// Mit <paramref name="clear"/> wird es geleert. false, wenn eine andere Instanz es benutzt.
+    /// </summary>
+    public static bool ClaimWorkDir(string dir, bool clear)
+    {
+        dir = Path.GetFullPath(dir);
         Directory.CreateDirectory(dir);
-        return dir;
+        var lockFile = _workDirLock;
+        if (!string.Equals(_lockedWorkDir, dir, StringComparison.Ordinal))
+        {
+            try
+            {
+                lockFile = new FileStream(Path.Combine(dir, LockFileName), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+        if (clear)
+        {
+            foreach (var sub in Directory.EnumerateDirectories(dir))
+                Directory.Delete(sub, true);
+            foreach (var file in Directory.EnumerateFiles(dir).Where(f => Path.GetFileName(f) != LockFileName))
+                File.Delete(file);
+        }
+        if (!ReferenceEquals(lockFile, _workDirLock))
+        {
+            _workDirLock?.Dispose();
+            _workDirLock = lockFile;
+            _lockedWorkDir = dir;
+        }
+        return true;
     }
 
     /// <summary>Liest eine JSON-Projektdatei (altes Format).</summary>
@@ -72,10 +121,12 @@ public static class ProjectStore
     /// Speichert das Projekt als ZIP. Pfade im Projekt sind relativ zu <paramref name="baseDir"/>; Dateien darin
     /// behalten ihren relativen Pfad, Dateien außerhalb kommen nach <c>dateien/</c> (bzw. <c>medien/</c> für das
     /// Medienverzeichnis), die Verweise werden angepasst. Fehlende Dateien werden übergangen.
-    /// Liefert zu jeder aufgenommenen Datei (voller Pfad) ihren Pfad im ZIP und das Medienverzeichnis im ZIP.
+    /// Liefert zu jeder aufgenommenen Datei (voller Pfad) ihren Pfad im ZIP, das Medienverzeichnis im ZIP und die
+    /// Dateien, auf die das Projekt verweist, die es aber nicht gibt (sie fehlen im ZIP).
     /// </summary>
-    public static (Dictionary<string, string> Entries, string MediaPath) SaveArchive(ProjectFile project, string baseDir, string path)
+    public static (Dictionary<string, string> Entries, string MediaPath, List<string> Missing) SaveArchive(ProjectFile project, string baseDir, string path)
     {
+        var missing = new List<string>();
         var file = FromJson(ToJson(project));
         var entries = new Dictionary<string, string>(StringComparer.Ordinal);
         var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ArchiveEntry };
@@ -97,7 +148,11 @@ public static class ProjectStore
             if (entries.TryGetValue(full, out var known))
                 return known;
             if (!File.Exists(full))
+            {
+                if (!missing.Contains(full))
+                    missing.Add(full);
                 return null;
+            }
             entry ??= Inside(baseDir, full) is { } inside && !used.Contains(inside)
                 ? inside
                 : Unique($"{OutsideDir}/{Path.GetFileName(full)}");
@@ -145,7 +200,7 @@ public static class ProjectStore
                 zip.CreateEntryFromFile(source, entry);
         }
         File.Move(temp, path, overwrite: true);
-        return (entries, file.MediaPath);
+        return (entries, file.MediaPath, missing);
     }
 
     /// <summary>Pfad von <paramref name="full"/> relativ zu <paramref name="dir"/> (mit „/“), null, wenn sie außerhalb liegt.</summary>

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.ML.OnnxRuntime;
@@ -37,6 +38,22 @@ public static class PiperSpeech
 
     /// <summary>Spricht den Text (Stimme wie in <see cref="Voices"/>, bei mehreren Sprechern „…#sprecher“), liefert WAV (mono, 16 Bit).</summary>
     public static async Task<byte[]> SpeakAsync(string voiceId, string text)
+    {
+        // Nacheinander: Sonst könnte das Freigeben der ältesten Stimme (MaxVoices) eine treffen, die gerade spricht
+        await SpeakLock.WaitAsync();
+        try
+        {
+            return await SpeakLockedAsync(voiceId, text);
+        }
+        finally
+        {
+            SpeakLock.Release();
+        }
+    }
+
+    static readonly SemaphoreSlim SpeakLock = new(1, 1);
+
+    static async Task<byte[]> SpeakLockedAsync(string voiceId, string text)
     {
         var parts = voiceId.Split('#', 2);
         var (config, session) = await UseVoiceAsync(parts[0]);
@@ -101,7 +118,7 @@ public static class PiperSpeech
             Loaded.Add((model, config, session));
             while (Loaded.Count > MaxVoices)
             {
-                // Gesprochen wird nacheinander, die älteste Sitzung ist also gerade nicht in Gebrauch
+                // Gesprochen wird nacheinander (SpeakLock), die älteste Sitzung ist also gerade nicht in Gebrauch
                 Loaded[0].Session.Dispose();
                 Loaded.RemoveAt(0);
             }
@@ -161,17 +178,32 @@ public static class PiperSpeech
 
     // ---------- Lautschrift mit piper_phonemize ----------
 
-    /// <summary>Paket von piper-phonemize für dieses System.</summary>
-    static string PhonemizePackage()
+    /// <summary>
+    /// Paket von piper-phonemize für dieses System mit seiner SHA-256-Prüfsumme: Das Programm darin wird ausgeführt,
+    /// es darf also nur genau die bekannte Datei sein.
+    /// </summary>
+    static (string Name, string Sha256) PhonemizePackage()
     {
         var arm = RuntimeInformation.OSArchitecture == Architecture.Arm64;
-        if (OperatingSystem.IsWindows())
-            return "piper-phonemize_windows_amd64.zip"; // läuft auf Windows für ARM emuliert
+        if (OperatingSystem.IsWindows()) // läuft auf Windows für ARM emuliert
+            return ("piper-phonemize_windows_amd64.zip", "a6f1a3f80eba222c1b8eb3904a9c18781f3c21827bd2dc36bd85b216a306d945");
         if (OperatingSystem.IsMacOS())
-            return arm ? "piper-phonemize_macos_aarch64.tar.gz" : "piper-phonemize_macos_x64.tar.gz";
+            return arm
+                ? ("piper-phonemize_macos_aarch64.tar.gz", "78a9c28b3c94baf6e9526b2e386ce547909abaec4f31aadd7e16b01fbfe5f322")
+                : ("piper-phonemize_macos_x64.tar.gz", "9ec6e300c0d012a663758bc45a097b47ee759761a3b91c7742de042af789d84b");
         if (OperatingSystem.IsLinux())
-            return arm ? "piper-phonemize_linux_aarch64.tar.gz" : "piper-phonemize_linux_x86_64.tar.gz";
+            return arm
+                ? ("piper-phonemize_linux_aarch64.tar.gz", "f216660f6225a165155839110cd387947d69618f014f3d1c56729fdedb6557cc")
+                : ("piper-phonemize_linux_x86_64.tar.gz", "3fb3d58b4ac42bd69d38948acdbeab335eee7e599984169d28fb0082496649ad");
         throw new PlatformNotSupportedException("Für dieses System gibt es keine natürliche Sprachausgabe.");
+    }
+
+    /// <summary>Wirft, wenn die Daten nicht die erwartete SHA-256-Prüfsumme haben (verändert oder beschädigt).</summary>
+    public static void VerifySha256(ReadOnlySpan<byte> data, string expected, string name)
+    {
+        var actual = Convert.ToHexString(SHA256.HashData(data));
+        if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"{name}: Prüfsumme stimmt nicht (erwartet {expected}, erhalten {actual.ToLowerInvariant()}).");
     }
 
     /// <summary>Lädt und entpackt piper_phonemize (einmalig); liefert Programm und Verzeichnis mit espeak-ng-data.</summary>
@@ -185,29 +217,28 @@ public static class PiperSpeech
             {
                 if (!Directory.Exists(dir))
                 {
-                    var package = PhonemizePackage();
+                    var (package, sha256) = PhonemizePackage();
                     var tmp = dir + ".part";
                     if (Directory.Exists(tmp))
                         Directory.Delete(tmp, true);
                     Directory.CreateDirectory(tmp);
                     try
                     {
+                        // Erst ganz laden und prüfen, dann entpacken
+                        var buffer = new MemoryStream();
                         using (var response = await SendAsync(PhonemizeUrl + package))
                         await using (var stream = await response.Content.ReadAsStreamAsync())
+                            await stream.CopyToAsync(buffer);
+                        VerifySha256(buffer.GetBuffer().AsSpan(0, (int)buffer.Length), sha256, package);
+                        buffer.Position = 0;
+                        if (package.EndsWith(".zip"))
                         {
-                            if (package.EndsWith(".zip"))
-                            {
-                                // ZipFile braucht einen durchsuchbaren Datenstrom
-                                var buffer = new MemoryStream();
-                                await stream.CopyToAsync(buffer);
-                                buffer.Position = 0;
-                                ZipFile.ExtractToDirectory(buffer, tmp, true);
-                            }
-                            else
-                            {
-                                await using var gzip = new GZipStream(stream, CompressionMode.Decompress);
-                                await TarFile.ExtractToDirectoryAsync(gzip, tmp, true);
-                            }
+                            ZipFile.ExtractToDirectory(buffer, tmp, true);
+                        }
+                        else
+                        {
+                            await using var gzip = new GZipStream(buffer, CompressionMode.Decompress);
+                            await TarFile.ExtractToDirectoryAsync(gzip, tmp, true);
                         }
                         Directory.Move(tmp, dir);
                     }

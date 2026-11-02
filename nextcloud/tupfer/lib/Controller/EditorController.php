@@ -105,7 +105,12 @@ class EditorController extends Controller {
 	 * (Piper von cdnjs, jsDelivr und Hugging Face) und die Einbettung in die Seite der App.
 	 */
 	private static function policy(): EmptyContentSecurityPolicy {
-		$cdn = ['https://cdnjs.cloudflare.com', 'https://cdn.jsdelivr.net'];
+		// Nur die Pakete, die tupfer.js lädt (PIPER_ORT, PIPER_PHONEMIZE), nicht die ganzen CDNs: Der Designer läuft im
+		// selben Ursprung wie Nextcloud, fremdes Skript hätte dort Zugriff auf das Konto
+		$cdn = [
+			'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/',
+			'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/',
+		];
 		$voices = ['https://huggingface.co', 'https://*.huggingface.co', 'https://*.hf.co'];
 
 		$csp = new EmptyContentSecurityPolicy();

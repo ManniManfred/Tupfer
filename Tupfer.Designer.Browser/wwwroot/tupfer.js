@@ -151,6 +151,11 @@ export async function autosaveLoadMedia() {
 }
 
 /** Setzt den Titel des Browser-Tabs. */
+/** Rückfrage mit OK und Abbrechen; true = OK. */
+export function confirmMessage(text) {
+    return window.confirm(text);
+}
+
 export function setTitle(title) {
     document.title = title;
     // In der Nextcloud-App auch den Titel des umgebenden Fensters
@@ -231,6 +236,7 @@ export function speak(language, text) {
 // Laufzeit, Lautschrift und Stimmen werden beim ersten Gebrauch geladen (zusammen etwa 90 MB)
 // und vom Browser zwischengespeichert, die Stimmen dauerhaft im Cache-Speicher.
 
+// Bei Änderung auch die erlaubten Adressen in nextcloud/tupfer/lib/Controller/EditorController.php (policy) anpassen
 const PIPER_ORT = 'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/';
 const PIPER_PHONEMIZE = 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize';
 const PIPER_VOICES = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/';

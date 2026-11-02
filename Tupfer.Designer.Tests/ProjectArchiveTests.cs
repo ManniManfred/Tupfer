@@ -8,6 +8,8 @@ using Xunit;
 namespace Tupfer.Designer.Tests;
 
 /// <summary>Projektdatei *.tupfer (ZIP mit Bildern und Aufnahmen) und Öffnen alter *.tupfer.json.</summary>
+// Ändert ProjectStore.ArchiveWorkDir (statisch)
+[Collection("Statisch")]
 public class ProjectArchiveTests : IDisposable
 {
     readonly string _root = Path.Combine(Path.GetTempPath(), $"tupfer-archiv-{Guid.NewGuid():N}");

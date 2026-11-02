@@ -40,6 +40,10 @@ public static class SvgImporter
 
     const double MmPerPx = 25.4 / 96;
 
+    /// <summary>Verlinkte Bilder, die übernommen werden (wie PageCanvas.ImageExtensions).</summary>
+    static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
+
     /// <summary>Größte Abweichung der unterteilten Kurven (mm).</summary>
     const double CurveTolerance = 0.05;
 
@@ -1022,7 +1026,20 @@ public static class SvgImporter
             if (!Path.IsPathRooted(file) && svgDir != null)
                 file = Path.GetFullPath(file, svgDir);
             if (Path.IsPathRooted(file) && File.Exists(file))
+            {
+                // Nur Bilder übernehmen; ein Verweis aus einer fremden SVG soll keine beliebigen Dateien ins Projekt holen
+                if (!ImageExtensions.Contains(Path.GetExtension(file)))
+                {
+                    Result.Warnings.Add($"„{href}“ ist kein unterstütztes Bild und wird nicht übernommen.");
+                    return null;
+                }
+                // Liegt das Bild nicht beim SVG (absoluter Pfad, ../), darauf hinweisen: Es wird Teil der Projektdatei
+                if (svgDir != null && Path.GetRelativePath(Path.GetFullPath(svgDir), file) is var relative
+                    && (Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith(".." + Path.DirectorySeparatorChar)
+                        || relative.StartsWith("../")))
+                    Result.Warnings.Add($"Bild außerhalb des SVG-Ordners übernommen: {file}");
                 return file;
+            }
             Result.Warnings.Add($"Bild „{href}“ nicht gefunden.");
             return null;
         }

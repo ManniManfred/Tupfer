@@ -62,7 +62,13 @@
 				file = `${stem} (${i}).tupfer`
 			}
 			const path = (folder.path || '/').replace(/\/$/, '') + '/' + file
-			// Der Designer legt das Projekt an (Inhalt wie „Datei → Neu“) und speichert es gleich
+			// Der Designer legt das Projekt an (Inhalt wie „Datei → Neu“) und speichert es gleich. Der Pfad in
+			// sessionStorage zeigt ihm, dass der Auftrag von hier kommt (sonst fragt er nach, z. B. bei fremden Links).
+			try {
+				sessionStorage.setItem('tupfer-neu', path)
+			} catch (e) {
+				// ohne sessionStorage fragt der Designer nach
+			}
 			window.location.href = OC.generateUrl('/apps/tupfer/') + '?neu=' + encodeURIComponent(path)
 		},
 	}

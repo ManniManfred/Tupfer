@@ -23,23 +23,31 @@ public partial class App : Application
         var vm = new MainWindowViewModel();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            bool hasArgs = desktop.Args is { Length: > 0 };
-            if (hasArgs)
-                vm.Load(desktop.Args![0]);
             MainWindowViewModel.AutoSaveStore ??= new FileAutoSaveStore();
-            _ = vm.StartAsync(null, restore: !hasArgs);
             var window = new MainWindow { DataContext = vm };
             vm.Dialogs = CreateDialogs(window);
             desktop.MainWindow = window;
+            // Mit Datei (z. B. Doppelklick auf ein Projekt): sie öffnen, sonst den zuletzt gesicherten Stand
+            var path = desktop.Args is { Length: > 0 } args ? args[0] : null;
+            _ = vm.StartAsync(null, restore: path == null, path);
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {
             // Browser: eine einzige Ansicht statt eines Fensters
             var view = new MainView { DataContext = vm };
-            view.AttachedToVisualTree += (_, _) => vm.Dialogs ??= CreateDialogs(TopLevel.GetTopLevel(view)!);
+            bool started = false;
+            view.AttachedToVisualTree += (_, _) =>
+            {
+                vm.Dialogs ??= CreateDialogs(TopLevel.GetTopLevel(view)!);
+                // Erst mit Dialogen starten: Beim Öffnen wird evtl. nach ungespeicherten Änderungen gefragt.
+                // z. B. index.html?beispiel=tic-tac-toi, sonst der zuletzt gesicherte Stand
+                if (!started)
+                {
+                    started = true;
+                    _ = vm.StartAsync(StartExample, restore: true);
+                }
+            };
             singleView.MainView = view;
-            // z. B. index.html?beispiel=tic-tac-toi, sonst der zuletzt gesicherte Stand
-            _ = vm.StartAsync(StartExample, restore: true);
         }
         base.OnFrameworkInitializationCompleted();
     }

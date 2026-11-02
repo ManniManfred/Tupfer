@@ -67,6 +67,9 @@ public partial class ProjectViewModel : ObservableObject
 
     readonly Dictionary<string, Bitmap?> _images = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Bilder, die sich nicht laden ließen, mit dem Stand der Datei damals (ändert sie sich, neuer Versuch).</summary>
+    readonly Dictionary<string, DateTime> _failedImages = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Lädt ein Bild (zwischengespeichert, damit z. B. Rückgängig nicht neu lädt). null, wenn es fehlt.</summary>
     public Bitmap? LoadImage(string path)
     {
@@ -74,6 +77,9 @@ public partial class ProjectViewModel : ObservableObject
             return null;
         if (_images.TryGetValue(path, out var bmp))
             return bmp;
+        var stamp = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+        if (_failedImages.TryGetValue(path, out var failed) && failed == stamp)
+            return null;
         try
         {
             bmp = new Bitmap(path);
@@ -83,7 +89,10 @@ public partial class ProjectViewModel : ObservableObject
             // Wird beim Zeichnen aufgerufen – das Protokoll erst danach ändern
             var message = $"Bild '{path}' konnte nicht geladen werden: {ex.Message}";
             Avalonia.Threading.Dispatcher.UIThread.Post(() => Log(message));
+            _failedImages[path] = stamp;
+            return null;
         }
+        _failedImages.Remove(path);
         _images[path] = bmp;
         return bmp;
     }

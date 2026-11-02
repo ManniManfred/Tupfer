@@ -22,6 +22,9 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
     /// <summary>Ziel von „Speichern unter“, bis die Datei geschrieben ist: lokaler Pfad → Pfad in Nextcloud.</summary>
     readonly Dictionary<string, string> _saveAs = new();
 
+    /// <summary>Exporte in Nextcloud, die in dieser Sitzung geschrieben werden dürfen (neu oder Überschreiben bestätigt).</summary>
+    readonly HashSet<string> _exportsAllowed = new(StringComparer.Ordinal);
+
     /// <summary>Lädt die gemerkten Ziele (für den wiederhergestellten Bearbeitungsstand).</summary>
     public static void Init()
     {
@@ -117,14 +120,38 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
         var previous = Environment.CurrentDirectory;
         var workDir = BrowserFileDialogs.NewWorkDir();
         var local = Path.Combine(workDir, RemoteName(remote));
-        if (!await DownloadAsync(remote, local))
+        bool found;
+        try
+        {
+            found = await DownloadAsync(remote, local);
+        }
+        catch
+        {
+            Discard(workDir, previous);
+            throw;
+        }
+        if (!found)
         {
             // Das bisherige Projekt bleibt offen, neue Bilder sollen weiter dort landen
-            Environment.CurrentDirectory = previous;
+            Discard(workDir, previous);
             throw new FileNotFoundException($"„{remote}“ gibt es in Nextcloud nicht (mehr).");
         }
         SetTarget(workDir, remote);
         return local;
+    }
+
+    /// <summary>Verwirft ein nicht gebrauchtes Arbeitsverzeichnis und kehrt ins vorige zurück.</summary>
+    static void Discard(string workDir, string previous)
+    {
+        if (Directory.Exists(previous))
+            Environment.CurrentDirectory = previous;
+        try
+        {
+            Directory.Delete(workDir, true);
+        }
+        catch (IOException)
+        {
+        }
     }
 
     /// <summary>
@@ -135,11 +162,15 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
     {
         if (!IsProject(remote))
             remote += ProjectStore.Extension;
+        var previous = Environment.CurrentDirectory;
         var workDir = BrowserFileDialogs.NewWorkDir();
         var local = Path.Combine(workDir, RemoteName(remote));
         ProjectStore.SaveArchive(MainWindowViewModel.DefaultProjectFile(), workDir, local);
         if (await UploadAsync(local, remote, "neu") == "vorhanden")
+        {
+            Discard(workDir, previous);
             return await OpenProjectAsync(remote);
+        }
         SetTarget(workDir, remote);
         NextcloudInterop.Notify($"In Nextcloud angelegt: {remote}");
         return local;
@@ -227,6 +258,16 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
                 continue;
             }
             var remote = Normalize(RemoteParent(project) + "/" + Path.GetFileName(path))!;
+            // Vorhandene Dateien nicht ungefragt überschreiben (einmal je Datei und Sitzung fragen)
+            if (!_exportsAllowed.Contains(remote))
+            {
+                if (await NextcloudInterop.ExistsAsync(remote) && !NextcloudInterop.Confirm($"„{remote}“ gibt es schon. Überschreiben?"))
+                {
+                    File.Delete(path);
+                    continue;
+                }
+                _exportsAllowed.Add(remote);
+            }
             await UploadAsync(path, remote, "immer");
             File.Delete(path);
             saved.Add(remote);
@@ -259,10 +300,14 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
             mode = "immer";
         }
 
-        if (await UploadAsync(path, remote, mode) == "geaendert")
+        var result = await UploadAsync(path, remote, mode);
+        if (result is "geaendert" or "unbekannt")
         {
-            if (!NextcloudInterop.Confirm($"„{remote}“ wurde inzwischen in Nextcloud geändert (z. B. auf einem anderen Gerät).\n\nTrotzdem mit diesem Stand überschreiben?"))
-                throw new OperationCanceledException($"nicht gespeichert – „{remote}“ wurde inzwischen in Nextcloud geändert. Mit „Speichern unter“ lässt sich das Projekt unter anderem Namen sichern.");
+            var reason = result == "geaendert"
+                ? $"„{remote}“ wurde inzwischen in Nextcloud geändert (z. B. auf einem anderen Gerät)."
+                : $"Ob „{remote}“ inzwischen in Nextcloud geändert wurde, lässt sich nicht prüfen (der zuletzt geladene Stand ist nicht mehr bekannt).";
+            if (!NextcloudInterop.Confirm(reason + "\n\nTrotzdem mit diesem Stand überschreiben?"))
+                throw new OperationCanceledException($"nicht gespeichert – „{remote}“ wurde nicht überschrieben. Mit „Speichern unter“ lässt sich das Projekt unter anderem Namen sichern.");
             await UploadAsync(path, remote, "immer");
         }
         SetTarget(workDir, remote);
@@ -277,6 +322,8 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
     }
 
     public void ProjectCreated() => browser.ProjectCreated();
+
+    public Task<bool> ConfirmAsync(string message) => browser.ConfirmAsync(message);
 
     public Task<string> PrintAsync(string pdfPath) => browser.PrintAsync(pdfPath);
 

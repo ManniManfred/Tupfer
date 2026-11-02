@@ -41,6 +41,10 @@ public static class GmeBuilder
         if (numeric > 0 && numeric < project.Scripts.Count)
             throw new GmeBuildException("Skriptnamen dürfen nicht teils Zahlen, teils Namen sein (wie bei tttool).");
 
+        // Zahlen als Skriptnamen sind der Code selbst; außerhalb von 0 … 65535 würde er still abgeschnitten
+        if (project.Scripts.FirstOrDefault(s => int.TryParse(s.Name, out var n) && n is < 0 or > ushort.MaxValue) is { } invalid)
+            throw new GmeBuildException($"Der Skriptname „{invalid.Name}“ ist als Code zu groß (erlaubt sind 0 bis {ushort.MaxValue}).");
+
         CodeAssigner.Assign(project);
         var codeOf = project.Scripts.ToDictionary(s => s.Name, s => (ushort)s.Code!.Value);
 

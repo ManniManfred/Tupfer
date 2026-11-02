@@ -5,9 +5,10 @@ namespace Tupfer.Designer.Services;
 /// <summary>
 /// Automatisch gesicherter Bearbeitungsstand: Projekt (wie in der Projektdatei, Pfade relativ zu
 /// <paramref name="BaseDir"/>), der Pfad der Projektdatei (null = noch nicht gespeichert) und das
-/// aktuelle Verzeichnis (dorthin werden neue Bilder und Aufnahmen kopiert).
+/// aktuelle Verzeichnis (dorthin werden neue Bilder und Aufnahmen kopiert). <paramref name="Modified"/>: Es gibt
+/// ungespeicherte Änderungen (ältere Sicherungen ohne diese Angabe gelten als geändert).
 /// </summary>
-public record AutoSaveSnapshot(string? FilePath, string BaseDir, string CurrentDirectory, string ProjectJson);
+public record AutoSaveSnapshot(string? FilePath, string BaseDir, string CurrentDirectory, string ProjectJson, bool Modified = true);
 
 /// <summary>Ablage für den automatisch gesicherten Stand.</summary>
 public interface IAutoSaveStore

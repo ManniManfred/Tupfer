@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Tupfer.Designer.ViewModels;
 
@@ -31,6 +34,52 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
             FileTypeChoices = new[] { new FilePickerFileType(filterName) { Patterns = new[] { "*" + extension } } },
         });
         return file?.TryGetLocalPath();
+    }
+
+    public async Task<bool> ConfirmAsync(string message)
+    {
+        if (topLevel is not Window owner)
+            return true;
+        // Beim Start (Projekt per Doppelklick) ist das Fenster evtl. noch nicht zu sehen
+        if (!owner.IsVisible)
+        {
+            var opened = new TaskCompletionSource();
+            owner.Opened += (_, _) => opened.TrySetResult();
+            if (!owner.IsVisible)
+                await opened.Task;
+        }
+        bool result = false;
+        var dialog = new Window
+        {
+            Title = "Tupfer Designer",
+            SizeToContent = SizeToContent.WidthAndHeight,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ShowInTaskbar = false,
+        };
+        var yes = new Button { Content = "Ja", IsDefault = true, MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
+        var no = new Button { Content = "Nein", IsCancel = true, MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
+        yes.Click += (_, _) => { result = true; dialog.Close(); };
+        no.Click += (_, _) => dialog.Close();
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Spacing = 16,
+            MaxWidth = 480,
+            Children =
+            {
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { yes, no },
+                },
+            },
+        };
+        await dialog.ShowDialog(owner);
+        return result;
     }
 
     public async Task<string> PrintAsync(string pdfPath)

@@ -23,6 +23,9 @@ public interface IFileDialogs
     /// <summary>Ein neues, leeres Projekt wurde angelegt.</summary>
     void ProjectCreated() { }
 
+    /// <summary>Rückfrage mit Ja/Nein (z. B. ungespeicherte Änderungen verwerfen); true = Ja.</summary>
+    Task<bool> ConfirmAsync(string message) => Task.FromResult(true);
+
     /// <summary>
     /// Druckt die PDF-Datei direkt (Desktop: Standarddrucker, Browser: Druckdialog) und löscht sie danach,
     /// sobald sie nicht mehr gebraucht wird. Liefert einen Hinweis, wie es weitergeht.
@@ -42,6 +45,27 @@ public partial class MainWindowViewModel : ObservableObject
     public MainWindowViewModel()
     {
         _project = CreateDefaultProject(Log);
+        MarkSaved();
+    }
+
+    // ---------- Ungespeicherte Änderungen ----------
+
+    /// <summary>Zuletzt geladener bzw. gespeicherter Stand (JSON, Pfade relativ zu Base); null = unbekannt, gilt als geändert.</summary>
+    (string Base, string Json)? _saved;
+
+    (string Base, string Json) Snapshot() => (BaseDir, ProjectStore.ToJson(Project.ToFile(BaseDir)));
+
+    void MarkSaved() => _saved = Snapshot();
+
+    /// <summary>true, wenn das Projekt seit dem Laden bzw. Speichern geändert wurde.</summary>
+    public bool IsModified => _saved is not { } saved || ProjectStore.ToJson(Project.ToFile(saved.Base)) != saved.Json;
+
+    /// <summary>Fragt bei ungespeicherten Änderungen, ob sie verworfen werden dürfen; true = weitermachen.</summary>
+    async Task<bool> ConfirmDiscardAsync()
+    {
+        if (!IsModified || Dialogs == null)
+            return true;
+        return await Dialogs.ConfirmAsync("Das Projekt hat ungespeicherte Änderungen. Sollen sie verworfen werden?");
     }
 
     public IFileDialogs? Dialogs { get; set; }
@@ -165,6 +189,12 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Name der Projektdatei für die Titelleiste.</summary>
     public string FileName => FilePath == null ? "Neues Projekt" : Path.GetFileName(FilePath);
 
+    /// <summary>
+    /// Name des Projekts ohne Endung für Exporte (GME, PDF …), null bei ungespeicherten Projekten. In Nextcloud der
+    /// Name der Datei dort, der vom Namen der lokalen Kopie abweichen kann.
+    /// </summary>
+    string? ProjectBaseName => FilePath == null ? null : ProjectStore.BaseName(Dialogs?.DisplayPath(FilePath) ?? FilePath);
+
     /// <summary>Verzeichnis, in das das geöffnete *.tupfer entpackt wurde (null bei alten bzw. neuen Projekten).</summary>
     string? _archiveDir;
 
@@ -219,13 +249,16 @@ public partial class MainWindowViewModel : ObservableObject
     // ---------- Datei ----------
 
     [RelayCommand]
-    void NewProject()
+    async Task NewProject()
     {
+        if (!await ConfirmDiscardAsync())
+            return;
         Project = CreateDefaultProject(Log);
         _archiveDir = null;
         FilePath = null;
         Dialogs?.ProjectCreated();
         ProgramErrors = ProgramOutput = "";
+        MarkSaved();
         Log("Neues Projekt angelegt.");
     }
 
@@ -334,9 +367,19 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand(AllowConcurrentExecutions = true)]
     Task OpenProject() => Guard("Öffnen", async () =>
     {
+        // Erst nach der Auswahl fragen: Im Browser darf der Dateidialog nur direkt nach dem Klick kommen
+        var directory = Environment.CurrentDirectory;
         var path = await Dialogs!.OpenAsync("Projekt öffnen", "Tupfer-Projekt", "*" + ProjectStore.Extension, "*" + ProjectStore.LegacyExtension);
-        if (path != null)
-            LoadProject(path);
+        if (path == null)
+            return;
+        if (!await ConfirmDiscardAsync())
+        {
+            // Im Browser hat die Auswahl schon ein neues Arbeitsverzeichnis angelegt: beim bisherigen Projekt bleiben
+            if (Directory.Exists(directory))
+                Environment.CurrentDirectory = directory;
+            return;
+        }
+        LoadProject(path);
     });
 
     [RelayCommand]
@@ -345,6 +388,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task OpenExample(ExampleProject example) => Guard("Öffnen", async () =>
     {
+        if (!await ConfirmDiscardAsync())
+            return;
         Log($"Lade „{example.Title}“ …");
         Load(await example.FetchAsync());
     });
@@ -384,6 +429,7 @@ public partial class MainWindowViewModel : ObservableObject
         FilePath = path;
         Log($"Projekt geladen: {Dialogs?.DisplayPath(path) ?? path}");
         AfterLoad();
+        MarkSaved();
     }
 
     void LoadYaml(string path)
@@ -393,6 +439,7 @@ public partial class MainWindowViewModel : ObservableObject
         _archiveDir = null;
         FilePath = null;
         AfterLoad();
+        MarkSaved();
         Log($"Importiert: {path} ({file.Scripts.Count} Skripte, {file.Speak.Count} Texte).");
         if (!string.IsNullOrWhiteSpace(file.ExtraYaml))
             Log("Hinweis: Nicht unterstützte Einträge wurden unter Projekt → Weitere YAML-Einträge übernommen.");
@@ -417,21 +464,23 @@ public partial class MainWindowViewModel : ObservableObject
                 return;
             }
         }
-        WriteProject(path);
+        var saved = WriteProject(path);
         await Dialogs!.SavedAsync(path);
+        _saved = saved;
         Log($"Gespeichert: {Dialogs!.DisplayPath(path)}");
     });
 
     [RelayCommand]
     Task SaveProjectAs() => Guard("Speichern", async () =>
     {
-        var name = (FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt") + ProjectStore.Extension;
+        var name = (ProjectBaseName ?? "projekt") + ProjectStore.Extension;
         var path = await Dialogs!.SaveAsync("Projekt speichern", name, "Tupfer-Projekt", ProjectStore.Extension);
         if (path == null) return;
         if (!path.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
             path = Path.Combine(Path.GetDirectoryName(path)!, ProjectStore.BaseName(path) + ProjectStore.Extension);
-        WriteProject(path);
+        var saved = WriteProject(path);
         await Dialogs!.SavedAsync(path);
+        _saved = saved;
         Log($"Gespeichert: {Dialogs!.DisplayPath(path)}");
     });
 
@@ -440,10 +489,13 @@ public partial class MainWindowViewModel : ObservableObject
     /// Format), wird danach wie nach dem Öffnen im Arbeitsverzeichnis weitergearbeitet: Die Dateien werden
     /// dorthin kopiert und neue Aufnahmen landen dort.
     /// </summary>
-    void WriteProject(string path)
+    /// <returns>Der geschriebene Stand (gilt als gespeichert, sobald die Datei auch angekommen ist, z. B. in Nextcloud).</returns>
+    (string Base, string Json) WriteProject(string path)
     {
         Project.AssignCodes();
-        var (entries, mediaPath) = ProjectStore.SaveArchive(Project.ToFile(BaseDir), BaseDir, path);
+        var (entries, mediaPath, missing) = ProjectStore.SaveArchive(Project.ToFile(BaseDir), BaseDir, path);
+        if (missing.Count > 0)
+            Notice($"Achtung: {missing.Count} Datei(en) fehlen und sind nicht in der Projektdatei:\n  " + string.Join("\n  ", missing));
         if (_archiveDir == null)
         {
             var dir = ProjectStore.ArchiveWorkDir(path);
@@ -452,6 +504,7 @@ public partial class MainWindowViewModel : ObservableObject
             _archiveDir = dir;
         }
         FilePath = path;
+        return Snapshot();
     }
 
     void MoveToWorkDir(Dictionary<string, string> entries, string mediaPath, string dir)
@@ -476,7 +529,7 @@ public partial class MainWindowViewModel : ObservableObject
     Task ImportYaml() => Guard("YAML-Import", async () =>
     {
         var path = await Dialogs!.OpenAsync("tttool-YAML importieren", "tttool YAML", "*.yaml", "*.yml");
-        if (path != null)
+        if (path != null && await ConfirmDiscardAsync())
             LoadYaml(path);
     });
 
@@ -484,7 +537,7 @@ public partial class MainWindowViewModel : ObservableObject
     Task ExportYaml() => Guard("YAML-Export", async () =>
     {
         if (!EnsureProgram()) return;
-        var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt";
+        var name = ProjectBaseName ?? "projekt";
         var path = await Dialogs!.SaveAsync("tttool-YAML exportieren", name + ".yaml", "tttool YAML", ".yaml");
         if (path == null) return;
         WriteYaml(path);
@@ -515,7 +568,7 @@ public partial class MainWindowViewModel : ObservableObject
     Task SaveToPen() => Guard("Auf den Stift speichern", async () =>
     {
         if (!EnsureProgram()) return;
-        var name = (FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt") + ".gme";
+        var name = (ProjectBaseName ?? "projekt") + ".gme";
         string? built = null;
         var target = await Dialogs!.SaveToPenAsync(name, async () => built = await CreateGme());
         // Im Browser liegt die Datei nur im Speicher-Dateisystem und wird nicht mehr gebraucht
@@ -534,7 +587,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (!EnsureProgram()) return null;
         if (!IsDesktop)
         {
-            var path = Path.Combine(BaseDir, (FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt") + ".gme");
+            var path = Path.Combine(BaseDir, (ProjectBaseName ?? "projekt") + ".gme");
             return await BuildGmeInternal(Project.ToFile(BaseDir), BaseDir, path) ? path : null;
         }
         if (FilePath == null)
@@ -549,12 +602,12 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         var dir = Path.GetDirectoryName(FilePath)!;
-        var gme = Path.Combine(dir, ProjectStore.BaseName(FilePath) + ".gme");
+        var gme = Path.Combine(dir, ProjectBaseName + ".gme");
         bool ok;
         if (Project.UseTttool)
         {
             // Im Projektverzeichnis, damit tttool das Medienverzeichnis findet
-            var yaml = Path.Combine(BaseDir, ProjectStore.BaseName(FilePath) + ".yaml");
+            var yaml = Path.Combine(BaseDir, ProjectBaseName + ".yaml");
             WriteYaml(yaml);
             ok = await RunTttoolAssemble(yaml);
             var built = Path.ChangeExtension(yaml, ".gme");
@@ -686,7 +739,7 @@ public partial class MainWindowViewModel : ObservableObject
     Task ExportSvg() => Guard("SVG-Export", async () =>
     {
         if (Project.SelectedPage is not { } page) return;
-        var name = (FilePath != null ? ProjectStore.BaseName(FilePath) + "-" : "") + page.Name;
+        var name = (ProjectBaseName is { } projectName ? projectName + "-" : "") + page.Name;
         name = string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
         var path = await Dialogs!.SaveAsync("Seite als SVG exportieren", name + ".svg", "SVG-Grafik", ".svg");
         if (path == null) return;
@@ -703,7 +756,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (!EnsureProgram()) return;
         Project.AssignCodes();
-        var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "seiten";
+        var name = ProjectBaseName ?? "seiten";
         var path = await Dialogs!.SaveAsync("Seiten als PDF exportieren", name + ".pdf", "PDF", ".pdf");
         if (path == null) return;
 
@@ -717,7 +770,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (!EnsureProgram()) return;
         Project.AssignCodes();
-        var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "seiten";
+        var name = ProjectBaseName ?? "seiten";
         var dir = Path.Combine(Path.GetTempPath(), "tupfer-druck");
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
@@ -754,7 +807,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (!EnsureProgram()) return;
         Project.AssignCodes();
-        var name = FilePath != null ? ProjectStore.BaseName(FilePath) : "projekt";
+        var name = ProjectBaseName ?? "projekt";
         var path = await Dialogs!.SaveAsync("OID-Tabelle exportieren", name + "-oids.pdf", "PDF", ".pdf");
         if (path == null) return;
 
@@ -1102,6 +1155,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand(AllowConcurrentExecutions = true)]
     Task PlaySpeak(SpeakViewModel speak) => Guard("Wiedergabe", async () =>
     {
+        // Wurde inzwischen ein anderer Text angeklickt, diesen nach dem Laden nicht mehr abspielen
+        int request = ++_speakRequest;
         byte[] data;
         string extension;
         if (speak.HasRecording)
@@ -1122,6 +1177,8 @@ public partial class MainWindowViewModel : ObservableObject
             data = await Task.Run(() => tts.Speak(key, speak.Text));
             extension = Audio.ExtensionOf(data);
         }
+        if (request != _speakRequest)
+            return;
         EndSpeakPlayback();
         var playing = Audio.Device.PlayAsync(data, extension);
         if (playing.IsCompleted)
@@ -1147,6 +1204,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     SpeakViewModel? _playingSpeak;
     int _speakPlayId;
+    int _speakRequest;
 
     /// <summary>Setzt die Anzeige der laufenden Wiedergabe zurück.</summary>
     void EndSpeakPlayback()
@@ -1164,6 +1222,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     void StopSpeak(SpeakViewModel? speak)
     {
+        // Eine noch ladende Wiedergabe soll danach nicht mehr starten
+        _speakRequest++;
         if (_playingSpeak is null || (speak is not null && speak != _playingSpeak))
             return;
         EndSpeakPlayback();
@@ -1266,13 +1326,26 @@ public partial class MainWindowViewModel : ObservableObject
         Log($"„{speak.Name}“ verwendet wieder die Sprachausgabe.");
     }
 
-    /// <summary>Aufnahmen liegen im Projektverzeichnis unter aufnahmen/, benannt nach dem Text.</summary>
+    /// <summary>
+    /// Aufnahmen liegen im Projektverzeichnis unter aufnahmen/, benannt nach dem Text. Eine Datei, die schon
+    /// existiert (z. B. die Aufnahme eines umbenannten Textes), wird nicht überschrieben, nur die eigene.
+    /// </summary>
     string RecordingPath(SpeakViewModel speak, string extension)
     {
         var dir = Path.Combine(BaseDir, "aufnahmen");
         Directory.CreateDirectory(dir);
-        var name = string.Concat(speak.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-        return Path.Combine(dir, (name.Length > 0 ? name : "aufnahme") + extension);
+        var name = string.Concat(speak.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) || c is '/' or '\\' ? '_' : c));
+        if (name.Length == 0)
+            name = "aufnahme";
+        var own = speak.HasRecording ? Path.GetFullPath(speak.Recording!, BaseDir) : null;
+        var usedByOthers = Project.Speak.Where(s => s != speak && s.HasRecording)
+            .Select(s => Path.GetFullPath(s.Recording!, BaseDir))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var path = Path.Combine(dir, name + extension);
+        for (int i = 2; usedByOthers.Contains(path)
+                        || (File.Exists(path) && !string.Equals(path, own, StringComparison.OrdinalIgnoreCase)); i++)
+            path = Path.Combine(dir, $"{name}-{i}{extension}");
+        return path;
     }
 
     /// <summary>Auf dem Desktop brauchen Aufnahmen ein gespeichertes Projekt (sie liegen daneben).</summary>

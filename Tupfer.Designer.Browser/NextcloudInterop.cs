@@ -46,7 +46,7 @@ static partial class NextcloudInterop
     /// <summary>
     /// Schreibt die übergebenen Daten in die Datei; fehlende Ordner werden angelegt. <paramref name="mode"/>:
     /// „neu“ (nur anlegen), „ersetzen“ (nur, wenn seit dem letzten Lesen/Schreiben unverändert) oder „immer“.
-    /// Liefert „ok“, „vorhanden“ oder „geaendert“.
+    /// Liefert „ok“, „vorhanden“, „geaendert“ oder „unbekannt“ (bei „ersetzen“, wenn der letzte Stand nicht bekannt ist).
     /// </summary>
     [JSImport("write", "nextcloud")]
     public static partial Task<string> WriteAsync(string path, string mode);
