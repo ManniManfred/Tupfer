@@ -1,77 +1,70 @@
-using System.Security.Cryptography;
 using System.Text.Json;
-using Tupfer.Designer.Gme;
-using Tupfer.Designer.Model;
 using Tupfer.Designer.Services;
 using Tupfer.Designer.ViewModels;
 
 namespace Tupfer.Designer;
 
 /// <summary>
-/// Dateidialoge in der Nextcloud-App: Projekte, Bilder und Audiodateien werden mit der Dateiauswahl von Nextcloud
-/// gewählt und in das Arbeitsverzeichnis geladen, beim Speichern wird zurück nach Nextcloud geschrieben.
-/// Ein aus Nextcloud geöffnetes Projekt liegt im Arbeitsverzeichnis unter demselben Pfad wie in Nextcloud
-/// (/tupfer/projekt3/Tiptoi/buch/buch.tupfer für /Tiptoi/buch/buch.tupfer) und wird dort entpackt; bei alten
-/// Projekten (*.tupfer.json) werden Bilder und Aufnahmen daneben geladen, damit relative Pfade wie ../bilder/…
-/// stimmen. Gespeichert wird immer als *.tupfer. Drucken und „Auf den Stift“ laufen wie im Browser.
+/// Dateidialoge in der Nextcloud-App. Bearbeitet werden nur Projekte im Format *.tupfer (ein ZIP mit Projekt,
+/// Bildern und Aufnahmen): Ein Projekt aus Nextcloud wird in ein eigenes Arbeitsverzeichnis geladen und dort
+/// entpackt, „Speichern“ schreibt es an dieselbe Stelle in Nextcloud zurück, „Speichern unter“ fragt nach Ordner
+/// und Namen in Nextcloud. Wurde die Datei inzwischen anderswo geändert, wird vor dem Überschreiben gefragt.
+/// Bilder, SVG- und Audiodateien kommen aus Nextcloud und werden beim Speichern ins Projekt übernommen; Exporte
+/// (GME, PDF …) landen neben dem Projekt. Drucken und „Auf den Stift“ laufen wie im Browser.
 /// </summary>
 class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
 {
-    /// <summary>Je Arbeitsverzeichnis: welches lokale Verzeichnis welchem Nextcloud-Ordner entspricht.</summary>
-    static readonly Dictionary<string, Anchor> Anchors = new();
+    /// <summary>Je Arbeitsverzeichnis: die Projektdatei in Nextcloud und ihr zuletzt bekannter Stand (ETag).</summary>
+    static readonly Dictionary<string, Target> Targets = new();
 
-    /// <summary>Bekannter Inhalt in Nextcloud (Pfad → SHA-256), damit nur Geändertes hochgeladen wird.</summary>
-    static readonly Dictionary<string, string> Known = new();
+    record Target(string Remote, string ETag);
 
-    record Anchor(string Local, string Remote);
+    /// <summary>Ziel von „Speichern unter“, bis die Datei geschrieben ist: lokaler Pfad → Pfad in Nextcloud.</summary>
+    readonly Dictionary<string, string> _saveAs = new();
 
-    /// <summary>Lädt die gemerkten Zuordnungen (für den wiederhergestellten Bearbeitungsstand).</summary>
+    /// <summary>Lädt die gemerkten Ziele (für den wiederhergestellten Bearbeitungsstand).</summary>
     public static void Init()
     {
         try
         {
             var json = NextcloudInterop.LoadState();
-            if (json.Length > 0 && JsonSerializer.Deserialize<Dictionary<string, Anchor>>(json) is { } saved)
-                foreach (var (dir, anchor) in saved)
-                    Anchors[dir] = anchor;
+            if (json.Length > 0 && JsonSerializer.Deserialize<Dictionary<string, Target>>(json) is { } saved)
+                foreach (var (dir, target) in saved)
+                {
+                    Targets[dir] = target;
+                    NextcloudInterop.SetETag(target.Remote, target.ETag);
+                }
         }
         catch (JsonException)
         {
         }
-        // Neue Arbeitsverzeichnisse (neues Projekt, Beispiel) gehören noch zu keinem Ordner
+        // Neue Arbeitsverzeichnisse (neues Projekt, Beispiel) gehören noch zu keiner Datei
         BrowserFileDialogs.WorkDirCreated += dir =>
         {
-            if (Anchors.Remove(dir))
-                SaveAnchors();
+            if (Targets.Remove(dir))
+                SaveTargets();
         };
     }
 
-    static void SaveAnchors() => NextcloudInterop.SaveState(JsonSerializer.Serialize(Anchors));
+    static void SaveTargets() => NextcloudInterop.SaveState(JsonSerializer.Serialize(Targets));
 
-    static void SetAnchor(string workDir, Anchor anchor)
+    static void SetTarget(string workDir, string remote)
     {
-        Anchors[workDir] = anchor;
-        SaveAnchors();
+        Targets[workDir] = new Target(remote, NextcloudInterop.ETag(remote));
+        SaveTargets();
     }
+
+    static string WorkDir(string local) => BrowserFileDialogs.WorkDirOf(local);
+
+    /// <summary>Projektdatei in Nextcloud, zu der das lokale Verzeichnis gehört, sonst null.</summary>
+    static string? RemoteOf(string localDir) =>
+        Targets.TryGetValue(WorkDir(Path.Combine(localDir, "x")), out var target) ? target.Remote : null;
+
+    /// <summary>Für das Protokoll: bei Projekten der Pfad in Nextcloud.</summary>
+    public string DisplayPath(string path) =>
+        IsProject(path) && Targets.TryGetValue(WorkDir(path), out var target) ? target.Remote : path;
 
     // ---------- Pfade ----------
-
-    /// <summary>Nextcloud-Pfad zu einer lokalen Datei, oder null, wenn ihr Projekt (noch) nicht in Nextcloud liegt.</summary>
-    static string? RemotePath(string local)
-    {
-        if (!Anchors.TryGetValue(BrowserFileDialogs.WorkDirOf(local), out var anchor))
-            return null;
-        return Normalize(anchor.Remote + "/" + Path.GetRelativePath(anchor.Local, local));
-    }
-
-    /// <summary>Lokaler Pfad zu einer Nextcloud-Datei im Arbeitsverzeichnis, oder null, wenn sie außerhalb läge.</summary>
-    static string? LocalPath(string workDir, string remote)
-    {
-        if (!Anchors.TryGetValue(workDir, out var anchor))
-            return null;
-        var local = Path.GetFullPath(Path.Combine(anchor.Local, Path.GetRelativePath(anchor.Remote, remote)));
-        return Path.GetRelativePath(workDir, local).StartsWith("..") ? null : local;
-    }
 
     /// <summary>„/a/./b/../c“ → „/a/c“; null, wenn der Pfad über den obersten Ordner hinausführt.</summary>
     public static string? Normalize(string path)
@@ -99,95 +92,38 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
 
     static string RemoteName(string remote) => remote[(remote.LastIndexOf('/') + 1)..];
 
-    /// <summary>Ordner, in dem die Dateiauswahl beginnt: der des aktuellen Projekts, sonst der oberste.</summary>
-    static string StartFolder() => RemotePath(Environment.CurrentDirectory) ?? "/";
+    static bool IsProject(string path) => path.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase);
 
-    static string Hash(byte[] data) => Convert.ToHexString(SHA256.HashData(data));
+    /// <summary>Ordner, in dem die Dateiauswahl beginnt: der des aktuellen Projekts, sonst der oberste.</summary>
+    static string StartFolder() => RemoteOf(Environment.CurrentDirectory) is { } remote ? RemoteParent(remote) : "/";
 
     // ---------- Laden ----------
 
-    /// <summary>Lädt die Datei an <paramref name="local"/>; false, wenn es sie in Nextcloud nicht gibt.</summary>
+    /// <summary>Lädt die Datei nach <paramref name="local"/>; false, wenn es sie in Nextcloud nicht gibt.</summary>
     static async Task<bool> DownloadAsync(string remote, string local)
     {
         if (await NextcloudInterop.ReadAsync(remote) is not { } base64)
             return false;
-        var data = Convert.FromBase64String(base64);
         Directory.CreateDirectory(Path.GetDirectoryName(local)!);
-        await File.WriteAllBytesAsync(local, data);
-        Known[remote] = Hash(data);
+        await File.WriteAllBytesAsync(local, Convert.FromBase64String(base64));
         return true;
     }
 
-    /// <summary>
-    /// Öffnet ein Projekt (oder eine tttool-YAML-Datei) aus Nextcloud in einem neuen Arbeitsverzeichnis,
-    /// zusammen mit den Bildern, Aufnahmen und Audiodateien, auf die es verweist. Liefert den lokalen Pfad.
-    /// </summary>
+    /// <summary>Lädt ein Projekt (*.tupfer) aus Nextcloud in ein neues Arbeitsverzeichnis. Liefert den lokalen Pfad.</summary>
     public static async Task<string> OpenProjectAsync(string remote)
     {
+        if (!IsProject(remote))
+            throw new InvalidOperationException($"„{RemoteName(remote)}“ ist kein Tupfer-Projekt (*{ProjectStore.Extension}).");
         var previous = Environment.CurrentDirectory;
-        try
-        {
-            return await LoadProjectAsync(remote);
-        }
-        catch
+        var workDir = BrowserFileDialogs.NewWorkDir();
+        var local = Path.Combine(workDir, RemoteName(remote));
+        if (!await DownloadAsync(remote, local))
         {
             // Das bisherige Projekt bleibt offen, neue Bilder sollen weiter dort landen
             Environment.CurrentDirectory = previous;
-            throw;
-        }
-    }
-
-    static async Task<string> LoadProjectAsync(string remote)
-    {
-        var workDir = BrowserFileDialogs.NewWorkDir();
-        SetAnchor(workDir, new Anchor(workDir, "/"));
-        var local = LocalPath(workDir, remote)!;
-        if (!await DownloadAsync(remote, local))
             throw new FileNotFoundException($"„{remote}“ gibt es in Nextcloud nicht (mehr).");
-
-        // *.tupfer enthält Bilder und Aufnahmen schon selbst
-        if (ProjectStore.IsArchive(local))
-        {
-            Environment.CurrentDirectory = Path.GetDirectoryName(local)!;
-            return local;
         }
-
-        var remoteDir = RemoteParent(remote);
-        var references = new List<string>();
-        ProjectFile file;
-        if (ProjectStore.IsLegacy(local))
-        {
-            file = ProjectStore.Load(local);
-            references.AddRange(file.Pages.SelectMany(p => p.Elements).Select(e => e.ImagePath));
-            references.AddRange(file.Pages.Select(p => p.BackgroundImage ?? ""));   // ältere Projekte
-            references.AddRange(file.Speak.Select(s => s.Recording ?? ""));
-        }
-        else
-        {
-            var codes = TttoolYaml.CodesPathFor(local);
-            await DownloadAsync(RemotePath(codes)!, codes);
-            file = TttoolYaml.Import(local);
-        }
-
-        // Audiodateien im Medienverzeichnis (z. B. „audio/%s“)
-        var pattern = string.IsNullOrWhiteSpace(file.MediaPath) ? "%s" : file.MediaPath;
-        var mediaDir = Path.GetDirectoryName(pattern) ?? "";
-        if (!mediaDir.Contains('%') && !Path.IsPathRooted(mediaDir) && Normalize(remoteDir + "/" + mediaDir) is { } remoteMedia)
-        {
-            var names = JsonSerializer.Deserialize<string[]>(await NextcloudInterop.ListAsync(remoteMedia)) ?? [];
-            references.AddRange(names
-                .Where(n => GmeBuilder.MediaExtensions.Contains(Path.GetExtension(n).ToLowerInvariant()))
-                .Select(n => Path.Combine(mediaDir, n)));
-        }
-
-        foreach (var reference in references.Where(r => r.Length > 0 && !Path.IsPathRooted(r)).Distinct())
-        {
-            // Fehlende Dateien zeigt das Projekt selbst an
-            if (Normalize(remoteDir + "/" + reference) is { } path && LocalPath(workDir, path) is { } target)
-                await DownloadAsync(path, target);
-        }
-
-        Environment.CurrentDirectory = Path.GetDirectoryName(local)!;
+        SetTarget(workDir, remote);
         return local;
     }
 
@@ -197,35 +133,36 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
     /// </summary>
     public static async Task<string> CreateProjectAsync(string remote)
     {
-        if (await NextcloudInterop.ExistsAsync(remote))
-            return await OpenProjectAsync(remote);
+        if (!IsProject(remote))
+            remote += ProjectStore.Extension;
         var workDir = BrowserFileDialogs.NewWorkDir();
-        SetAnchor(workDir, new Anchor(workDir, "/"));
-        var local = LocalPath(workDir, remote)!;
-        Directory.CreateDirectory(Path.GetDirectoryName(local)!);
-        Environment.CurrentDirectory = Path.GetDirectoryName(local)!;
-        ProjectStore.SaveArchive(MainWindowViewModel.DefaultProjectFile(), Path.GetDirectoryName(local)!, local);
-        await UploadAsync(local, remote, always: true);
+        var local = Path.Combine(workDir, RemoteName(remote));
+        ProjectStore.SaveArchive(MainWindowViewModel.DefaultProjectFile(), workDir, local);
+        if (await UploadAsync(local, remote, "neu") == "vorhanden")
+            return await OpenProjectAsync(remote);
+        SetTarget(workDir, remote);
         NextcloudInterop.Notify($"In Nextcloud angelegt: {remote}");
         return local;
     }
 
     public async Task<string?> OpenAsync(string title, string filterName, params string[] patterns)
     {
-        var endings = patterns.Select(p => p.TrimStart('*')).ToList();
+        // tttool-YAML ist ein Import vom eigenen Rechner, kein Projekt in Nextcloud
+        if (patterns.Any(p => p.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)))
+            return await browser.OpenAsync(title, filterName, patterns);
+
+        bool project = patterns.Any(BrowserFileDialogs.IsProjectPattern);
+        List<string> endings = project ? [ProjectStore.Extension] : patterns.Select(p => p.TrimStart('*')).ToList();
         var remote = await NextcloudInterop.PickAsync(title, string.Join(',', endings), false, StartFolder());
         if (remote.Length == 0)
             return null;
         if (!endings.Any(e => remote.EndsWith(e, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"„{RemoteName(remote)}“ ist keine passende Datei ({string.Join(", ", endings)}).");
-        if (patterns.Any(BrowserFileDialogs.IsProjectPattern))
+        if (project)
             return await OpenProjectAsync(remote);
 
-        // Bild, SVG oder Audiodatei: an ihre Stelle im Arbeitsverzeichnis, sonst als Kopie ins aktuelle Verzeichnis
-        var current = Environment.CurrentDirectory;
-        var local = LocalPath(BrowserFileDialogs.WorkDirOf(Path.Combine(current, "x")), remote);
-        if (local == null || File.Exists(local) && !Known.ContainsKey(remote))
-            local = WorkFiles.UniquePath(current, RemoteName(remote));
+        // Bild, SVG oder Audiodatei: als Kopie ins Projekt, beim Speichern wird sie Teil der *.tupfer
+        var local = WorkFiles.UniquePath(Environment.CurrentDirectory, RemoteName(remote));
         if (!await DownloadAsync(remote, local))
             throw new FileNotFoundException($"„{remote}“ gibt es in Nextcloud nicht (mehr).");
         return local;
@@ -241,45 +178,32 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
         if (extension != ProjectStore.Extension)
         {
             // Exporte neben das Projekt in Nextcloud; liegt es noch nicht dort, wie im Browser herunterladen
-            return RemotePath(current) != null
+            return RemoteOf(current) != null
                 ? Path.Combine(current, suggestedName)
                 : await browser.SaveAsync(title, suggestedName, filterName, extension);
         }
 
-        if (await PickTargetAsync(title, ProjectStore.BaseName(suggestedName), askName: true) is not { } remote)
+        // Speichern unter: Ordner und Namen in Nextcloud wählen; lokal bleibt das Projekt in seinem Verzeichnis
+        if (await PickTargetAsync(title, ProjectStore.BaseName(suggestedName)) is not { } remote)
             return null;
-        var workDir = BrowserFileDialogs.WorkDirOf(Path.Combine(current, "x"));
-        // Im selben Arbeitsverzeichnis bleiben, damit Bilder und Aufnahmen weiter gefunden werden
-        var local = LocalPath(workDir, remote);
-        if (local == null)
-        {
-            local = Path.Combine(current, RemoteName(remote));
-            SetAnchor(workDir, new Anchor(current, RemoteParent(remote)));
-        }
-        Directory.CreateDirectory(Path.GetDirectoryName(local)!);
-        Environment.CurrentDirectory = Path.GetDirectoryName(local)!;
+        var local = Path.Combine(current, RemoteName(remote));
+        _saveAs[local] = remote;
         return local;
     }
 
     /// <summary>
-    /// Fragt nach dem Ordner in Nextcloud und, wenn <paramref name="askName"/>, nach dem Namen des Projekts
-    /// (vorbelegt mit <paramref name="name"/>, ohne Endung). Liefert den Pfad, null bei Abbruch.
+    /// Fragt nach Ordner und Namen (vorbelegt mit <paramref name="name"/>, ohne Endung) für ein Projekt in
+    /// Nextcloud; gibt es die Datei schon, wird vor dem Überschreiben gefragt. Liefert den Pfad, null bei Abbruch.
     /// </summary>
-    static async Task<string?> PickTargetAsync(string title, string name, bool askName)
+    static async Task<string?> PickTargetAsync(string title, string name)
     {
         var folder = await NextcloudInterop.PickAsync(title + ": Ordner wählen", "", true, StartFolder());
         if (folder.Length == 0)
             return null;
-        if (askName)
-        {
-            name = NextcloudInterop.AskName($"Name des Projekts in {folder}:", name);
-            if (name.Length == 0)
-                return null;
-        }
-        foreach (var ext in new[] { ProjectStore.LegacyExtension, ProjectStore.Extension })
-            if (name.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
-                name = name[..^ext.Length];
-        name = string.Concat(name.Select(c => c is '/' or '\\' ? '_' : c)) + ProjectStore.Extension;
+        name = NextcloudInterop.AskName($"Name des Projekts in {folder}:", name);
+        if (name.Length == 0)
+            return null;
+        name = string.Concat(ProjectStore.BaseName(name).Select(c => c is '/' or '\\' ? '_' : c)) + ProjectStore.Extension;
         var remote = Normalize(folder + "/" + name)!;
         if (await NextcloudInterop.ExistsAsync(remote) && !NextcloudInterop.Confirm($"„{remote}“ gibt es schon. Überschreiben?"))
             return null;
@@ -288,48 +212,68 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
 
     public async Task SavedAsync(params string[] paths)
     {
-        var uploaded = new List<string>();
+        var saved = new List<string>();
         foreach (var path in paths.Where(File.Exists))
         {
-            var remote = RemotePath(path);
-            bool project = path.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase);
-            if (remote == null && project)
+            if (IsProject(path))
             {
-                // Projekt, das noch nicht in Nextcloud liegt (z. B. ein Beispiel): Ordner wählen, der Name bleibt
-                remote = await PickTargetAsync("Projekt in Nextcloud speichern", Path.GetFileName(path), askName: false);
-                if (remote == null)
-                    continue;
-                SetAnchor(BrowserFileDialogs.WorkDirOf(path), new Anchor(Path.GetDirectoryName(path)!, RemoteParent(remote)));
+                saved.Add(await SaveProjectAsync(path));
+                continue;
             }
-            if (remote == null)
+            // Export: neben das Projekt in Nextcloud, sonst herunterladen
+            if (RemoteOf(Path.GetDirectoryName(path)!) is not { } project)
             {
                 await browser.SavedAsync(path);
                 continue;
             }
-
-            // Das Projekt enthält Bilder und Aufnahmen selbst und bleibt als geöffnete Datei liegen
-            await UploadAsync(path, remote, always: true);
-            if (!project)
-                File.Delete(path);
-            uploaded.Insert(0, remote);
+            var remote = Normalize(RemoteParent(project) + "/" + Path.GetFileName(path))!;
+            await UploadAsync(path, remote, "immer");
+            File.Delete(path);
+            saved.Add(remote);
         }
-        if (uploaded.Count > 0)
-            NextcloudInterop.Notify(uploaded.Count == 1
-                ? $"In Nextcloud gespeichert: {uploaded[0]}"
-                : $"In Nextcloud gespeichert: {uploaded[0]} und {uploaded.Count - 1} weitere Dateien");
+        if (saved.Count > 0)
+            NextcloudInterop.Notify(saved.Count == 1
+                ? $"In Nextcloud gespeichert: {saved[0]}"
+                : $"In Nextcloud gespeichert: {saved[0]} und {saved.Count - 1} weitere Dateien");
     }
 
-    /// <summary>Lädt die Datei hoch, wenn sie sich geändert hat (oder immer); true, wenn hochgeladen.</summary>
-    static async Task<bool> UploadAsync(string local, string remote, bool always = false)
+    /// <summary>Schreibt das Projekt in seine Datei in Nextcloud (bzw. das Ziel von „Speichern unter“).</summary>
+    async Task<string> SaveProjectAsync(string path)
     {
-        var data = await File.ReadAllBytesAsync(local);
-        var hash = Hash(data);
-        if (!always && Known.TryGetValue(remote, out var known) && known == hash)
-            return false;
-        NextcloudInterop.SetPending(data);
-        await NextcloudInterop.WriteAsync(remote);
-        Known[remote] = hash;
-        return true;
+        var workDir = WorkDir(path);
+        string remote, mode;
+        if (_saveAs.Remove(path, out var target))
+        {
+            // Überschreiben wurde bei der Auswahl schon bestätigt
+            (remote, mode) = (target, "immer");
+        }
+        else if (Targets.TryGetValue(workDir, out var known))
+        {
+            (remote, mode) = (known.Remote, "ersetzen");
+        }
+        else
+        {
+            // Neues Projekt oder Beispiel: noch keine Datei in Nextcloud
+            remote = await PickTargetAsync("Projekt in Nextcloud speichern", ProjectStore.BaseName(path))
+                     ?? throw new OperationCanceledException("nicht in Nextcloud gespeichert (abgebrochen).");
+            mode = "immer";
+        }
+
+        if (await UploadAsync(path, remote, mode) == "geaendert")
+        {
+            if (!NextcloudInterop.Confirm($"„{remote}“ wurde inzwischen in Nextcloud geändert (z. B. auf einem anderen Gerät).\n\nTrotzdem mit diesem Stand überschreiben?"))
+                throw new OperationCanceledException($"nicht gespeichert – „{remote}“ wurde inzwischen in Nextcloud geändert. Mit „Speichern unter“ lässt sich das Projekt unter anderem Namen sichern.");
+            await UploadAsync(path, remote, "immer");
+        }
+        SetTarget(workDir, remote);
+        return remote;
+    }
+
+    /// <summary>Lädt die Datei hoch (Modus siehe <see cref="NextcloudInterop.WriteAsync"/>).</summary>
+    static async Task<string> UploadAsync(string local, string remote, string mode)
+    {
+        NextcloudInterop.SetPending(await File.ReadAllBytesAsync(local));
+        return await NextcloudInterop.WriteAsync(remote, mode);
     }
 
     public void ProjectCreated() => browser.ProjectCreated();

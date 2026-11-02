@@ -265,21 +265,23 @@ Das Paket `Tupfer-Designer-Nextcloud.tar.gz` liegt bei jedem
 (.NET-SDK mit `wasm-tools`, Ergebnis in `nextcloud/dist/`). Es enthält die fertige Web-Version im
 Ordner `editor/`, die Nextcloud über PHP ausliefert. So braucht der Webserver keine eigenen Regeln.
 
-**Benutzen:**
+**Benutzen:** Die App bearbeitet nur Projekte im Format `*.tupfer` (mit allen Bildern und
+Aufnahmen in einer Datei). Ältere `*.tupfer.json` und tttool-YAML öffnet man in der Desktop- oder
+Web-Version; einmal gespeichert, sind sie ein `*.tupfer`.
 
-- Im App-Menü erscheint **Tupfer**. Dort startet der Designer mit dem zuletzt bearbeiteten Stand.
-- In der Dateien-App öffnet ein Klick auf eine `*.tupfer` (oder ältere `*.tupfer.json`) das Projekt im Designer, ebenso
-  der Eintrag *Mit Tupfer Designer öffnen* im Menü der Datei.
-- Über **+ Neu → Tupfer-Projekt** in der Dateien-App entsteht im aktuellen Ordner ein neues
-  Projekt (Inhalt wie *Datei → Neu*), das sich gleich im Designer öffnet.
-- **Öffnen und Einfügen:** *Projekt öffnen*, *Bild einfügen*, *SVG importieren* und
-  *Aufnahme laden* zeigen die Dateiauswahl von Nextcloud. Ein `*.tupfer` enthält Bilder und
-  Aufnahmen selbst; bei älteren `*.tupfer.json` lädt der Designer die Bilder und Audiodateien,
-  auf die sie verweisen (auch in Nachbarordnern wie `../bilder/`), mit dem Projekt.
-  Bilder vom eigenen Rechner lassen sich weiter auf die Seite ziehen.
-- **Speichern:** Das Projekt wird als `*.tupfer` (mit Bildern und Aufnahmen) an seinen Platz in
-  Nextcloud geschrieben; eine ältere `*.tupfer.json` bleibt dabei unverändert liegen. Ein neues
-  Projekt (oder ein Beispiel) fragt beim ersten Speichern nach Ordner und Namen.
+- **Anlegen:** Über **+ Neu → Tupfer-Projekt** in der Dateien-App entsteht im aktuellen Ordner ein
+  neues Projekt (Inhalt wie *Datei → Neu*), das sich gleich im Designer öffnet.
+- **Bearbeiten:** Ein Klick auf eine `*.tupfer` öffnet sie im Designer, ebenso der Eintrag
+  *Mit Tupfer Designer öffnen* im Menü der Datei. Im App-Menü startet **Tupfer** mit dem zuletzt
+  bearbeiteten Stand; *Datei → Öffnen* zeigt die Dateiauswahl von Nextcloud.
+- **Speichern** schreibt das Projekt zurück in seine Datei in Nextcloud. Wurde sie inzwischen
+  anderswo geändert (z. B. auf einem anderen Gerät), fragt der Designer vor dem Überschreiben.
+  Ein neues Projekt oder ein Beispiel fragt beim ersten Speichern nach Ordner und Namen.
+- **Speichern unter** fragt nach Ordner und Namen in Nextcloud (mit Rückfrage, wenn es die Datei
+  schon gibt); danach speichert *Speichern* in die neue Datei.
+- **Einfügen:** *Bild einfügen*, *SVG importieren* und *Aufnahme laden* zeigen die Dateiauswahl
+  von Nextcloud; die Dateien werden beim Speichern Teil des Projekts. Bilder vom eigenen Rechner
+  lassen sich weiter auf die Seite ziehen.
 - **Exporte** (GME, PDF, SVG, YAML) landen neben dem Projekt in Nextcloud. Bei einem noch nicht
   gespeicherten Projekt werden sie wie im Browser heruntergeladen. *Drucken* und *Auf den Stift*
   funktionieren wie im Browser.

@@ -36,10 +36,6 @@ static partial class NextcloudInterop
     [JSImport("read", "nextcloud")]
     public static partial Task<string?> ReadAsync(string path);
 
-    /// <summary>Namen der Dateien im Ordner als JSON-Array.</summary>
-    [JSImport("list", "nextcloud")]
-    public static partial Task<string> ListAsync(string path);
-
     [JSImport("exists", "nextcloud")]
     public static partial Task<bool> ExistsAsync(string path);
 
@@ -47,9 +43,21 @@ static partial class NextcloudInterop
     [JSImport("setPending", "nextcloud")]
     public static partial void SetPending([JSMarshalAs<JSType.MemoryView>] Span<byte> data);
 
-    /// <summary>Schreibt die übergebenen Daten in die Datei; fehlende Ordner werden angelegt.</summary>
+    /// <summary>
+    /// Schreibt die übergebenen Daten in die Datei; fehlende Ordner werden angelegt. <paramref name="mode"/>:
+    /// „neu“ (nur anlegen), „ersetzen“ (nur, wenn seit dem letzten Lesen/Schreiben unverändert) oder „immer“.
+    /// Liefert „ok“, „vorhanden“ oder „geaendert“.
+    /// </summary>
     [JSImport("write", "nextcloud")]
-    public static partial Task WriteAsync(string path);
+    public static partial Task<string> WriteAsync(string path, string mode);
+
+    /// <summary>Letzter bekannter Stand (ETag) der Datei, leer, wenn unbekannt.</summary>
+    [JSImport("etag", "nextcloud")]
+    public static partial string ETag(string path);
+
+    /// <summary>Setzt den bekannten Stand (nach dem Neuladen der Seite).</summary>
+    [JSImport("setEtag", "nextcloud")]
+    public static partial void SetETag(string path, string etag);
 
     [JSImport("saveState", "nextcloud")]
     public static partial void SaveState(string json);

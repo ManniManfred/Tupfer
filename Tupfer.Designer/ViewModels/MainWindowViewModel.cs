@@ -17,6 +17,9 @@ public interface IFileDialogs
     /// <summary>Die Dateien wurden geschrieben (im Browser werden sie jetzt heruntergeladen).</summary>
     Task SavedAsync(params string[] paths) => Task.CompletedTask;
 
+    /// <summary>Pfad für das Protokoll (in Nextcloud: der Pfad dort statt der Kopie im Arbeitsverzeichnis).</summary>
+    string DisplayPath(string path) => path;
+
     /// <summary>Ein neues, leeres Projekt wurde angelegt.</summary>
     void ProjectCreated() { }
 
@@ -379,7 +382,7 @@ public partial class MainWindowViewModel : ObservableObject
             _archiveDir = null;
         }
         FilePath = path;
-        Log($"Projekt geladen: {path}");
+        Log($"Projekt geladen: {Dialogs?.DisplayPath(path) ?? path}");
         AfterLoad();
     }
 
@@ -416,7 +419,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         WriteProject(path);
         await Dialogs!.SavedAsync(path);
-        Log($"Gespeichert: {path}");
+        Log($"Gespeichert: {Dialogs!.DisplayPath(path)}");
     });
 
     [RelayCommand]
@@ -429,7 +432,7 @@ public partial class MainWindowViewModel : ObservableObject
             path = Path.Combine(Path.GetDirectoryName(path)!, ProjectStore.BaseName(path) + ProjectStore.Extension);
         WriteProject(path);
         await Dialogs!.SavedAsync(path);
-        Log($"Gespeichert: {path}");
+        Log($"Gespeichert: {Dialogs!.DisplayPath(path)}");
     });
 
     /// <summary>

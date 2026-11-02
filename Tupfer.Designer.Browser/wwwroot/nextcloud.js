@@ -49,6 +49,29 @@ function fail(response, path) {
     throw new Error(`Nextcloud: ${path}: ${response.status} ${response.statusText}`.trim());
 }
 
+// Letzter bekannter Stand (ETag) je Datei: Beim Speichern wird nur überschrieben, was seitdem
+// niemand anders geändert hat.
+const etags = new Map();
+
+function remember(path, response) {
+    const tag = response.headers.get('ETag');
+    if (tag)
+        etags.set(path, tag);
+    else
+        etags.delete(path);
+}
+
+/** Letzter bekannter Stand (ETag) der Datei, leer, wenn unbekannt. */
+export function etag(path) {
+    return etags.get(path) ?? '';
+}
+
+/** Setzt den bekannten Stand (nach dem Neuladen der Seite). */
+export function setEtag(path, tag) {
+    if (tag)
+        etags.set(path, tag);
+}
+
 /** Inhalt der Datei als Base64, oder null, wenn es sie nicht gibt. */
 export async function read(path) {
     const response = await dav('GET', path);
@@ -56,6 +79,7 @@ export async function read(path) {
         return null;
     if (!response.ok)
         fail(response, path);
+    remember(path, response);
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -63,27 +87,6 @@ export async function read(path) {
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(blob);
     });
-}
-
-/** Namen der Dateien (ohne Unterordner) im Ordner als JSON-Array; leer, wenn es ihn nicht gibt. */
-export async function list(path) {
-    const response = await dav('PROPFIND', path, {
-        headers: { Depth: '1', 'Content-Type': 'application/xml' },
-        body: '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>',
-    });
-    if (response.status === 404)
-        return '[]';
-    if (!response.ok)
-        fail(response, path);
-    const xml = new DOMParser().parseFromString(await response.text(), 'application/xml');
-    const names = [];
-    for (const entry of xml.getElementsByTagNameNS('DAV:', 'response')) {
-        if (entry.getElementsByTagNameNS('DAV:', 'collection').length > 0)
-            continue;
-        const href = entry.getElementsByTagNameNS('DAV:', 'href')[0]?.textContent ?? '';
-        names.push(decodeURIComponent(href.replace(/\/$/, '').split('/').pop()));
-    }
-    return JSON.stringify(names);
 }
 
 /** true, wenn es die Datei oder den Ordner gibt. */
@@ -99,17 +102,33 @@ export function setPending(data) {
     pending = data.slice();
 }
 
-/** Schreibt die übergebenen Daten in die Datei; fehlende Ordner werden angelegt. */
-export async function write(path) {
+/**
+ * Schreibt die übergebenen Daten in die Datei; fehlende Ordner werden angelegt.
+ * mode: 'neu' – nur, wenn es die Datei noch nicht gibt; 'ersetzen' – nur, wenn sie seit dem letzten Lesen
+ * oder Schreiben unverändert ist; 'immer' – auf jeden Fall.
+ * Liefert 'ok', 'vorhanden' (bei 'neu') oder 'geaendert' (bei 'ersetzen').
+ */
+export async function write(path, mode) {
     const body = pending;
     pending = null;
-    let response = await dav('PUT', path, { body });
+    const headers = {};
+    if (mode === 'neu')
+        headers['If-None-Match'] = '*';
+    else if (mode === 'ersetzen' && etags.has(path))
+        headers['If-Match'] = etags.get(path);
+    let response = await dav('PUT', path, { body, headers });
     if (response.status === 409 || response.status === 404) {
         await makeFolders(path);
-        response = await dav('PUT', path, { body });
+        response = await dav('PUT', path, { body, headers });
     }
+    if (response.status === 412)
+        return mode === 'neu' ? 'vorhanden' : 'geaendert';
     if (!response.ok)
         fail(response, path);
+    remember(path, response);
+    if (!etags.has(path))
+        remember(path, await dav('HEAD', path));
+    return 'ok';
 }
 
 async function makeFolders(path) {

@@ -1,5 +1,5 @@
-// Dateien-App: Tupfer-Projekte (*.tupfer, ältere *.tupfer.json) per Klick im Tupfer Designer öffnen und über das Menü
-// „Neu“ anlegen.
+// Dateien-App: Tupfer-Projekte (*.tupfer) per Klick im Tupfer Designer bearbeiten und über das Menü „Neu“ anlegen.
+// Ältere Projekte (*.tupfer.json) gehören nicht dazu: Sie öffnet man in der Desktop- oder Web-Version.
 // Ohne Build-Schritt: Die Aktion wird so angemeldet wie mit registerFileAction aus @nextcloud/files –
 // Version 3 (Nextcloud bis 32) und Version 4 (ab 33), die Funktionen verstehen beide Aufrufarten.
 (function () {
@@ -12,7 +12,7 @@
 		iconSvgInline: () => icon,
 		enabled: (arg) => {
 			const nodes = nodesOf(arg)
-			return nodes.length === 1 && nodes[0].type === 'file' && /\.tupfer(\.json)?$/i.test(nodes[0].basename)
+			return nodes.length === 1 && nodes[0].type === 'file' && /\.tupfer$/i.test(nodes[0].basename)
 		},
 		exec: async (arg) => {
 			const node = nodesOf(arg)[0]
