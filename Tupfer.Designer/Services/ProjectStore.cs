@@ -98,6 +98,14 @@ public static class ProjectStore
         return true;
     }
 
+    /// <summary>Gibt das belegte Arbeitsverzeichnis frei (unter Windows lässt es sich sonst nicht löschen).</summary>
+    public static void ReleaseWorkDir()
+    {
+        _workDirLock?.Dispose();
+        _workDirLock = null;
+        _lockedWorkDir = null;
+    }
+
     /// <summary>Liest eine JSON-Projektdatei (altes Format).</summary>
     public static ProjectFile Load(string path) => FromJson(File.ReadAllText(path));
 

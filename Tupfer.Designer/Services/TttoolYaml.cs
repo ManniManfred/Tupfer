@@ -61,8 +61,9 @@ public static class TttoolYaml
         {
             var sb = new StringWriter();
             new YamlStream(new YamlDocument(extra)).Save(sb, assignAnchors: false);
-            // Nur die Endmarke des Dokuments („...“ in einer eigenen Zeile) entfernen, nicht Auslassungspunkte in Texten
-            project.ExtraYaml = System.Text.RegularExpressions.Regex.Replace(sb.ToString(), @"^\.\.\.[ \t]*$", "",
+            // Nur die Endmarke des Dokuments („...“ in einer eigenen Zeile) entfernen, nicht Auslassungspunkte in Texten;
+            // „$“ steht vor „\n“, unter Windows bleibt davor noch „\r“
+            project.ExtraYaml = System.Text.RegularExpressions.Regex.Replace(sb.ToString(), @"^\.\.\.[ \t]*\r?$", "",
                 System.Text.RegularExpressions.RegexOptions.Multiline).Trim();
         }
 

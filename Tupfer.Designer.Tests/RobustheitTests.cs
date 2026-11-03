@@ -15,7 +15,12 @@ public class RobustheitTests : IDisposable
 {
     readonly string _dir = Directory.CreateTempSubdirectory("tupfer-robust").FullName;
 
-    public void Dispose() => Directory.Delete(_dir, true);
+    public void Dispose()
+    {
+        // Die Sperrdatei eines belegten Arbeitsverzeichnisses ist offen und verhindert unter Windows das Löschen
+        ProjectStore.ReleaseWorkDir();
+        Directory.Delete(_dir, true);
+    }
 
     // ---------- Skripte ----------
 
