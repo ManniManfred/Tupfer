@@ -257,7 +257,11 @@
             <MenuItem Header="OID-_Tabelle als PDF …" Command="{Binding ExportOidTableCommand}" />
             <MenuItem Header="Gewählte Fläche als P_NG …" Command="{Binding ExportAreaPngCommand}" />
             <Separator />
-            <MenuItem Header="_Drucker-Testseite …" Command="{Binding ExportPrinterTestCommand}" />
+            <MenuItem Header="_Drucker-Testseite speichern …" Command="{Binding ExportPrinterTestCommand}"
+                      ToolTip.Tip="PDF und druckertest.gme für den Stift speichern" />
+            <MenuItem Header="Drucker-Testseite druc_ken …" Command="{Binding PrintPrinterTestCommand}"
+                      IsVisible="{x:Static vm:MainWindowViewModel.CanPrintDirectly}"
+                      ToolTip.Tip="Testseite direkt drucken, ohne PDF-Programm, in Originalgröße" />
             <MenuItem Header="Produkte auf dem Stift _anzeigen …" Command="{Binding ShowPenProductsCommand}"
                       IsVisible="{x:Static vm:MainWindowViewModel.IsDesktop}"
                       ToolTip.Tip="Alle GME-Dateien auf dem Stift mit Produkt-ID, um doppelte zu finden" />

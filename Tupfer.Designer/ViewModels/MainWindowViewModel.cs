@@ -886,6 +886,17 @@ public partial class MainWindowViewModel : ObservableObject
         await Dialogs!.ShowTextAsync("Produkte auf dem Stift", string.Join(Environment.NewLine + Environment.NewLine, parts));
     });
 
+    /// <summary>Windows: Der Designer druckt selbst (siehe <see cref="DirectPrinting"/>).</summary>
+    public static bool CanPrintDirectly => DirectPrinting.Printer != null;
+
+    /// <summary>Druckt die Drucker-Testseite direkt, ohne PDF-Programm (Windows).</summary>
+    [RelayCommand]
+    Task PrintPrinterTest() => Guard("Drucker-Testseite drucken", async () =>
+    {
+        if (await Dialogs!.PrintDirectAsync([PrinterTest.CreatePage(PrinterTest.CreateProject())], 1200, 2) is { Length: > 0 } printed)
+            Notice(printed + $" Dazu gehört {PrinterTest.BaseName}.gme (Erstellen → Drucker-Testseite speichern …) auf dem Stift.");
+    });
+
     [RelayCommand]
     Task ExportPrinterTest() => Guard("Drucker-Testseite", async () =>
     {
