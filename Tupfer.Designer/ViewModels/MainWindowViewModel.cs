@@ -214,6 +214,8 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Protokoll unten anzeigen (Menü Erstellen); Fehler und Hinweise blenden es ein.</summary>
     [ObservableProperty] bool _showLog;
 
+    [RelayCommand] void HideLog() => ShowLog = false;
+
     /// <summary>Meldung, die gelesen werden soll (Fehler, Hinweis, Ergebnis): blendet das Protokoll ein.</summary>
     void Notice(string message)
     {
