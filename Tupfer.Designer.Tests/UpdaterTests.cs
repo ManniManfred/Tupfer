@@ -16,18 +16,25 @@ public class UpdaterTests
             assets = new object[]
             {
                 new { name = "Tupfer-Designer-Linux-x64.deb", browser_download_url = "https://example.org/linux.deb", digest = (string?)null },
-                new { name = asset, browser_download_url = "https://example.org/setup.exe", digest },
+                new { name = asset, browser_download_url = "https://example.org/neu", digest },
             },
         })).RootElement;
 
     [Fact]
-    public void NeuereVersion_LiefertSetupUndPruefsumme()
+    public void NeuereVersion_LiefertDateiUndPruefsumme()
     {
-        var release = Updater.ParseRelease(Release("v1.28.0", digest: "sha256:ABCDEF"), "1.27.0");
+        var release = Updater.ParseRelease(Release("v1.28.0", digest: "sha256:ABCDEF"), "1.27.0", Updater.SetupAsset);
         Assert.NotNull(release);
         Assert.Equal(new Version(1, 28, 0), release.Version);
-        Assert.Equal("https://example.org/setup.exe", release.SetupUrl);
+        Assert.Equal("https://example.org/neu", release.Url);
         Assert.Equal("abcdef", release.Sha256);
+    }
+
+    [Fact]
+    public void AppImage_NurMitPassenderDatei()
+    {
+        Assert.NotNull(Updater.ParseRelease(Release("v1.28.0", asset: Updater.AppImageAsset), "1.27.0", Updater.AppImageAsset));
+        Assert.Null(Updater.ParseRelease(Release("v1.28.0"), "1.27.0", Updater.AppImageAsset));
     }
 
     [Theory]
@@ -35,15 +42,16 @@ public class UpdaterTests
     [InlineData("v1.27", "1.27.0")]
     [InlineData("v1.26.5", "1.27.0")]
     public void GleicheOderAeltereVersion_KeinUpdate(string tag, string installed) =>
-        Assert.Null(Updater.ParseRelease(Release(tag), installed));
+        Assert.Null(Updater.ParseRelease(Release(tag), installed, Updater.SetupAsset));
 
     [Fact]
-    public void OhneWindowsSetupOderVorabversion_KeinUpdate()
+    public void OhneDateiOderVorabversion_KeinUpdate()
     {
-        Assert.Null(Updater.ParseRelease(Release("v2.0.0", asset: "anderes.exe"), "1.27.0"));
-        Assert.Null(Updater.ParseRelease(Release("v2.0.0", prerelease: true), "1.27.0"));    }
+        Assert.Null(Updater.ParseRelease(Release("v2.0.0", asset: "anderes.exe"), "1.27.0", Updater.SetupAsset));
+        Assert.Null(Updater.ParseRelease(Release("v2.0.0", prerelease: true), "1.27.0", Updater.SetupAsset));
+    }
 
     [Fact]
     public void OhnePruefsumme_TrotzdemUpdate() =>
-        Assert.Null(Updater.ParseRelease(Release("v1.27.1"), "1.27.0")!.Sha256);
+        Assert.Null(Updater.ParseRelease(Release("v1.27.1"), "1.27.0", Updater.SetupAsset)!.Sha256);
 }

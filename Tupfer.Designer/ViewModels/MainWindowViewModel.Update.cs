@@ -5,10 +5,10 @@ using Tupfer.Designer.Services;
 
 namespace Tupfer.Designer.ViewModels;
 
-// Automatische Aktualisierung der mit dem Setup installierten Windows-Version
+// Automatische Aktualisierung (Windows mit Setup, Linux als AppImage)
 public partial class MainWindowViewModel
 {
-    /// <summary>„Nach Updates suchen“ gibt es nur in der installierten Windows-Version.</summary>
+    /// <summary>„Nach neuer Version suchen“ gibt es nur, wo sich das Programm selbst aktualisieren kann (siehe Updater).</summary>
     public static bool CanUpdate => Updater.IsAvailable;
 
     bool _updating;
@@ -55,7 +55,7 @@ public partial class MainWindowViewModel
             // Letzten Stand sichern, beim Neustart wird er wiederhergestellt
             _autoSaveTimer?.Stop();
             await AutoSave();
-            Updater.StartSetup(setup);
+            Updater.Install(setup);
             (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         }
         finally
