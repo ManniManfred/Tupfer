@@ -43,6 +43,13 @@ public partial class MainWindowViewModel
             _ = CheckForUpdateOnStartAsync();
     }
 
+    /// <summary>Öffnet eine Projektdatei, die das Betriebssystem bei laufender App übergibt (z. B. macOS-Finder).</summary>
+    public async Task OpenFromSystemAsync(string path)
+    {
+        if (await ConfirmDiscardAsync())
+            Load(path);
+    }
+
     async Task<AutoSaveSnapshot?> LoadAutoSave(IAutoSaveStore store)
     {
         try

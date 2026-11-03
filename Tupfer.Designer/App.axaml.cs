@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Tupfer.Designer.Services;
 using Tupfer.Designer.ViewModels;
 using Tupfer.Designer.Views;
@@ -30,6 +31,13 @@ public partial class App : Application
             // Mit Datei (z. B. Doppelklick auf ein Projekt): sie öffnen, sonst den zuletzt gesicherten Stand
             var path = desktop.Args is { Length: > 0 } args ? args[0] : null;
             _ = vm.StartAsync(null, restore: path == null, path);
+            // macOS übergibt per Doppelklick geöffnete Dateien nicht als Argument, sondern als Ereignis
+            if (TryGetFeature(typeof(IActivatableLifetime)) is IActivatableLifetime activatable)
+                activatable.Activated += async (_, e) =>
+                {
+                    if (e is FileActivatedEventArgs { Files: [var file, ..] } && file.TryGetLocalPath() is { } local)
+                        await vm.OpenFromSystemAsync(local);
+                };
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {

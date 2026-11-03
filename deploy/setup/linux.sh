@@ -14,11 +14,25 @@ work=$(mktemp -d)
 # .deb: Programm unter /opt, Starter unter /usr/bin, Eintrag im Anwendungsmenü
 pkg=$work/deb
 mkdir -p "$pkg/DEBIAN" "$pkg/opt/tupfer-designer" "$pkg/usr/bin" \
-         "$pkg/usr/share/applications" "$pkg/usr/share/icons/hicolor/256x256/apps"
+         "$pkg/usr/share/applications" "$pkg/usr/share/icons/hicolor/256x256/apps" \
+         "$pkg/usr/share/icons/hicolor/256x256/mimetypes" "$pkg/usr/share/mime/packages"
 cp -r "$source"/. "$pkg/opt/tupfer-designer/"
 chmod 755 "$pkg/opt/tupfer-designer/Tupfer.Designer"
 ln -s /opt/tupfer-designer/Tupfer.Designer "$pkg/usr/bin/tupfer-designer"
 cp Tupfer.Designer/Assets/Tupfer.png "$pkg/usr/share/icons/hicolor/256x256/apps/tupfer-designer.png"
+cp Tupfer.Designer/Assets/Tupfer.png "$pkg/usr/share/icons/hicolor/256x256/mimetypes/application-x-tupfer.png"
+# Dateityp für Projektdateien (*.tupfer); MIME- und Desktop-Datenbank aktualisiert dpkg per Trigger
+cat > "$pkg/usr/share/mime/packages/tupfer-designer.xml" <<'MIME'
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-tupfer">
+    <comment>Tupfer project</comment>
+    <comment xml:lang="de">Tupfer-Projekt</comment>
+    <icon name="application-x-tupfer"/>
+    <glob pattern="*.tupfer"/>
+  </mime-type>
+</mime-info>
+MIME
 cat > "$pkg/usr/share/applications/tupfer-designer.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
@@ -28,6 +42,7 @@ Exec=/opt/tupfer-designer/Tupfer.Designer %f
 Icon=tupfer-designer
 Terminal=false
 Categories=Graphics;Education;
+MimeType=application/x-tupfer;
 DESKTOP
 cat > "$pkg/DEBIAN/control" <<CONTROL
 Package: tupfer-designer
@@ -56,6 +71,9 @@ exec "$here/usr/lib/tupfer-designer/Tupfer.Designer" "$@"
 APPRUN
 chmod 755 "$appdir/AppRun"
 cp Tupfer.Designer/Assets/Tupfer.png "$appdir/tupfer-designer.png"
+# Dateityp für Integrationswerkzeuge wie AppImageLauncher oder appimaged
+mkdir -p "$appdir/usr/share/mime/packages"
+cp "$pkg/usr/share/mime/packages/tupfer-designer.xml" "$appdir/usr/share/mime/packages/"
 sed 's|^Exec=.*|Exec=Tupfer.Designer %f|' "$pkg/usr/share/applications/tupfer-designer.desktop" > "$appdir/tupfer-designer.desktop"
 
 tool=${APPIMAGETOOL:-$(command -v appimagetool || true)}

@@ -35,6 +35,8 @@ OutputBaseFilename=Tupfer-Designer-Setup-Windows-x64
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+; Explorer über die neue Dateiverknüpfung informieren
+ChangesAssociations=yes
 
 [Languages]
 Name: "de"; MessagesFile: "compiler:Languages\German.isl"
@@ -48,6 +50,15 @@ Source: "{#Source}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs cre
 [Icons]
 Name: "{group}\Tupfer Designer"; Filename: "{app}\Tupfer.Designer.exe"
 Name: "{autodesktop}\Tupfer Designer"; Filename: "{app}\Tupfer.Designer.exe"; Tasks: desktopicon
+
+[Registry]
+; Projektdateien (*.tupfer) per Doppelklick öffnen; HKA = HKCU oder bei Installation für alle HKLM
+Root: HKA; Subkey: "Software\Classes\.tupfer"; ValueType: string; ValueName: ""; ValueData: "TupferDesigner.Projekt"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\.tupfer\OpenWithProgids"; ValueType: string; ValueName: "TupferDesigner.Projekt"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\TupferDesigner.Projekt"; ValueType: string; ValueName: ""; ValueData: "Tupfer-Projekt"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\TupferDesigner.Projekt\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\Tupfer.Designer.exe,0"
+Root: HKA; Subkey: "Software\Classes\TupferDesigner.Projekt\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Tupfer.Designer.exe"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\Applications\Tupfer.Designer.exe\SupportedTypes"; ValueType: string; ValueName: ".tupfer"; ValueData: ""; Flags: uninsdeletekey
 
 [Run]
 Filename: "{app}\Tupfer.Designer.exe"; Description: "{cm:LaunchProgram,Tupfer Designer}"; Flags: nowait postinstall skipifsilent
