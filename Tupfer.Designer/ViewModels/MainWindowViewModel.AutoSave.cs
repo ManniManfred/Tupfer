@@ -21,16 +21,24 @@ public partial class MainWindowViewModel
     /// </summary>
     public async Task StartAsync(ExampleProject? example, bool restore, string? path = null)
     {
+        bool restored = false;
         if (AutoSaveStore != null && (restore || example != null || path != null))
         {
-            bool open = example != null || path != null;
+            // Mit Projektdatei (Desktop) nur ungespeicherte Änderungen wiederherstellen, z. B. nach einem Absturz,
+            // sonst erscheint der Startbildschirm
+            bool open = example != null || path != null || RequireProjectFile;
             if (await LoadAutoSave(AutoSaveStore) is { } snapshot && (!open || snapshot.Modified))
+            {
                 RestoreAutoSave(snapshot);
+                restored = true;
+            }
         }
         if (example != null)
             await OpenExampleCommand.ExecuteAsync(example);
         else if (path != null && await ConfirmDiscardAsync())
             Load(path);
+        if (RequireProjectFile && FilePath == null && !restored)
+            ShowStartScreen = true;
 
         // Erst jetzt, sonst würde der gesicherte Stand gleich mit dem leeren Projekt überschrieben
         if (AutoSaveStore != null)

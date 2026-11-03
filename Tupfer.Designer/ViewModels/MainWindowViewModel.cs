@@ -252,9 +252,13 @@ public partial class MainWindowViewModel : ObservableObject
     // ---------- Datei ----------
 
     [RelayCommand]
-    async Task NewProject()
+    Task NewProject() => Guard("Neu", async () =>
     {
         if (!await ConfirmDiscardAsync())
+            return;
+        // Desktop: gleich als Datei anlegen
+        string? path = null;
+        if (RequireProjectFile && (path = await AskProjectPathAsync("Neues Projekt anlegen", "projekt")) == null)
             return;
         Project = CreateDefaultProject(Log);
         _archiveDir = null;
@@ -262,8 +266,14 @@ public partial class MainWindowViewModel : ObservableObject
         Dialogs?.ProjectCreated();
         ProgramErrors = ProgramOutput = "";
         MarkSaved();
-        Log("Neues Projekt angelegt.");
-    }
+        if (path != null)
+        {
+            _saved = WriteProject(path);
+            Log($"Neues Projekt angelegt: {path}");
+        }
+        else
+            Log("Neues Projekt angelegt.");
+    });
 
     // ---------- C#-Programm ----------
 
@@ -430,6 +440,7 @@ public partial class MainWindowViewModel : ObservableObject
             _archiveDir = null;
         }
         FilePath = path;
+        AddRecent(path);
         Log($"Projekt geladen: {Dialogs?.DisplayPath(path) ?? path}");
         AfterLoad();
         MarkSaved();
@@ -476,11 +487,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task SaveProjectAs() => Guard("Speichern", async () =>
     {
-        var name = (ProjectBaseName ?? "projekt") + ProjectStore.Extension;
-        var path = await Dialogs!.SaveAsync("Projekt speichern", name, "Tupfer-Projekt", ProjectStore.Extension);
+        var path = await AskProjectPathAsync("Projekt speichern", ProjectBaseName ?? "projekt");
         if (path == null) return;
-        if (!path.EndsWith(ProjectStore.Extension, StringComparison.OrdinalIgnoreCase))
-            path = Path.Combine(Path.GetDirectoryName(path)!, ProjectStore.BaseName(path) + ProjectStore.Extension);
         var saved = WriteProject(path);
         await Dialogs!.SavedAsync(path);
         _saved = saved;
@@ -507,6 +515,7 @@ public partial class MainWindowViewModel : ObservableObject
             _archiveDir = dir;
         }
         FilePath = path;
+        AddRecent(path);
         return Snapshot();
     }
 
@@ -532,8 +541,18 @@ public partial class MainWindowViewModel : ObservableObject
     Task ImportYaml() => Guard("YAML-Import", async () =>
     {
         var path = await Dialogs!.OpenAsync("tttool-YAML importieren", "tttool YAML", "*.yaml", "*.yml");
-        if (path != null && await ConfirmDiscardAsync())
-            LoadYaml(path);
+        if (path == null || !await ConfirmDiscardAsync())
+            return;
+        // Desktop: das importierte Projekt gleich als Datei anlegen
+        string? target = null;
+        if (RequireProjectFile && (target = await AskProjectPathAsync("Importiertes Projekt speichern", Path.GetFileNameWithoutExtension(path))) == null)
+            return;
+        LoadYaml(path);
+        if (target != null)
+        {
+            _saved = WriteProject(target);
+            Log($"Gespeichert: {target}");
+        }
     });
 
     [RelayCommand]

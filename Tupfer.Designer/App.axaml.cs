@@ -21,9 +21,10 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        var vm = new MainWindowViewModel();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Desktop: immer mit einer Projektdatei arbeiten, mit Liste der zuletzt geöffneten
+            var vm = new MainWindowViewModel { RequireProjectFile = true, Recent = new RecentFiles() };
             MainWindowViewModel.AutoSaveStore ??= new FileAutoSaveStore();
             var window = new MainWindow { DataContext = vm };
             vm.Dialogs = CreateDialogs(window);
@@ -42,6 +43,7 @@ public partial class App : Application
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {
             // Browser: eine einzige Ansicht statt eines Fensters
+            var vm = new MainWindowViewModel();
             var view = new MainView { DataContext = vm };
             bool started = false;
             view.AttachedToVisualTree += (_, _) =>
