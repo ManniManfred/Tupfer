@@ -82,6 +82,21 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         return result;
     }
 
+    public void OpenInViewer(string path)
+    {
+        var open = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo(path) { UseShellExecute = true }
+            : new ProcessStartInfo(OperatingSystem.IsMacOS() ? "open" : "xdg-open", [path]);
+        try
+        {
+            Process.Start(open)?.Dispose();
+        }
+        catch (Win32Exception)
+        {
+            // Kein Programm für den Dateityp; die Datei ist trotzdem geschrieben
+        }
+    }
+
     public async Task<string> PrintAsync(string pdfPath)
     {
         // Ältere Druckdateien aufräumen (die aktuelle braucht das PDF-Programm evtl. noch eine Weile)
@@ -124,10 +139,7 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         }
 
         // Sonst im PDF-Programm öffnen und dort drucken
-        var open = OperatingSystem.IsWindows()
-            ? new ProcessStartInfo(pdfPath) { UseShellExecute = true }
-            : new ProcessStartInfo(OperatingSystem.IsMacOS() ? "open" : "xdg-open", [pdfPath]);
-        Process.Start(open)?.Dispose();
+        OpenInViewer(pdfPath);
         return "Direktes Drucken ist hier nicht möglich, das PDF wurde im PDF-Programm geöffnet – bitte dort drucken.";
     }
 

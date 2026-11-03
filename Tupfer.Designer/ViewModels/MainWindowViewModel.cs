@@ -17,6 +17,9 @@ public interface IFileDialogs
     /// <summary>Die Dateien wurden geschrieben (im Browser werden sie jetzt heruntergeladen).</summary>
     Task SavedAsync(params string[] paths) => Task.CompletedTask;
 
+    /// <summary>Öffnet eine geschriebene Datei im zugehörigen Programm (Desktop; im Browser genügt der Download).</summary>
+    void OpenInViewer(string path) { }
+
     /// <summary>Pfad für das Protokoll (in Nextcloud: der Pfad dort statt der Kopie im Arbeitsverzeichnis).</summary>
     string DisplayPath(string path) => path;
 
@@ -761,6 +764,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (path == null) return;
 
         PdfWriter.Write(path, CreatePageSpecs(), Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
+        Dialogs.OpenInViewer(path);
         await Dialogs.SavedAsync(path);
         Log($"PDF geschrieben: {path}. Mit {Project.Dpi} dpi und ohne Skalierung („Tatsächliche Größe“) drucken.");
     });
@@ -817,6 +821,7 @@ public partial class MainWindowViewModel : ObservableObject
         entries.AddRange(Project.Scripts.Where(x => x.Code.HasValue && !x.Helper).Select(x => (x.Name, x.Code!.Value)));
 
         PdfWriter.WriteOidTable(path, Project.Comment, entries, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
+        Dialogs.OpenInViewer(path);
         await Dialogs.SavedAsync(path);
         Log($"OID-Tabelle geschrieben: {path}");
     });
