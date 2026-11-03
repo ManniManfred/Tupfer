@@ -382,8 +382,11 @@ Testseite in `examples/druckertest/` findest du die passende Einstellung:
 4. Die Variante, die zuverlässig erkannt wird, im Designer unter *Projekt → Druckauflösung /
    Punktgröße* eintragen.
 
-Die Testseite lässt sich im Designer jederzeit neu erzeugen: *Erstellen → Drucker-Testseite …*
-(baut die GME-Datei gleich mit).
+Die Testseite lässt sich im Designer jederzeit neu erzeugen: *Erstellen → Drucker-Testseite → PDF und
+GME speichern …* (baut die GME-Datei gleich mit). Unter Windows druckt *Erstellen → Drucker-Testseite →
+Direkt drucken …* sie ohne PDF-Programm in Originalgröße; das ist sicherer, weil manche PDF-Programme (z. B. der
+Acrobat Reader) die feinen Punkte beim Drucken so verändern, dass der Stift sie nicht erkennt. Auch *Seiten
+drucken* (Strg+P) druckt unter Windows direkt.
 
 ## Quellen
 

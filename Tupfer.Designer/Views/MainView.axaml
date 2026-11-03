@@ -257,11 +257,15 @@
             <MenuItem Header="OID-_Tabelle als PDF …" Command="{Binding ExportOidTableCommand}" />
             <MenuItem Header="Gewählte Fläche als P_NG …" Command="{Binding ExportAreaPngCommand}" />
             <Separator />
-            <MenuItem Header="_Drucker-Testseite speichern …" Command="{Binding ExportPrinterTestCommand}"
-                      ToolTip.Tip="PDF und druckertest.gme für den Stift speichern" />
-            <MenuItem Header="Drucker-Testseite druc_ken …" Command="{Binding PrintPrinterTestCommand}"
-                      IsVisible="{x:Static vm:MainWindowViewModel.CanPrintDirectly}"
-                      ToolTip.Tip="Testseite direkt drucken, ohne PDF-Programm, in Originalgröße" />
+            <!-- Eigenes Untermenü, damit es nicht mit „Seiten drucken“ verwechselt wird: gehört nicht zum Projekt -->
+            <MenuItem Header="Druc_ker-Testseite (eigenes Produkt 950)"
+                      ToolTip.Tip="Feste Testseite unabhängig vom Projekt, um die beste Druckauflösung und Punktgröße zu finden">
+              <MenuItem Header="PDF und GME _speichern …" Command="{Binding ExportPrinterTestCommand}"
+                        ToolTip.Tip="druckertest.pdf und druckertest.gme speichern; die GME gehört auf den Stift" />
+              <MenuItem Header="_Direkt drucken …" Command="{Binding PrintPrinterTestCommand}"
+                        IsVisible="{x:Static vm:MainWindowViewModel.CanPrintDirectly}"
+                        ToolTip.Tip="Testseite direkt drucken, ohne PDF-Programm, in Originalgröße" />
+            </MenuItem>
             <MenuItem Header="Produkte auf dem Stift _anzeigen …" Command="{Binding ShowPenProductsCommand}"
                       IsVisible="{x:Static vm:MainWindowViewModel.IsDesktop}"
                       ToolTip.Tip="Alle GME-Dateien auf dem Stift mit Produkt-ID, um doppelte zu finden" />
