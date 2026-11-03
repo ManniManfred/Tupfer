@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Tupfer.Designer.Services;
 using Tupfer.Designer.ViewModels;
 
 namespace Tupfer.Designer.Views;
@@ -36,18 +37,55 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         return file?.TryGetLocalPath();
     }
 
+    /// <summary>Wartet, bis das Hauptfenster zu sehen ist (beim Start, z. B. Projekt per Doppelklick).</summary>
+    static async Task WhenVisible(Window owner)
+    {
+        if (owner.IsVisible)
+            return;
+        var opened = new TaskCompletionSource();
+        owner.Opened += (_, _) => opened.TrySetResult();
+        if (!owner.IsVisible)
+            await opened.Task;
+    }
+
+    public async Task ShowTextAsync(string title, string text)
+    {
+        if (topLevel is not Window owner)
+            return;
+        await WhenVisible(owner);
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 760,
+            Height = 480,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ShowInTaskbar = false,
+        };
+        var close = new Button { Content = "Schließen", IsDefault = true, IsCancel = true, MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
+        close.Click += (_, _) => dialog.Close();
+        var panel = new DockPanel { Margin = new Thickness(16) };
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0), Children = { close } };
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        panel.Children.Add(buttons);
+        // Auswählbar, damit sich die Liste kopieren lässt; Festbreitenschrift für die Spalten
+        panel.Children.Add(new TextBox
+        {
+            Text = text,
+            IsReadOnly = true,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.NoWrap,
+            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"),
+            FontSize = 12,
+        });
+        dialog.Content = panel;
+        await dialog.ShowDialog(owner);
+    }
+
     public async Task<bool> ConfirmAsync(string message)
     {
         if (topLevel is not Window owner)
             return true;
-        // Beim Start (Projekt per Doppelklick) ist das Fenster evtl. noch nicht zu sehen
-        if (!owner.IsVisible)
-        {
-            var opened = new TaskCompletionSource();
-            owner.Opened += (_, _) => opened.TrySetResult();
-            if (!owner.IsVisible)
-                await opened.Task;
-        }
+        await WhenVisible(owner);
         bool result = false;
         var dialog = new Window
         {
@@ -145,23 +183,9 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
 
     public async Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create)
     {
-        // Der Stift meldet sich als Laufwerk „tiptoi“ (Windows: Bezeichnung, Linux/macOS: Einhängepunkt)
-        var pens = DriveInfo.GetDrives()
-            .Where(d =>
-            {
-                try
-                {
-                    return d.IsReady && (string.Equals(d.VolumeLabel, "tiptoi", StringComparison.OrdinalIgnoreCase)
-                                         || string.Equals(Path.GetFileName(d.RootDirectory.FullName.TrimEnd('/', '\\')), "tiptoi", StringComparison.OrdinalIgnoreCase));
-                }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-                {
-                    return false;
-                }
-            })
-            .ToList();
+        var pens = PenContents.FindPens();
         var target = pens.Count == 1
-            ? Path.Combine(pens[0].RootDirectory.FullName, fileName)
+            ? Path.Combine(pens[0], fileName)
             : await SaveAsync("Auf den Stift speichern (Laufwerk „tiptoi“ wählen)", fileName, "GME-Datei", ".gme");
         if (target == null)
             return null;

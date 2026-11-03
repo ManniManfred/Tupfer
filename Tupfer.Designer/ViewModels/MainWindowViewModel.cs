@@ -26,6 +26,9 @@ public interface IFileDialogs
     /// <summary>Ein neues, leeres Projekt wurde angelegt.</summary>
     void ProjectCreated() { }
 
+    /// <summary>Zeigt einen längeren Text in einem eigenen Fenster (Desktop), z. B. die Produkte auf dem Stift.</summary>
+    Task ShowTextAsync(string title, string text) => Task.CompletedTask;
+
     /// <summary>Rückfrage mit Ja/Nein (z. B. ungespeicherte Änderungen verwerfen); true = Ja.</summary>
     Task<bool> ConfirmAsync(string message) => Task.FromResult(true);
 
@@ -845,6 +848,27 @@ public partial class MainWindowViewModel : ObservableObject
         Dialogs.OpenInViewer(path);
         await Dialogs.SavedAsync(path);
         Log($"OID-Tabelle geschrieben: {path}");
+    });
+
+    /// <summary>Listet die GME-Dateien auf dem Stift mit ihren Produkt-IDs, damit doppelte auffallen (Desktop).</summary>
+    [RelayCommand]
+    Task ShowPenProducts() => Guard("Produkte auf dem Stift", async () =>
+    {
+        var pens = PenContents.FindPens();
+        if (pens.Count == 0)
+        {
+            Notice("Kein Stift gefunden: Er muss angeschlossen sein und sich als Laufwerk „tiptoi“ melden.");
+            return;
+        }
+        var parts = new List<string>();
+        foreach (var root in pens)
+        {
+            var products = await Task.Run(() => PenContents.ReadProducts(root));
+            parts.Add(PenContents.Describe(root, products, Project.ProductId));
+            foreach (var g in PenContents.Duplicates(products))
+                Notice($"Doppelte Produkt-ID {g.Key} auf dem Stift: {string.Join(", ", g.Select(p => p.RelativePath))}");
+        }
+        await Dialogs!.ShowTextAsync("Produkte auf dem Stift", string.Join(Environment.NewLine + Environment.NewLine, parts));
     });
 
     [RelayCommand]

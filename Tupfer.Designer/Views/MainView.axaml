@@ -258,6 +258,9 @@
             <MenuItem Header="Gewählte Fläche als P_NG …" Command="{Binding ExportAreaPngCommand}" />
             <Separator />
             <MenuItem Header="_Drucker-Testseite …" Command="{Binding ExportPrinterTestCommand}" />
+            <MenuItem Header="Produkte auf dem Stift _anzeigen …" Command="{Binding ShowPenProductsCommand}"
+                      IsVisible="{x:Static vm:MainWindowViewModel.IsDesktop}"
+                      ToolTip.Tip="Alle GME-Dateien auf dem Stift mit Produkt-ID, um doppelte zu finden" />
             <Separator />
             <MenuItem Header="P_rotokoll anzeigen" ToggleType="CheckBox" IsChecked="{Binding ShowLog, Mode=TwoWay}" />
           </MenuItem>
