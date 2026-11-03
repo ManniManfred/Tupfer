@@ -51,3 +51,11 @@ Name: "{autodesktop}\Tupfer Designer"; Filename: "{app}\Tupfer.Designer.exe"; Ta
 
 [Run]
 Filename: "{app}\Tupfer.Designer.exe"; Description: "{cm:LaunchProgram,Tupfer Designer}"; Flags: nowait postinstall skipifsilent
+; Automatische Aktualisierung aus dem Programm (/SILENT /NEUSTART=1): danach wieder starten
+Filename: "{app}\Tupfer.Designer.exe"; Flags: nowait runasoriginaluser; Check: RestartAfterUpdate
+
+[Code]
+function RestartAfterUpdate: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:NEUSTART|0}') = '1');
+end;

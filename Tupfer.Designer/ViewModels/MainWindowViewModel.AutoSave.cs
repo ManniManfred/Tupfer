@@ -38,6 +38,9 @@ public partial class MainWindowViewModel
             _autoSaveTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, async (_, _) => await AutoSave());
             _autoSaveTimer.Start();
         }
+
+        if (CanUpdate)
+            _ = CheckForUpdateOnStartAsync();
     }
 
     async Task<AutoSaveSnapshot?> LoadAutoSave(IAutoSaveStore store)
