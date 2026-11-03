@@ -10,7 +10,8 @@ namespace Tupfer.Designer.Gme;
 /// Erzeugt Sprachausgaben für die GME-Datei. Zuerst mit der natürlichen Stimme (Piper, im Browser
 /// und am Desktop, siehe <see cref="NaturalSynthesizer"/>); geht das nicht, wie tttool mit pico2wave,
 /// espeak oder (macOS) say, unter Windows mit der eingebauten Sprachausgabe. Danach wird mit oggenc nach
-/// Ogg/Vorbis umgewandelt, ohne oggenc mit dem eingebauten Encoder (<see cref="Audio.WavToOgg"/>).
+/// Ogg/Vorbis umgewandelt, ohne oggenc (und bei der natürlichen Stimme immer) mit dem eingebauten Encoder
+/// (<see cref="Audio.WavToOgg"/>).
 /// Ergebnisse werden in einem Cache-Verzeichnis abgelegt.
 /// </summary>
 public class TextToSpeech
@@ -98,7 +99,14 @@ public class TextToSpeech
     {
         var natural = CachePath(speechKey, text, "-natural.wav");
         if (File.Exists(natural))
-            return File.ReadAllBytes(natural);
+        {
+            // Wie die übrigen Sprachausgaben als Ogg Vorbis in die GME (Piper liefert WAV)
+            var naturalOgg = Path.ChangeExtension(natural, ".ogg");
+            if (File.Exists(naturalOgg))
+                return File.ReadAllBytes(naturalOgg);
+            var wavData = File.ReadAllBytes(natural);
+            return ToOgg(wavData, naturalOgg) ?? wavData;
+        }
         // Ohne natürliche Stimme zählt nur die Sprache
         var language = Voices.Parse(speechKey).Language;
         Directory.CreateDirectory(_cacheDir);

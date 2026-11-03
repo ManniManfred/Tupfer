@@ -51,6 +51,33 @@ public class TextToSpeechTests
     }
 
     [Fact]
+    public async Task NatuerlicheStimme_KommtAlsOggInDieGme()
+    {
+        var dir = Directory.CreateTempSubdirectory("tupfer-tts").FullName;
+        try
+        {
+            // Piper liefert WAV (hier 16000 Hz wie bei x_low-Stimmen); in der GME soll Ogg Vorbis 22050 Hz landen
+            var samples = Enumerable.Range(0, 16000).Select(i => (float)Math.Sin(i * 0.1) * 0.5f).ToArray();
+            TextToSpeech.NaturalSynthesizer = (_, _) => Task.FromResult(PiperSpeech.WavFromSamples(samples, 16000));
+            var tts = new TextToSpeech(dir, _ => { });
+            await tts.PrepareAsync([("de", "Hallo")]);
+
+            var data = tts.Speak("de", "Hallo");
+            Assert.Equal(".ogg", Services.Audio.ExtensionOf(data));
+            Assert.True(data.Length < 32000 / 4, $"Ogg ist {data.Length} Bytes groß");
+
+            // Beim nächsten Mal aus dem Cache, nicht neu kodiert
+            TextToSpeech.NaturalSynthesizer = (_, _) => throw new InvalidOperationException("darf nicht sprechen");
+            Assert.Equal(data, new TextToSpeech(dir, _ => { }).Speak("de", "Hallo"));
+        }
+        finally
+        {
+            TextToSpeech.NaturalSynthesizer = null;
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public void Stimme_TextVorProjekt_NurPassendeSprache()
     {
         Assert.Equal("de", Voices.SpeechKey("de", null, null));
