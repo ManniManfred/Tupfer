@@ -894,7 +894,7 @@ public partial class MainWindowViewModel : ObservableObject
     Task PrintPrinterTest() => Guard("Drucker-Testseite drucken", async () =>
     {
         if (await Dialogs!.PrintDirectAsync([PrinterTest.CreatePage(PrinterTest.CreateProject())], 1200, 2) is { Length: > 0 } printed)
-            Notice(printed + $" Dazu gehört {PrinterTest.BaseName}.gme (Erstellen → Drucker-Testseite speichern …) auf dem Stift.");
+            Notice(printed + $" Auf dem Stift muss {PrinterTest.BaseName}.gme liegen (Erstellen → Drucker-Testseite speichern …).");
     });
 
     [RelayCommand]

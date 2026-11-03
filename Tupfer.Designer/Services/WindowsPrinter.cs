@@ -34,7 +34,7 @@ public class WindowsPrinter : IDirectPrinter
         doc.OriginAtMargins = false;
 
         int index = 0;
-        var used = new HashSet<string>();
+        var used = new HashSet<(int RequestedDpi, int Dpi, int PixelSize)>();
         doc.QueryPageSettings += (_, e) =>
         {
             var spec = pages[index];
@@ -52,11 +52,32 @@ public class WindowsPrinter : IDirectPrinter
             // Der Ursprung liegt am bedruckbaren Bereich, nicht an der Blattkante
             double offsetX = e.PageSettings.HardMarginX / 100.0 * g.DpiX;
             double offsetY = e.PageSettings.HardMarginY / 100.0 * g.DpiY;
-            used.Add(DrawPage(g, pages[index], dpi, pixelSize, g.DpiX, g.DpiY, offsetX, offsetY));
+            used.UnionWith(DrawPage(g, pages[index], dpi, pixelSize, g.DpiX, g.DpiY, offsetX, offsetY));
             e.HasMorePages = ++index < pages.Count;
         };
         doc.Print();
-        return $"An „{printer}“ gesendet ({pages.Count} Seite(n), Originalgröße, {string.Join("; ", used)}).";
+        return Describe(printer, pages.Count, used);
+    }
+
+    /// <summary>
+    /// Meldung nach dem Drucken, z. B. „An „X“ gesendet: 1 Seite in Originalgröße, Codes mit 600 dpi (Punktgröße 1 und 2).“
+    /// mit Hinweis, wenn der Drucker die gewünschte Auflösung nicht kann.
+    /// </summary>
+    public static string Describe(string printer, int pages, IEnumerable<(int RequestedDpi, int Dpi, int PixelSize)> used)
+    {
+        var list = used.ToList();
+        var codes = string.Join(", ", list.GroupBy(u => u.Dpi).OrderByDescending(g => g.Key).Select(g =>
+        {
+            var sizes = g.Select(u => u.PixelSize).Distinct().Order().ToList();
+            var text = sizes.Count == 1 ? $"{sizes[0]}" : string.Join(", ", sizes[..^1]) + " und " + sizes[^1];
+            return $"{g.Key} dpi (Punktgröße {text})";
+        }));
+        var message = $"An „{printer}“ gesendet: {pages} Seite{(pages == 1 ? "" : "n")} in Originalgröße" +
+                      (codes != "" ? $", Codes mit {codes}." : ".");
+        if (list.Where(u => u.Dpi < u.RequestedDpi).Select(u => u.RequestedDpi).Distinct().Order().ToList() is { Count: > 0 } lower)
+            message += $" Der Drucker kann höchstens {list.Max(u => u.Dpi)} dpi; Codes für {string.Join(" und ", lower)} dpi " +
+                       "wurden mit gleich großen Punkten in dieser Auflösung gedruckt.";
+        return message;
     }
 
     /// <summary>Wunschauflösung, sonst die höchste angebotene; null = Einstellung des Druckers lassen.</summary>
@@ -82,9 +103,9 @@ public class WindowsPrinter : IDirectPrinter
     /// <summary>
     /// Zeichnet eine Seite in Gerätepixeln (<see cref="GraphicsUnit.Pixel"/>); <paramref name="offsetX"/>/<paramref name="offsetY"/>
     /// ist die Lage des Grafikursprungs auf dem Blatt in Pixeln. Die Muster liegen wie im PDF auf dem Pixelraster der
-    /// Seite, gemessen ab der oberen linken Blattecke. Liefert, mit welcher Auflösung und Punktgröße gedruckt wurde.
+    /// Seite, gemessen ab der oberen linken Blattecke. Liefert je Fläche gewünschte und tatsächliche Auflösung samt Punktgröße.
     /// </summary>
-    public static string DrawPage(Graphics g, PdfPageSpec spec, int dpi, int pixelSize, double deviceDpiX, double deviceDpiY,
+    public static HashSet<(int RequestedDpi, int Dpi, int PixelSize)> DrawPage(Graphics g, PdfPageSpec spec, int dpi, int pixelSize, double deviceDpiX, double deviceDpiY,
         double offsetX = 0, double offsetY = 0)
     {
         double pxX = deviceDpiX / 25.4, pxY = deviceDpiY / 25.4;
@@ -105,14 +126,14 @@ public class WindowsPrinter : IDirectPrinter
 
         g.InterpolationMode = InterpolationMode.NearestNeighbor;
         g.PixelOffsetMode = PixelOffsetMode.Half;
-        var used = new SortedSet<string>();
+        var used = new HashSet<(int RequestedDpi, int Dpi, int PixelSize)>();
         foreach (var a in spec.Areas)
         {
             int areaDpi = a.Dpi ?? dpi, areaPixel = a.PixelSize ?? pixelSize;
             // Kann der Drucker die Auflösung nicht, gleich große Punkte in seiner Auflösung
             int effective = (int)Math.Min(areaDpi, Math.Min(Math.Round(deviceDpiX), Math.Round(deviceDpiY)));
             int effectivePixel = Math.Max(1, (int)Math.Round(areaPixel * (double)effective / areaDpi));
-            used.Add($"{effective} dpi, Punktgröße {effectivePixel}");
+            used.Add((areaDpi, effective, effectivePixel));
             using var dots = AreaBitmap(a, effective, effectivePixel, pxX, pxY, pageW, pageH, out int x0, out int y0);
             if (dots != null)
                 g.DrawImage(dots, new Rectangle(x0 - ox, y0 - oy, dots.Width, dots.Height));
@@ -130,7 +151,7 @@ public class WindowsPrinter : IDirectPrinter
             g.DrawString(t.Text, font, Brushes.Black, (float)(t.X * pxX - ox), (float)(t.Y * pxY - oy));
         }
         g.ResetClip();
-        return string.Join(", ", used);
+        return used;
     }
 
     /// <summary>

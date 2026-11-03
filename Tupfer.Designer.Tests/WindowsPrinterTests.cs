@@ -81,6 +81,17 @@ public class WindowsPrinterTests
     }
 
     [Fact]
+    public void MeldungNenntAuflösungUndPunktgrößen()
+    {
+        // Testseite auf einem 600-dpi-Drucker: Varianten A–D (1200 dpi) und E/F (600 dpi)
+        var text = WindowsPrinter.Describe("Laser", 1, [(1200, 600, 1), (1200, 600, 2), (600, 600, 1), (600, 600, 2)]);
+        Assert.Equal("An „Laser“ gesendet: 1 Seite in Originalgröße, Codes mit 600 dpi (Punktgröße 1 und 2). " +
+                     "Der Drucker kann höchstens 600 dpi; Codes für 1200 dpi wurden mit gleich großen Punkten in dieser Auflösung gedruckt.", text);
+        Assert.Equal("An „Laser“ gesendet: 2 Seiten in Originalgröße, Codes mit 1200 dpi (Punktgröße 2).",
+            WindowsPrinter.Describe("Laser", 2, [(1200, 1200, 2)]));
+    }
+
+    [Fact]
     public void NichtBedruckbarerRandVerschiebtDasMusterNicht()
     {
         if (!OperatingSystem.IsWindows())
