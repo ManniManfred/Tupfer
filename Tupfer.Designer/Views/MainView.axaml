@@ -1104,6 +1104,8 @@
                   <TextBox Grid.Column="2" Text="{Binding PixelSize}" />
                 </Grid>
                 <TextBlock Classes="hint" Margin="0,4,0,0" Text="Standard: 1200 dpi, 2 Pixel. Werden Codes nicht erkannt, 600 dpi oder Punktgröße 3 probieren." />
+                <CheckBox Margin="0,8,0,0" Content="Bilder ohne Schwarzanteil (CMYK)" IsChecked="{Binding CmykWithoutBlack}" />
+                <TextBlock Classes="hint" Text="Bilder werden nur aus Cyan, Magenta und Gelb gemischt, Schwarz bleibt den Codes vorbehalten. Hilft, wenn der Stift auf dunklen Bildstellen falsch reagiert. Im Druckdialog die Farbanpassung abschalten; wirkt nur bei Druckern, die CMYK-Daten übernehmen (z. B. PostScript-Farblaser)." />
                 <TextBlock Classes="label" Text="Wiederholen- / Stopp-Code" />
                 <StackPanel Orientation="Horizontal" Spacing="16">
                   <TextBlock Classes="value" Text="{Binding Replay}" />

@@ -46,6 +46,7 @@ public partial class ProjectViewModel : ObservableObject
     [ObservableProperty] bool _denoiseRecordings = true;
     [ObservableProperty] int _dpi = 1200;
     [ObservableProperty] int _pixelSize = 2;
+    [ObservableProperty] bool _cmykWithoutBlack;
 
     [ObservableProperty] ScriptViewModel? _selectedScript;
     [ObservableProperty] SpeakViewModel? _selectedSpeak;
@@ -275,6 +276,7 @@ public partial class ProjectViewModel : ObservableObject
         DenoiseRecordings = DenoiseRecordings,
         Dpi = Dpi,
         PixelSize = PixelSize,
+        CmykWithoutBlack = CmykWithoutBlack,
         Scripts = Scripts.Select(s => s.ToEntry()).ToList(),
         Speak = Speak.Select(s => new SpeakEntry
         {
@@ -307,6 +309,7 @@ public partial class ProjectViewModel : ObservableObject
             DenoiseRecordings = f.DenoiseRecordings,
             Dpi = f.Dpi,
             PixelSize = f.PixelSize,
+            CmykWithoutBlack = f.CmykWithoutBlack,
         };
         foreach (var s in f.Scripts)
         {

@@ -760,7 +760,7 @@ public partial class MainWindowViewModel : ObservableObject
         var path = await Dialogs!.SaveAsync("Seiten als PDF exportieren", name + ".pdf", "PDF", ".pdf");
         if (path == null) return;
 
-        PdfWriter.Write(path, CreatePageSpecs(), Project.Dpi, Project.PixelSize);
+        PdfWriter.Write(path, CreatePageSpecs(), Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
         await Dialogs.SavedAsync(path);
         Log($"PDF geschrieben: {path}. Mit {Project.Dpi} dpi und ohne Skalierung („Tatsächliche Größe“) drucken.");
     });
@@ -775,7 +775,7 @@ public partial class MainWindowViewModel : ObservableObject
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
 
-        PdfWriter.Write(path, CreatePageSpecs(), Project.Dpi, Project.PixelSize);
+        PdfWriter.Write(path, CreatePageSpecs(), Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
         var hint = await Dialogs!.PrintAsync(path);
         Notice($"{hint} Ohne Skalierung drucken („Tatsächliche Größe“ / 100 %), sonst erkennt der Stift die Codes nicht.");
     });
@@ -816,7 +816,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (Project.Stop is { } s) entries.Add(("Stopp", s));
         entries.AddRange(Project.Scripts.Where(x => x.Code.HasValue && !x.Helper).Select(x => (x.Name, x.Code!.Value)));
 
-        PdfWriter.WriteOidTable(path, Project.Comment, entries, Project.Dpi, Project.PixelSize);
+        PdfWriter.WriteOidTable(path, Project.Comment, entries, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
         await Dialogs.SavedAsync(path);
         Log($"OID-Tabelle geschrieben: {path}");
     });

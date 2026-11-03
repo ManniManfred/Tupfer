@@ -35,6 +35,9 @@ public class PdfPageSpec
 /// Kleiner PDF-Schreiber für Druckvorlagen mit OID-Codes.
 /// Die Codes werden als Kachelmuster (Tiling Pattern) erzeugt, damit sie unabhängig von der
 /// Flächengröße pixelgenau gedruckt werden.
+/// Mit <c>cmyk</c> wird das Hintergrundbild in DeviceCMYK ohne Schwarzanteil (K = 0) geschrieben
+/// und die Codes in reinem Schwarz (K), damit der Drucker dunkle Bildbereiche nicht mit
+/// Schwarz mischt, das der Stift im Infrarotlicht sieht.
 /// </summary>
 public class PdfWriter
 {
@@ -43,22 +46,24 @@ public class PdfWriter
     readonly List<byte[]> _objects = new();
     readonly int _dpi;
     readonly int _pixelSize;
+    readonly bool _cmyk;
     readonly Dictionary<(int Oid, int Dpi, int PixelSize, double PageHeight), int> _patterns = new();
 
-    public PdfWriter(int dpi = 1200, int pixelSize = 2)
+    public PdfWriter(int dpi = 1200, int pixelSize = 2, bool cmyk = false)
     {
         _dpi = dpi;
         _pixelSize = pixelSize;
+        _cmyk = cmyk;
     }
 
-    public static void Write(string path, IEnumerable<PdfPageSpec> pages, int dpi = 1200, int pixelSize = 2)
+    public static void Write(string path, IEnumerable<PdfPageSpec> pages, int dpi = 1200, int pixelSize = 2, bool cmyk = false)
     {
-        var w = new PdfWriter(dpi, pixelSize);
+        var w = new PdfWriter(dpi, pixelSize, cmyk);
         File.WriteAllBytes(path, w.Build(pages.ToList()));
     }
 
     /// <summary>Erzeugt eine Tabelle aller angegebenen Codes (ähnlich "tttool oid-table").</summary>
-    public static void WriteOidTable(string path, string title, IReadOnlyList<(string Label, int Oid)> entries, int dpi = 1200, int pixelSize = 2)
+    public static void WriteOidTable(string path, string title, IReadOnlyList<(string Label, int Oid)> entries, int dpi = 1200, int pixelSize = 2, bool cmyk = false)
     {
         const double size = 25, gapX = 10, gapY = 14, margin = 15, top = 25;
         int cols = (int)((210 - 2 * margin + gapX) / (size + gapX));
@@ -77,7 +82,7 @@ public class PdfWriter
             }
             pages.Add(page);
         }
-        Write(path, pages, dpi, pixelSize);
+        Write(path, pages, dpi, pixelSize, cmyk);
     }
 
     int Add(byte[] content)
@@ -127,12 +132,15 @@ public class PdfWriter
                 if (!mask[y * tile + x])
                     bits[y * stride + x / 8] |= (byte)(0x80 >> (x % 8)); // 1 = weiß (transparent)
 
-        int image = AddStream($"/Type /XObject /Subtype /Image /Width {tile} /Height {tile} /ColorSpace /DeviceGray /BitsPerComponent 1 /Mask [1 1] /Interpolate false", bits, true);
+        // Im CMYK-Modus als Bildmaske, die in reinem Schwarz (0 0 0 1 k) gefüllt wird
+        int image = _cmyk
+            ? AddStream($"/Type /XObject /Subtype /Image /Width {tile} /Height {tile} /ImageMask true /BitsPerComponent 1 /Interpolate false", bits, true)
+            : AddStream($"/Type /XObject /Subtype /Image /Width {tile} /Height {tile} /ColorSpace /DeviceGray /BitsPerComponent 1 /Mask [1 1] /Interpolate false", bits, true);
 
         // Musterraum in Druckerpixeln, y nach unten, Ursprung oben links auf der Seite
         double unit = 72.0 / dpi;
         var matrix = string.Join(" ", new[] { unit, 0, 0, -unit, 0, pageHeightPt }.Select(v => v.ToString("0.########", CultureInfo.InvariantCulture)));
-        var content = Encoding.ASCII.GetBytes($"q {tile} 0 0 -{tile} 0 {tile} cm /Im Do Q");
+        var content = Encoding.ASCII.GetBytes($"{(_cmyk ? "0 0 0 1 k " : "")}q {tile} 0 0 -{tile} 0 {tile} cm /Im Do Q");
         id = AddStream($"/Type /Pattern /PatternType 1 /PaintType 1 /TilingType 1 /Matrix [{matrix}] /BBox [0 0 {tile} {tile}] /XStep {tile} /YStep {tile} /Resources << /XObject << /Im {image} 0 R >> >>", content, false);
         _patterns[(oid, dpi, pixelSize, pageHeightPt)] = id;
         return id;
@@ -155,7 +163,9 @@ public class PdfWriter
 
             if (spec.Background is { } bg)
             {
-                int img = AddStream($"/Type /XObject /Subtype /Image /Width {bg.Width} /Height {bg.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8", bg.Rgb, true);
+                int img = _cmyk
+                    ? AddStream($"/Type /XObject /Subtype /Image /Width {bg.Width} /Height {bg.Height} /ColorSpace /DeviceCMYK /BitsPerComponent 8", ToCmykWithoutBlack(bg.Rgb), true)
+                    : AddStream($"/Type /XObject /Subtype /Image /Width {bg.Width} /Height {bg.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8", bg.Rgb, true);
                 xobjects.Append($" /Bg {img} 0 R");
                 content.AppendLine($"q {F(pw)} 0 0 {F(ph)} 0 0 cm /Bg Do Q");
             }
@@ -185,7 +195,7 @@ public class PdfWriter
             content.AppendLine("Q");
 
             foreach (var (x, y, w, h) in spec.Frames)
-                content.AppendLine($"q 0.6 G 0.5 w {F(x * PtPerMm)} {F(ph - (y + h) * PtPerMm)} {F(w * PtPerMm)} {F(h * PtPerMm)} re S Q");
+                content.AppendLine($"q {(_cmyk ? "0.4 0.4 0.4 0 K" : "0.6 G")} 0.5 w {F(x * PtPerMm)} {F(ph - (y + h) * PtPerMm)} {F(w * PtPerMm)} {F(h * PtPerMm)} re S Q");
 
             foreach (var t in spec.Texts)
                 content.AppendLine($"BT 0 g /F1 {F(t.SizePt)} Tf {F(t.X * PtPerMm)} {F(ph - t.Y * PtPerMm - t.SizePt)} Td ({EscapeText(t.Text)}) Tj ET");
@@ -217,6 +227,19 @@ public class PdfWriter
             W($"{o:D10} 00000 n \n");
         W($"trailer\n<< /Size {_objects.Count + 1} /Root {catalog} 0 R >>\nstartxref\n{xref}\n%%EOF\n");
         return output.ToArray();
+    }
+
+    /// <summary>Wandelt RGB-Pixel in CMYK ohne Schwarzanteil um (C = 1 − R, M = 1 − G, Y = 1 − B, K = 0).</summary>
+    public static byte[] ToCmykWithoutBlack(byte[] rgb)
+    {
+        var cmyk = new byte[rgb.Length / 3 * 4];
+        for (int i = 0, j = 0; i + 2 < rgb.Length; i += 3, j += 4)
+        {
+            cmyk[j] = (byte)(255 - rgb[i]);
+            cmyk[j + 1] = (byte)(255 - rgb[i + 1]);
+            cmyk[j + 2] = (byte)(255 - rgb[i + 2]);
+        }
+        return cmyk;
     }
 
     // Zeichen außerhalb von Latin-1, die in WinAnsiEncoding vorhanden sind

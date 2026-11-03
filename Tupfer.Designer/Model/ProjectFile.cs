@@ -34,6 +34,9 @@ public class ProjectFile
     public int Dpi { get; set; } = 1200;
     public int PixelSize { get; set; } = 2;
 
+    /// <summary>Bilder im PDF als CMYK ohne Schwarzanteil schreiben, Schwarz nur für die Codes.</summary>
+    public bool CmykWithoutBlack { get; set; }
+
     public List<ScriptEntry> Scripts { get; set; } = new();
     public List<SpeakEntry> Speak { get; set; } = new();
     public List<PageEntry> Pages { get; set; } = new();
