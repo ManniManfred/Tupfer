@@ -15,9 +15,9 @@
     <NoWarn>$(NoWarn);CA1416;IL2026</NoWarn>
   </PropertyGroup>
 
-  <!-- Der Designer selbst wird aus Tupfer.Designer mitübersetzt (ohne Desktop-Start, Windows-Sprachausgabe, Piper und Personenerkennung mit ONNX Runtime und C#-Übersetzer) -->
+  <!-- Der Designer selbst wird aus Tupfer.Designer mitübersetzt (ohne Desktop-Start, Windows-Sprachausgabe, Windows-Druck, Piper und Personenerkennung mit ONNX Runtime und C#-Übersetzer) -->
   <ItemGroup>
-    <Compile Include="../Tupfer.Designer/**/*.cs" Exclude="../Tupfer.Designer/bin/**;../Tupfer.Designer/obj/**;../Tupfer.Designer/Program.cs;../Tupfer.Designer/Gme/WindowsSpeech.cs;../Tupfer.Designer/Gme/PiperSpeech.cs;../Tupfer.Designer/Services/PersonSegmenter.cs;../Tupfer.Designer/Compiler/ProgramCompiler.cs"
+    <Compile Include="../Tupfer.Designer/**/*.cs" Exclude="../Tupfer.Designer/bin/**;../Tupfer.Designer/obj/**;../Tupfer.Designer/Program.cs;../Tupfer.Designer/Gme/WindowsSpeech.cs;../Tupfer.Designer/Gme/PiperSpeech.cs;../Tupfer.Designer/Services/PersonSegmenter.cs;../Tupfer.Designer/Services/WindowsPrinter.cs;../Tupfer.Designer/Compiler/ProgramCompiler.cs"
              Link="Designer/%(RecursiveDir)%(Filename)%(Extension)" />
     <AvaloniaXaml Include="../Tupfer.Designer/**/*.axaml" Exclude="../Tupfer.Designer/bin/**;../Tupfer.Designer/obj/**"
                   Link="Designer/%(RecursiveDir)%(Filename)%(Extension)" />

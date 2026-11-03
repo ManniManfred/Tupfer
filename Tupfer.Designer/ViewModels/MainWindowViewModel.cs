@@ -39,6 +39,12 @@ public interface IFileDialogs
     Task<string> PrintAsync(string pdfPath);
 
     /// <summary>
+    /// Druckt die Seiten direkt (Windows, siehe <see cref="DirectPrinting"/>) nach Auswahl des Druckers. Liefert eine
+    /// Meldung, „“ bei Abbruch oder null, wenn das hier nicht geht (dann über das PDF drucken).
+    /// </summary>
+    Task<string?> PrintDirectAsync(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize) => Task.FromResult<string?>(null);
+
+    /// <summary>
     /// Speichert eine Datei auf den Stift: erst wird das Ziel gewählt (Laufwerk „tiptoi“ oder Dialog),
     /// dann erzeugt <paramref name="create"/> die Datei (null = Fehler) und sie wird dorthin kopiert.
     /// Liefert den Zielnamen, oder null bei Abbruch oder Fehler.
@@ -798,12 +804,21 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (!EnsureProgram()) return;
         Project.AssignCodes();
+        var pages = CreatePageSpecs();
+        // Windows: selbst drucken; mit CMYK-Bildern nur über das PDF (GDI druckt RGB)
+        if (!Project.CmykWithoutBlack && await Dialogs!.PrintDirectAsync(pages, Project.Dpi, Project.PixelSize) is { } direct)
+        {
+            if (direct != "")
+                Notice(direct);
+            return;
+        }
+
         var name = ProjectBaseName ?? "seiten";
         var dir = Path.Combine(Path.GetTempPath(), "tupfer-druck");
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
 
-        PdfWriter.Write(path, CreatePageSpecs(), Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
+        PdfWriter.Write(path, pages, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
         var hint = await Dialogs!.PrintAsync(path);
         Notice($"{hint} Ohne Skalierung drucken („Tatsächliche Größe“ / 100 %), sonst erkennt der Stift die Codes nicht.");
     });
@@ -885,6 +900,13 @@ public partial class MainWindowViewModel : ObservableObject
         await Dialogs.SavedAsync(ok ? [path, gme] : [path]);
         if (ok)
             Notice($"GME erstellt: {gme} – auf den Stift kopieren, Seite drucken und die Varianten durchtippen.");
+
+        // Windows: gleich selbst drucken, das PDF-Programm kann die feinen Punkte verfälschen
+        if (DirectPrinting.Printer != null
+            && await Dialogs.ConfirmAsync("Testseite jetzt direkt drucken? Der Designer druckt dann selbst in Originalgröße, " +
+                                          "ohne PDF-Programm (der Acrobat Reader verändert die Punkte teils so, dass der Stift sie nicht erkennt).")
+            && await Dialogs.PrintDirectAsync([PrinterTest.CreatePage(PrinterTest.CreateProject())], 1200, 2) is { Length: > 0 } printed)
+            Notice(printed);
     });
 
     [RelayCommand]

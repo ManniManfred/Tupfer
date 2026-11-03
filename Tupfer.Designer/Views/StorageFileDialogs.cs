@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Tupfer.Designer.Oid;
 using Tupfer.Designer.Services;
 using Tupfer.Designer.ViewModels;
 
@@ -79,6 +80,55 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         });
         dialog.Content = panel;
         await dialog.ShowDialog(owner);
+    }
+
+    public async Task<string?> PrintDirectAsync(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize)
+    {
+        if (DirectPrinting.Printer is not { } printer || topLevel is not Window owner)
+            return null;
+        var printers = printer.Printers();
+        if (printers.Count == 0)
+            return null;
+        await WhenVisible(owner);
+
+        // Drucker wählen; der Standarddrucker ist vorausgewählt
+        string? chosen = null;
+        var dialog = new Window
+        {
+            Title = "Drucken",
+            SizeToContent = SizeToContent.WidthAndHeight,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ShowInTaskbar = false,
+        };
+        var list = new ComboBox { ItemsSource = printers, MinWidth = 320, HorizontalAlignment = HorizontalAlignment.Stretch };
+        list.SelectedItem = printer.DefaultPrinter() is { } d && printers.Contains(d) ? d : printers[0];
+        var print = new Button { Content = "Drucken", IsDefault = true, MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
+        var cancel = new Button { Content = "Abbrechen", IsCancel = true, MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
+        print.Click += (_, _) => { chosen = list.SelectedItem as string; dialog.Close(); };
+        cancel.Click += (_, _) => dialog.Close();
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Spacing = 12,
+            MaxWidth = 480,
+            Children =
+            {
+                new TextBlock { Text = "Drucker" },
+                list,
+                new TextBlock
+                {
+                    Text = $"Gedruckt wird in Originalgröße mit {dpi} dpi (sofern der Drucker das kann), ohne PDF-Programm.",
+                    TextWrapping = TextWrapping.Wrap,
+                    Opacity = 0.7,
+                },
+                new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { print, cancel } },
+            },
+        };
+        await dialog.ShowDialog(owner);
+        if (chosen == null)
+            return "";
+        return await Task.Run(() => printer.Print(pages, dpi, pixelSize, chosen));
     }
 
     public async Task<bool> ConfirmAsync(string message)

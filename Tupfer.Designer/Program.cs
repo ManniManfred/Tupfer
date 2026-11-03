@@ -13,6 +13,9 @@ static class Program
         TextToSpeech.NaturalSynthesizer = PiperSpeech.SpeakAsync;
         PersonDetector.Segmenter = PersonSegmenter.SegmentAsync;
         PersonDetector.FaceDetector = PersonSegmenter.DetectFacesAsync;
+        // Windows: selbst drucken statt über das PDF-Programm (das die OID-Punkte verändern kann)
+        if (OperatingSystem.IsWindows())
+            DirectPrinting.Printer = new WindowsPrinter();
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
