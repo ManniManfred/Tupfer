@@ -40,9 +40,10 @@ public interface IFileDialogs
 
     /// <summary>
     /// Druckt die Seiten direkt (Windows, siehe <see cref="DirectPrinting"/>) nach Auswahl des Druckers. Liefert eine
-    /// Meldung, „“ bei Abbruch oder null, wenn das hier nicht geht (dann über das PDF drucken).
+    /// Meldung, „“ bei Abbruch oder null, wenn das hier nicht geht (dann über das PDF drucken). Mit
+    /// <paramref name="booklet"/> beidseitig an der kurzen Kante gewendet (Broschüre).
     /// </summary>
-    Task<string?> PrintDirectAsync(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize) => Task.FromResult<string?>(null);
+    Task<string?> PrintDirectAsync(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize, bool booklet = false) => Task.FromResult<string?>(null);
 
     /// <summary>
     /// Speichert eine Datei auf den Stift: erst wird das Ziel gewählt (Laufwerk „tiptoi“ oder Dialog),
@@ -821,6 +822,60 @@ public partial class MainWindowViewModel : ObservableObject
         PdfWriter.Write(path, pages, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
         var hint = await Dialogs!.PrintAsync(path);
         Notice($"{hint} Ohne Skalierung drucken („Tatsächliche Größe“ / 100 %), sonst erkennt der Stift die Codes nicht.");
+    });
+
+    const string BookletHint = "Beidseitig drucken, an der kurzen Kante wenden, ohne Skalierung („Tatsächliche Größe“ / 100 %); " +
+                               "danach die Bögen in der Mitte falzen und ineinanderlegen.";
+
+    /// <summary>Seiten als Broschüre: je zwei nebeneinander auf einem Bogen in Heftreihenfolge (siehe <see cref="Booklet"/>).</summary>
+    List<PdfPageSpec> CreateBookletSpecs()
+    {
+        var pages = CreatePageSpecs();
+        if (pages.Count % 4 != 0)
+            Log($"Broschüre: {4 - pages.Count % 4} leere Seite(n) ergänzt, damit die Seitenzahl durch vier teilbar ist.");
+        var sheets = Booklet.Impose(pages);
+        if (sheets.Count > 0)
+            Log($"Broschüre: {sheets.Count / 2} Bogen, Bogengröße {sheets[0].WidthMm:0.#} × {sheets[0].HeightMm:0.#} mm.");
+        return sheets;
+    }
+
+    [RelayCommand]
+    Task PrintBooklet() => Guard("Broschüre drucken", async () =>
+    {
+        if (!EnsureProgram()) return;
+        Project.AssignCodes();
+        var sheets = CreateBookletSpecs();
+        if (sheets.Count == 0) return;
+        if (!Project.CmykWithoutBlack && await Dialogs!.PrintDirectAsync(sheets, Project.Dpi, Project.PixelSize, booklet: true) is { } direct)
+        {
+            if (direct != "")
+                Notice(direct);
+            return;
+        }
+
+        var name = ProjectBaseName ?? "seiten";
+        var dir = Path.Combine(Path.GetTempPath(), "tupfer-druck");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, $"{name}-broschuere-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
+        PdfWriter.Write(path, sheets, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
+        var hint = await Dialogs!.PrintAsync(path);
+        Notice($"{hint} {BookletHint}");
+    });
+
+    [RelayCommand]
+    Task ExportBookletPdf() => Guard("Broschüre als PDF", async () =>
+    {
+        if (!EnsureProgram()) return;
+        Project.AssignCodes();
+        var name = ProjectBaseName ?? "seiten";
+        var path = await Dialogs!.SaveAsync("Broschüre als PDF exportieren", name + "-broschuere.pdf", "PDF", ".pdf");
+        if (path == null) return;
+        var sheets = CreateBookletSpecs();
+        if (sheets.Count == 0) return;
+        PdfWriter.Write(path, sheets, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
+        Dialogs.OpenInViewer(path);
+        await Dialogs.SavedAsync(path);
+        Log($"Broschüre geschrieben: {path}. Mit {Project.Dpi} dpi drucken. {BookletHint}");
     });
 
     /// <summary>PDF-Seiten mit OID-Mustern (und je nach Einstellung Bildern und Texten); meldet Probleme als Warnung.</summary>

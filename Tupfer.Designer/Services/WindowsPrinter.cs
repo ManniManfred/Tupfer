@@ -24,7 +24,7 @@ public class WindowsPrinter : IDirectPrinter
         return settings.IsValid ? settings.PrinterName : null;
     }
 
-    public string Print(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize, string printer)
+    public string Print(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize, string printer, bool booklet = false)
     {
         using var doc = new PrintDocument { PrintController = new StandardPrintController(), DocumentName = "Tupfer Designer" };
         doc.PrinterSettings.PrinterName = printer;
@@ -32,6 +32,10 @@ public class WindowsPrinter : IDirectPrinter
             throw new InvalidOperationException($"Der Drucker „{printer}“ wurde nicht gefunden.");
         var resolution = ChooseResolution(doc.PrinterSettings, dpi);
         doc.OriginAtMargins = false;
+        // Broschüre: beidseitig, an der kurzen Kante gewendet
+        bool duplex = booklet && doc.PrinterSettings.CanDuplex;
+        if (duplex)
+            doc.PrinterSettings.Duplex = Duplex.Horizontal;
 
         int index = 0;
         var used = new HashSet<(int RequestedDpi, int Dpi, int PixelSize)>();
@@ -56,7 +60,13 @@ public class WindowsPrinter : IDirectPrinter
             e.HasMorePages = ++index < pages.Count;
         };
         doc.Print();
-        return Describe(printer, pages.Count, used);
+        var message = Describe(printer, pages.Count, used);
+        if (booklet)
+            message += duplex
+                ? " Beidseitig gedruckt (an der kurzen Kante gewendet): Bögen in der Mitte falzen und ineinanderlegen."
+                : " Der Drucker meldet keinen beidseitigen Druck; jede Bogenseite liegt auf einem eigenen Blatt. " +
+                  "Für beidseitigen Druck von Hand „Broschüre als PDF …“ verwenden.";
+        return message;
     }
 
     /// <summary>

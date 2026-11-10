@@ -82,7 +82,7 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         await dialog.ShowDialog(owner);
     }
 
-    public async Task<string?> PrintDirectAsync(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize)
+    public async Task<string?> PrintDirectAsync(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize, bool booklet = false)
     {
         if (DirectPrinting.Printer is not { } printer || topLevel is not Window owner)
             return null;
@@ -118,7 +118,8 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
                 list,
                 new TextBlock
                 {
-                    Text = $"Gedruckt wird in Originalgröße mit {dpi} dpi (sofern der Drucker das kann), ohne PDF-Programm.",
+                    Text = $"Gedruckt wird in Originalgröße mit {dpi} dpi (sofern der Drucker das kann), ohne PDF-Programm."
+                           + (booklet ? " Als Broschüre: je zwei Seiten nebeneinander, beidseitig an der kurzen Kante gewendet." : ""),
                     TextWrapping = TextWrapping.Wrap,
                     Opacity = 0.7,
                 },
@@ -128,7 +129,7 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         await dialog.ShowDialog(owner);
         if (chosen == null)
             return "";
-        return await Task.Run(() => printer.Print(pages, dpi, pixelSize, chosen));
+        return await Task.Run(() => printer.Print(pages, dpi, pixelSize, chosen, booklet));
     }
 
     public async Task<bool> ConfirmAsync(string message)

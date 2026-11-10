@@ -13,8 +13,11 @@ public interface IDirectPrinter
 
     string? DefaultPrinter();
 
-    /// <summary>Druckt die Seiten in Originalgröße; liefert eine Meldung, wie gedruckt wurde.</summary>
-    string Print(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize, string printer);
+    /// <summary>
+    /// Druckt die Seiten in Originalgröße; liefert eine Meldung, wie gedruckt wurde. Mit <paramref name="booklet"/>
+    /// beidseitig, an der kurzen Kante gewendet (Broschüre, siehe <see cref="Booklet"/>).
+    /// </summary>
+    string Print(IReadOnlyList<PdfPageSpec> pages, int dpi, int pixelSize, string printer, bool booklet = false);
 }
 
 public static class DirectPrinting

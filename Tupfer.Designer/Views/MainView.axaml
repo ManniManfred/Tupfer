@@ -253,6 +253,11 @@
               <MenuItem.Icon><PathIcon Data="{StaticResource IconPrint}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="Seiten als _PDF …" Command="{Binding ExportPdfCommand}" />
+            <MenuItem Header="Als _Broschüre"
+                      ToolTip.Tip="Je zwei Seiten nebeneinander auf einem Bogen in Heftreihenfolge (z. B. A5-Seiten auf A4 quer), beidseitig zum Falzen und Heften">
+              <MenuItem Header="_Drucken …" Command="{Binding PrintBookletCommand}" />
+              <MenuItem Header="Als _PDF …" Command="{Binding ExportBookletPdfCommand}" />
+            </MenuItem>
             <MenuItem Header="Bilder, Texte und Farbflächen mitdrucken" ToggleType="CheckBox" IsChecked="{Binding PrintElements, Mode=TwoWay}" />
             <MenuItem Header="OID-_Tabelle als PDF …" Command="{Binding ExportOidTableCommand}" />
             <MenuItem Header="Gewählte Fläche als P_NG …" Command="{Binding ExportAreaPngCommand}" />
