@@ -9,7 +9,8 @@ namespace Tupfer.Designer.Views;
 /// <summary>
 /// Zeigt eine Aufnahme als Wellenform (in der eingestellten Lautstärke). Anfang und Ende des Ausschnitts
 /// (Anteile 0–1) lassen sich mit der Maus bzw. dem Finger ziehen: Es bewegt sich die Kante, die dem
-/// Druckpunkt am nächsten ist. Was außerhalb liegt, ist blass, übersteuerte Stellen sind rot.
+/// Druckpunkt am nächsten ist. Was außerhalb liegt, ist blass, übersteuerte Stellen sind rot;
+/// beim Anhören zeigt eine orange Linie die Stelle, die gerade erklingt.
 /// </summary>
 public class WaveformView : Control
 {
@@ -25,9 +26,13 @@ public class WaveformView : Control
     public static readonly StyledProperty<double> GainProperty =
         AvaloniaProperty.Register<WaveformView, double>(nameof(Gain), 1);
 
+    /// <summary>Stelle der laufenden Wiedergabe (Anteil); negativ = keine.</summary>
+    public static readonly StyledProperty<double> PositionProperty =
+        AvaloniaProperty.Register<WaveformView, double>(nameof(Position), -1);
+
     static WaveformView()
     {
-        AffectsRender<WaveformView>(SamplesProperty, StartProperty, EndProperty, GainProperty);
+        AffectsRender<WaveformView>(SamplesProperty, StartProperty, EndProperty, GainProperty, PositionProperty);
     }
 
     public WaveformView()
@@ -40,6 +45,7 @@ public class WaveformView : Control
     public double Start { get => GetValue(StartProperty); set => SetValue(StartProperty, value); }
     public double End { get => GetValue(EndProperty); set => SetValue(EndProperty, value); }
     public double Gain { get => GetValue(GainProperty); set => SetValue(GainProperty, value); }
+    public double Position { get => GetValue(PositionProperty); set => SetValue(PositionProperty, value); }
 
     /// <summary>Lautester Wert je Bildspalte, für die aktuelle Breite berechnet.</summary>
     float[]? _columns;
@@ -76,6 +82,8 @@ public class WaveformView : Control
     static readonly IBrush Clipped = new SolidColorBrush(Color.Parse("#C62828"));
     static readonly IPen Edge = new Pen(new SolidColorBrush(Color.Parse("#1565C0")), 2);
     static readonly IBrush Handle = new SolidColorBrush(Color.Parse("#1565C0"));
+    static readonly IPen Playhead = new Pen(new SolidColorBrush(Color.Parse("#E65100")), 2);
+    static readonly IBrush PlayheadBrush = new SolidColorBrush(Color.Parse("#E65100"));
     static readonly IPen Axis = new Pen(new SolidColorBrush(Color.Parse("#E0E0E0")), 1);
 
     public override void Render(DrawingContext context)
@@ -102,6 +110,20 @@ public class WaveformView : Control
             context.DrawLine(Edge, new Point(x, 0), new Point(x, bounds.Height));
             context.FillRectangle(Handle, new Rect(x - 5, 0, 10, 10));
             context.FillRectangle(Handle, new Rect(x - 5, bounds.Height - 10, 10, 10));
+        }
+        if (Position >= 0)
+        {
+            double x = Position * width;
+            context.DrawLine(Playhead, new Point(x, 0), new Point(x, bounds.Height));
+            var arrow = new StreamGeometry();
+            using (var g = arrow.Open())
+            {
+                g.BeginFigure(new Point(x - 6, 0), true);
+                g.LineTo(new Point(x + 6, 0));
+                g.LineTo(new Point(x, 8));
+                g.EndFigure(true);
+            }
+            context.DrawGeometry(PlayheadBrush, null, arrow);
         }
     }
 

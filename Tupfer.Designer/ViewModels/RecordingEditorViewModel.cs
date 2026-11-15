@@ -42,6 +42,10 @@ public partial class RecordingEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(VolumeText), nameof(Gain), nameof(Clips))]
     double _volume = 100;
 
+    /// <summary>Stelle, die beim Anhören gerade erklingt (Anteil der ganzen Aufnahme); negativ = keine Wiedergabe.</summary>
+    [ObservableProperty]
+    double _playPosition = -1;
+
     partial void OnStartChanged(double value)
     {
         var clamped = Math.Clamp(value, 0, End - MinLength);

@@ -1027,7 +1027,8 @@
               <TextBlock Classes="hint" TextWrapping="Wrap"
                          Text="Anfang und Ende an den blauen Linien ziehen; was blass ist, wird abgeschnitten. Mit „Anhören“ lässt sich das Ergebnis vorher prüfen." />
               <views:WaveformView Height="110" Samples="{Binding Samples, FallbackValue={x:Null}}"
-                                  Start="{Binding Start}" End="{Binding End}" Gain="{Binding Gain, FallbackValue=1}" />
+                                  Start="{Binding Start}" End="{Binding End}" Gain="{Binding Gain, FallbackValue=1}"
+                                  Position="{Binding PlayPosition, FallbackValue=-1}" />
               <TextBlock Text="{Binding RangeText, FallbackValue=''}" />
               <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                 <TextBlock Text="Lautstärke" VerticalAlignment="Center" Margin="0,0,8,0" />

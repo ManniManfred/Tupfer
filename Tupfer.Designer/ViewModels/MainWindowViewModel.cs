@@ -1521,8 +1521,29 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         EndSpeakPlayback();
         var wav = await Task.Run(() => Audio.Wav(editor.Result()));
-        await Audio.Device.PlayAsync(wav, ".wav");
+        int id = ++_previewId;
+        double from = editor.Start, length = editor.End - editor.Start;
+        var playing = Audio.Device.PlayAsync(wav, ".wav");
+        // Die Geräte melden keine Position: aus der vergangenen Zeit schätzen
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            while (!playing.IsCompleted && id == _previewId)
+            {
+                editor.PlayPosition = from + Math.Min(clock.Elapsed.TotalSeconds / editor.Seconds, length);
+                await Task.WhenAny(playing, Task.Delay(30));
+            }
+            await playing;
+        }
+        finally
+        {
+            if (id == _previewId)
+                editor.PlayPosition = -1;
+        }
     });
+
+    /// <summary>Zählt die Wiedergaben im Editor, damit nur die letzte die Position anzeigt.</summary>
+    int _previewId;
 
     [RelayCommand]
     void StopRecordingEditPreview()

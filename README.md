@@ -155,7 +155,7 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   Linux/macOS `paplay`/`aplay`/`ffplay`/`afplay` zum Abspielen und `arecord`, `sox` oder `ffmpeg`
   zum Aufnehmen. Alternativ eigene Audiodateien im Medienverzeichnis.
   Die Schere an einer Aufnahme (WAV oder Ogg) öffnet einen Editor: Anfang und Ende in der Wellenform
-  ziehen, Lautstärke einstellen, anhören und übernehmen. Die bearbeitete Aufnahme wird als neue Datei
+  ziehen, Lautstärke einstellen, anhören (eine orange Linie zeigt die Stelle, die gerade erklingt) und übernehmen. Die bearbeitete Aufnahme wird als neue Datei
   gespeichert. *Lautstärke angleichen* bringt alle Aufnahmen auf einmal auf den gleichen Sprachpegel wie die
   Sprachausgabe (-22 dBFS, Pausen zählen nicht mit; einzelne Spitzen werden weich begrenzt); dasselbe macht
   „Automatisch“ im Editor für eine Aufnahme.
