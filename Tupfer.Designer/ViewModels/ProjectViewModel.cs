@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Tupfer.Designer.Model;
 using Tupfer.Designer.Services;
 
@@ -44,7 +45,39 @@ public partial class ProjectViewModel : ObservableObject
     public IReadOnlyList<VoiceOption> SpeakVoiceOptions => [new("", "Projektstimme"), .. Voices.For(Language)];
     [ObservableProperty] string _gmeLang = "";
     [ObservableProperty] string _init = "";
-    [ObservableProperty] string _welcome = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WelcomeProblem), nameof(HasWelcomeProblem))]
+    string _welcome = "";
+
+    /// <summary>Die Begrüßung ist keine Liste von Namen (z. B. ein ganzer Satz); sonst null.</summary>
+    public string? WelcomeProblem
+    {
+        get
+        {
+            try
+            {
+                ScriptParser.ParsePlayList(Welcome);
+                return null;
+            }
+            catch (ScriptParseException ex)
+            {
+                return $"Hier stehen Namen von Texten aus dem Tab „Sprachausgabe“ (z. B. willkommen), kein Satz: {ex.Message}";
+            }
+        }
+    }
+
+    public bool HasWelcomeProblem => WelcomeProblem != null;
+
+    /// <summary>Legt den Satz in der Begrüßung als neuen Text an und trägt dessen Namen ein.</summary>
+    [RelayCommand]
+    void WelcomeAsText()
+    {
+        if (!HasWelcomeProblem)
+            return;
+        var speak = AddSpeak("begruessung");
+        speak.Text = Welcome.Trim();
+        Welcome = speak.Name;
+    }
     [ObservableProperty] string _mediaPath = "";
     [ObservableProperty] string _extraYaml = "";
     [ObservableProperty] string _program = "";

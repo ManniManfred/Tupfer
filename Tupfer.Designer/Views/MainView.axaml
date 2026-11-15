@@ -1144,6 +1144,15 @@
                 <TextBlock Classes="label" Text="Begrüßung (welcome)" />
                 <TextBox Text="{Binding Welcome}" />
                 <TextBlock Classes="hint" Margin="0,4,0,0" Text="Kommagetrennte Liste von Texten/Audiodateien, die beim Anmelden abgespielt werden." />
+                <Border IsVisible="{Binding HasWelcomeProblem}" Background="#FFF3E0" CornerRadius="4" Padding="8,6" Margin="0,4,0,0">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding WelcomeProblem}" Foreground="#E65100" TextWrapping="Wrap" FontSize="12" />
+                    <Button Command="{Binding WelcomeAsTextCommand}" HorizontalAlignment="Left"
+                            ToolTip.Tip="Legt den Satz als neuen Text „begruessung“ an (Tab „Sprachausgabe“) und trägt hier dessen Namen ein">
+                      <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Als Text anlegen" /></StackPanel>
+                    </Button>
+                  </StackPanel>
+                </Border>
                 <TextBlock Classes="label" Text="Initialisierung (init)" />
                 <TextBox Classes="code" Text="{Binding Init}" />
                 <TextBlock Classes="hint" Margin="0,4,0,0" Text="Bei einem C#-Programm werden die Startwerte aus den Feldern übernommen." />

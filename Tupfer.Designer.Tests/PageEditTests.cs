@@ -186,6 +186,21 @@ public class PageEditTests
     }
 
     [Fact]
+    public void BegruessungAlsSatzWirdAlsTextAngelegt()
+    {
+        var (project, _) = NewProject();
+        project.Welcome = "willkommen, hallo";
+        Assert.False(project.HasWelcomeProblem);
+
+        project.Welcome = "Willkommen bei Familie Roßkamp";
+        Assert.True(project.HasWelcomeProblem);
+        project.WelcomeAsTextCommand.Execute(null);
+        Assert.False(project.HasWelcomeProblem);
+        Assert.Equal("begruessung", project.Welcome);
+        Assert.Equal("Willkommen bei Familie Roßkamp", project.Speak.Single(s => s.Name == "begruessung").Text);
+    }
+
+    [Fact]
     public void TextUmbenennenPasstSkripteAn()
     {
         var (project, page) = NewProject();

@@ -222,7 +222,17 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
                     return "";
                 var (exitCode, error) = await RunAsync("lp", "-d", chosen, "-o", "print-scaling=none", pdfPath);
                 if (exitCode == 0)
+                {
+                    // Angehaltener Drucker (z. B. Warteschlange von cups-browsed ohne Ziel): Auftrag wartet nur
+                    await Task.Delay(1500);
+                    if (Lpstat($"-p{chosen}") is { } state && state.Contains(" disabled", StringComparison.Ordinal))
+                    {
+                        var reason = string.Join(" ", state.Split('\n').Skip(1).Select(l => l.Trim()).Where(l => l.Length > 0));
+                        return $"Der Auftrag wartet: Der Drucker „{chosen}“ ist angehalten{(reason.Length > 0 ? $" ({reason})" : "")}. "
+                               + "Das ist eine Einstellung des Systems (CUPS) – in der Druckerwarteschlange nachsehen oder den Drucker neu einrichten.";
+                    }
                     return $"An „{chosen}“ gesendet.";
+                }
                 OpenInViewer(pdfPath);
                 return $"Drucken über CUPS ging nicht ({error.Trim()}), das PDF wurde im PDF-Programm geöffnet – bitte dort drucken.";
             }

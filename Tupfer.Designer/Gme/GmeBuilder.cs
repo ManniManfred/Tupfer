@@ -80,11 +80,19 @@ public static class GmeBuilder
             welcome = string.IsNullOrWhiteSpace(project.Welcome)
                 ? new List<List<string>>()
                 : new List<List<string>> { ScriptParser.ParsePlayList(project.Welcome) };
+        }
+        catch (ScriptParseException ex)
+        {
+            throw new GmeBuildException($"Begrüßung: {ex.Message}. Dort stehen durch Kommas getrennte Namen von Texten "
+                                        + "(Tab „Sprachausgabe“) oder Audiodateien, kein Satz – im Tab „Projekt“ lässt sich der Satz als Text anlegen.");
+        }
+        try
+        {
             init = ScriptParser.ParseInit(project.Init ?? "");
         }
         catch (ScriptParseException ex)
         {
-            throw new GmeBuildException($"Begrüßung/Initialisierung: {ex.Message}");
+            throw new GmeBuildException($"Initialisierung: {ex.Message}");
         }
 
         // Audiodateien: sortiert und eindeutig, wie Data.Set in tttool
