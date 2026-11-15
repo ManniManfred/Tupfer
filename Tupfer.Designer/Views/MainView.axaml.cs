@@ -77,8 +77,9 @@ public partial class MainView : UserControl
         ShowCanvas.Click += (_, _) => ShowPagesPanel(CanvasPanel);
         ShowPages.Click += (_, _) => ShowPagesPanel(PagesPanel);
         ShowProperties.Click += (_, _) => ShowPagesPanel(PropertiesPanel);
-        // Nur auf dem Desktop sichtbar: schließt das Hauptfenster
+        // Nur auf dem Desktop sichtbar: schließen das Hauptfenster
         QuitItem.Click += (_, _) => (TopLevel.GetTopLevel(this) as Window)?.Close();
+        QuitButton.Click += (_, _) => (TopLevel.GetTopLevel(this) as Window)?.Close();
     }
 
     // ---------- Titelleiste ----------

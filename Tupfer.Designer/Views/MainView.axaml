@@ -309,6 +309,10 @@
           <Button Classes="accent" Command="{Binding BuildGmeCommand}" ToolTip.Tip="GME-Datei bauen (F5)" Margin="6,0,0,0">
             <PathIcon Data="{StaticResource IconPlay}" />
           </Button>
+          <Button x:Name="QuitButton" Classes="tool" ToolTip.Tip="Beenden (Alt+F4)" Margin="6,0,0,0"
+                  IsVisible="{x:Static vm:MainWindowViewModel.IsDesktop}">
+            <PathIcon Data="{StaticResource IconPower}" />
+          </Button>
         </StackPanel>
       </Grid>
     </Border>
