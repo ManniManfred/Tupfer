@@ -2,7 +2,8 @@
 /** @var array $_ */
 /** @var \OCP\IL10N $l */
 ?>
-<div id="tupfer-app" data-editor="<?php p($_['editorUrl']); ?>">
+<div id="tupfer-app" data-editor="<?php p($_['editorUrl']); ?>" data-immich="<?php p($_['immichUrl']); ?>"
+	data-immich-proxy="<?php p($_['immichProxy']); ?>">
 <?php if ($_['installed']): ?>
 	<iframe id="tupfer-frame" title="Tupfer Designer" allow="microphone; fullscreen; autoplay; clipboard-read; clipboard-write"></iframe>
 <?php else: ?>

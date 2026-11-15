@@ -135,6 +135,51 @@ public class ImmichTests
     }
 
     [Fact]
+    public async Task InNextcloudUeberDieWeiterleitung()
+    {
+        var before = ImmichClient.Proxy;
+        int token = 0;
+        ImmichClient.Proxy = new ImmichProxy("https://cloud.example.org/index.php/apps/tupfer/immich/api/",
+            "https://fotos.example.org", () => $"token{++token}");
+        try
+        {
+            var server = new FakeImmich();
+            server.Json("GET /index.php/apps/tupfer/immich/api/users/me", """{"name":"Anni"}""");
+            server.Json($"GET /index.php/apps/tupfer/immich/api/faces?id={Asset}", "[]");
+            // Die Adresse aus den Einstellungen gilt nicht, nur der in Nextcloud eingetragene Server
+            using var client = new ImmichClient("https://anderswo.example.org", Key, server);
+            Assert.Equal("https://fotos.example.org", client.ServerUrl);
+            Assert.Equal("Anni", await client.CheckAsync());
+            Assert.Empty(await client.GetFacesAsync(Asset));
+            // Key wird durchgereicht, das CSRF-Token jedes Mal frisch geholt
+            Assert.Equal(Key, server.Requests[0].Request.Headers.GetValues("x-api-key").Single());
+            Assert.Equal(["token1", "token2"], server.Requests.Select(r => r.Request.Headers.GetValues("requesttoken").Single()));
+
+            // Fehler der Weiterleitung kommen mit der Meldung von Nextcloud
+            server.Json("GET /index.php/apps/tupfer/immich/api/albums",
+                """{"message":"Der Immich-Server ist vom Nextcloud-Server aus nicht erreichbar: cURL error 7","statusCode":502}""", HttpStatusCode.BadGateway);
+            var e = await Assert.ThrowsAsync<ImmichException>(client.GetAlbumsAsync);
+            Assert.Contains("vom Nextcloud-Server aus nicht erreichbar", e.Message);
+            Assert.DoesNotContain("CORS", e.Message);
+
+            // Abgelaufene Nextcloud-Sitzung ist kein falscher API-Key
+            server.Json("GET /index.php/apps/tupfer/immich/api/users/me", """{"message":"CSRF check failed"}""", HttpStatusCode.PreconditionFailed);
+            Assert.Contains("Seite neu laden", (await Assert.ThrowsAsync<ImmichException>(client.CheckAsync)).Message);
+            server.Json("GET /index.php/apps/tupfer/immich/api/users/me", """{"message":"Invalid API key","statusCode":401}""", HttpStatusCode.Unauthorized);
+            Assert.Contains("API-Key abgelehnt", (await Assert.ThrowsAsync<ImmichException>(client.CheckAsync)).Message);
+
+            // Ohne eingetragenen Server sagt der Designer, was der Administrator tun muss
+            ImmichClient.Proxy = ImmichClient.Proxy with { ServerUrl = "" };
+            Assert.Contains("occ config:app:set tupfer immich_url",
+                Assert.Throws<ImmichException>(() => new ImmichClient("https://fotos.example.org", Key, server)).Message);
+        }
+        finally
+        {
+            ImmichClient.Proxy = before;
+        }
+    }
+
+    [Fact]
     public async Task FalscheAdresseOhneImmichWirdErkannt()
     {
         var (client, server) = Connect();

@@ -40,6 +40,23 @@ export function startNew() {
     return '';
 }
 
+/** Vom Administrator eingetragener Immich-Server, leer wenn keiner. */
+export function immichUrl() {
+    return host()?.document.getElementById('tupfer-app')?.dataset.immich ?? '';
+}
+
+/** Adresse der Weiterleitung zu Immich (entspricht …/api/ von Immich), leer außerhalb von Nextcloud. */
+export function immichProxy() {
+    const link = host()?.document.getElementById('tupfer-app')?.dataset.immichProxy ?? '';
+    // Die Vorlage liefert die Adresse für den Pfad „x“
+    return link ? new URL(link.replace(/x$/, ''), host().location.href).href : '';
+}
+
+/** Aktuelles CSRF-Token von Nextcloud (wird von Nextcloud regelmäßig erneuert). */
+export function requestToken() {
+    return host()?.OC.requestToken ?? '';
+}
+
 function user() {
     return host().OC.getCurrentUser().uid;
 }

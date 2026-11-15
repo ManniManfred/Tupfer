@@ -277,7 +277,7 @@ Unterschiede zur Desktop-Version:
   fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als Ogg Vorbis (mono, 22 kHz).
 - **Fotos aus Immich** gehen im Browser nur, wenn der Immich-Server Zugriffe von der Seite des
   Designers erlaubt (CORS). Immich selbst schaltet CORS nur im Entwicklungsmodus ein; ohne Freigabe
-  meldet der Designer „nicht erreichbar … CORS“. Abhilfe: die Desktop-Version nehmen oder im
+  meldet der Designer „nicht erreichbar … CORS“. Abhilfe: die Desktop-Version oder die Nextcloud-App nehmen (dort ohne CORS) oder im
   Webserver vor Immich die Freigabe ergänzen, z. B. bei nginx (Adresse des Designers anpassen):
 
   ```nginx
@@ -339,17 +339,19 @@ Web-Version; einmal gespeichert, sind sie ein `*.tupfer`.
   gespeicherten Projekt werden sie wie im Browser heruntergeladen. *Drucken* und *Auf den Stift*
   funktionieren wie im Browser.
 
-**Fotos aus Immich** in Nextcloud: Die Sicherheitsregeln der App erlauben zunächst keine Zugriffe
-auf fremde Server. Der Administrator trägt den Immich-Server ein, dann lässt die App Zugriffe dorthin zu:
+**Fotos aus Immich** in Nextcloud: Die Zugriffe auf Immich laufen über den Nextcloud-Server; Immich
+braucht deshalb keine CORS-Freigabe, und Nextcloud muss Immich nur selbst erreichen (auch im eigenen
+Netz). Der Administrator trägt den Server ein:
 
 ```bash
 sudo -u www-data php occ config:app:set tupfer immich_url --value=https://fotos.example.org
 ```
 
-Zusätzlich muss Immich wie bei der Web-Version Zugriffe vom Nextcloud-Server erlauben (CORS, siehe
-„Tupfer Designer im Browser“, als Adresse die der Nextcloud). Adresse und API-Key gibt jeder Benutzer
-im Designer selbst ein; sie liegen im Speicher des Browsers für die Nextcloud-Adresse, nicht in
-Nextcloud und nicht im Projekt.
+Weitergeleitet wird nur dorthin und nur für die Zugriffe, die der Designer braucht (Anmeldung prüfen,
+Alben, Personen, Suche, Vorschauen, Originale, Gesichter), und nur für angemeldete Benutzer. Den
+API-Key gibt jeder Benutzer im Designer selbst ein; die Adresse ist dort fest. Der Key liegt im
+Speicher des Browsers für die Nextcloud-Adresse, nicht in Nextcloud und nicht im Projekt; Nextcloud
+reicht ihn nur durch. Ohne eingetragenen Server sagt der Designer, was zu tun ist.
 
 Die natürliche Sprachausgabe lädt ihre Stimmen wie im Browser von cdnjs, jsDelivr und Hugging Face.
 Die App erlaubt dafür diese Adressen in ihren Sicherheitsregeln (Content-Security-Policy). Ist der

@@ -64,4 +64,16 @@ static partial class NextcloudInterop
 
     [JSImport("loadState", "nextcloud")]
     public static partial string LoadState();
+
+    /// <summary>Vom Administrator eingetragener Immich-Server, leer wenn keiner.</summary>
+    [JSImport("immichUrl", "nextcloud")]
+    public static partial string ImmichUrl();
+
+    /// <summary>Adresse der Weiterleitung zu Immich in der Nextcloud-App (statt …/api/ von Immich).</summary>
+    [JSImport("immichProxy", "nextcloud")]
+    public static partial string ImmichProxy();
+
+    /// <summary>Aktuelles CSRF-Token von Nextcloud für Anfragen an die App.</summary>
+    [JSImport("requestToken", "nextcloud")]
+    public static partial string RequestToken();
 }

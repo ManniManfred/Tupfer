@@ -14,7 +14,6 @@ use OCP\AppFramework\Http\EmptyFeaturePolicy;
 use OCP\AppFramework\Http\NotFoundResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\StreamResponse;
-use OCP\IConfig;
 use OCP\IRequest;
 
 /**
@@ -38,7 +37,7 @@ class EditorController extends Controller {
 		'md' => 'text/markdown; charset=utf-8',
 	];
 
-	public function __construct(IRequest $request, private IConfig $config) {
+	public function __construct(IRequest $request) {
 		parent::__construct(Application::APP_ID, $request);
 	}
 
@@ -91,7 +90,7 @@ class EditorController extends Controller {
 			$response->setETag(md5($file . filemtime($file) . filesize($file)));
 		}
 
-		$response->setContentSecurityPolicy($this->policy());
+		$response->setContentSecurityPolicy(self::policy());
 		$features = new EmptyFeaturePolicy();
 		$features->addAllowedMicrophoneDomain('\'self\'');
 		$features->addAllowedFullScreenDomain('\'self\'');
@@ -103,10 +102,10 @@ class EditorController extends Controller {
 	/**
 	 * Eigene Sicherheitsregeln (eine EmptyContentSecurityPolicy wird von Nextcloud nicht mit den
 	 * Standardregeln zusammengeführt): WebAssembly, meSpeak (eval), die natürliche Sprachausgabe
-	 * (Piper von cdnjs, jsDelivr und Hugging Face), die Einbettung in die Seite der App und ggf. ein Immich-Server
-	 * (vom Admin eingetragen: occ config:app:set tupfer immich_url --value=https://fotos.example.org).
+	 * (Piper von cdnjs, jsDelivr und Hugging Face) und die Einbettung in die Seite der App. Immich erreicht der
+	 * Designer über die eigene Weiterleitung (ImmichController), also über 'self'.
 	 */
-	private function policy(): EmptyContentSecurityPolicy {
+	private static function policy(): EmptyContentSecurityPolicy {
 		// Nur die Pakete, die tupfer.js lädt (PIPER_ORT, PIPER_PHONEMIZE), nicht die ganzen CDNs: Der Designer läuft im
 		// selben Ursprung wie Nextcloud, fremdes Skript hätte dort Zugriff auf das Konto
 		$cdn = [
@@ -129,7 +128,7 @@ class EditorController extends Controller {
 			$csp->addAllowedFontDomain($domain);
 			$csp->addAllowedMediaDomain($domain);
 		}
-		foreach (array_merge(['\'self\'', 'data:', 'blob:'], $cdn, $voices, $this->immichOrigin()) as $domain) {
+		foreach (array_merge(['\'self\'', 'data:', 'blob:'], $cdn, $voices) as $domain) {
 			$csp->addAllowedConnectDomain($domain);
 		}
 		foreach (array_merge(['\'self\'', 'blob:'], $cdn) as $domain) {
@@ -141,15 +140,5 @@ class EditorController extends Controller {
 		$csp->addAllowedObjectDomain('blob:');
 		$csp->addAllowedFrameAncestorDomain('\'self\'');
 		return $csp;
-	}
-
-	/** Ursprung (https://host[:port]) des eingetragenen Immich-Servers, leer wenn keiner eingetragen oder ungültig. */
-	private function immichOrigin(): array {
-		$url = trim($this->config->getAppValue(Application::APP_ID, 'immich_url', ''));
-		$parts = $url === '' ? false : parse_url($url);
-		if ($parts === false || !isset($parts['scheme'], $parts['host']) || !in_array(strtolower($parts['scheme']), ['http', 'https'], true)) {
-			return [];
-		}
-		return [strtolower($parts['scheme']) . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '')];
 	}
 }

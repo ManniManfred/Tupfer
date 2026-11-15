@@ -57,6 +57,9 @@ static class Program
         if (NextcloudInterop.Available())
         {
             NextcloudFileDialogs.Init();
+            // Immich über die Weiterleitung der App: kein CORS nötig, nur der vom Admin eingetragene Server
+            ImmichClient.Proxy = new ImmichProxy(NextcloudInterop.ImmichProxy(), NextcloudInterop.ImmichUrl(),
+                () => NextcloudInterop.RequestToken());
             App.CreateDialogs = topLevel => new NextcloudFileDialogs(new BrowserFileDialogs(topLevel));
             var startFile = NextcloudInterop.StartFile();
             if (startFile.Length > 0)

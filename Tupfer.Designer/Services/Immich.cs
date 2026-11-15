@@ -23,6 +23,13 @@ public sealed record ImmichAssetPage(List<ImmichAsset> Items, int? NextPage);
 /// <summary>Heruntergeladenes Bild: Inhalt und Dateiname mit passender Endung.</summary>
 public sealed record ImmichDownload(byte[] Data, string FileName);
 
+/// <summary>
+/// Weiterleitung zu Immich (in der Nextcloud-App): <paramref name="ApiUrl"/> steht für …/api/ von Immich,
+/// <paramref name="ServerUrl"/> ist der dort eingetragene Server (leer = keiner), <paramref name="RequestToken"/>
+/// liefert das aktuelle CSRF-Token für den Header „requesttoken“.
+/// </summary>
+public sealed record ImmichProxy(string ApiUrl, string ServerUrl, Func<string> RequestToken);
+
 /// <summary>Fehler beim Zugriff auf Immich mit einer verständlichen Meldung.</summary>
 public class ImmichException(string message, Exception? inner = null) : Exception(message, inner);
 
@@ -40,6 +47,15 @@ public sealed class ImmichClient : IDisposable
     /// <summary>Im Browser: Die Seite selbst kommt über https (dann blockiert der Browser http-Adressen).</summary>
     public static bool PageIsSecure { get; set; }
 
+    /// <summary>
+    /// In der Nextcloud-App: Zugriffe laufen über den Nextcloud-Server (kein CORS nötig), und zwar nur zu dem dort
+    /// eingetragenen Server; die Adresse in den Einstellungen gilt dann nicht. null = direkt zu Immich.
+    /// </summary>
+    public static ImmichProxy? Proxy { get; set; }
+
+    /// <summary>Die Adresse des Servers ist fest vorgegeben (Nextcloud) und lässt sich nicht ändern.</summary>
+    public static bool HasFixedServer => Proxy != null;
+
     static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -53,19 +69,26 @@ public sealed class ImmichClient : IDisposable
     /// <param name="handler">Für Tests ein gefälschter Handler (wird nicht freigegeben), sonst der Standard.</param>
     public ImmichClient(string serverUrl, string apiKey, HttpMessageHandler? handler = null)
     {
-        ServerUrl = NormalizeUrl(serverUrl);
+        var proxy = Proxy;
+        if (proxy != null && proxy.ServerUrl.Length == 0)
+            throw new ImmichException("In dieser Nextcloud ist kein Immich-Server eingetragen. Der Administrator trägt ihn ein mit: " +
+                                      "occ config:app:set tupfer immich_url --value=https://fotos.example.org");
+        ServerUrl = NormalizeUrl(proxy?.ServerUrl ?? serverUrl);
         if (ServerUrl.Length == 0)
             throw new ImmichException("Bitte zuerst die Adresse des Immich-Servers eingeben.");
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new ImmichException("Bitte zuerst einen API-Key eingeben (in Immich unter Kontoeinstellungen → API-Schlüssel).");
-        if (IsBrowser && PageIsSecure && ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        if (proxy == null && IsBrowser && PageIsSecure && ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
             throw new ImmichException("Die Web-Version kommt über https; der Browser erlaubt dann keine Zugriffe auf " +
                                       $"{ServerUrl}. Bitte die https-Adresse des Immich-Servers eingeben.");
+        _proxy = proxy;
         _http = handler == null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
-        _http.BaseAddress = new Uri(ServerUrl + "/api/");
+        _http.BaseAddress = new Uri(proxy == null ? ServerUrl + "/api/" : proxy.ApiUrl.TrimEnd('/') + "/");
         _http.Timeout = TimeSpan.FromSeconds(60);
         _http.DefaultRequestHeaders.Add("x-api-key", apiKey.Trim());
     }
+
+    readonly ImmichProxy? _proxy;
 
     public void Dispose() => _http.Dispose();
 
@@ -218,6 +241,9 @@ public sealed class ImmichClient : IDisposable
 
     async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, string what)
     {
+        // Nextcloud verlangt bei Anfragen an Apps das CSRF-Token
+        if (_proxy != null)
+            request.Headers.TryAddWithoutValidation("requesttoken", _proxy.RequestToken());
         HttpResponseMessage response;
         try
         {
@@ -229,7 +255,9 @@ public sealed class ImmichClient : IDisposable
         }
         catch (HttpRequestException e)
         {
-            throw new ImmichException(IsBrowser
+            throw new ImmichException(_proxy != null
+                ? $"Der Nextcloud-Server ist nicht erreichbar: {e.Message}"
+                : IsBrowser
                 ? $"Der Immich-Server unter {ServerUrl} ist nicht erreichbar. Im Browser liegt das meist daran, dass Immich keine " +
                   "Zugriffe von anderen Seiten (CORS) erlaubt; dann geht es nur mit einer Freigabe im Webserver vor Immich " +
                   "oder in der Desktop-Version (siehe README)."
@@ -242,10 +270,17 @@ public sealed class ImmichClient : IDisposable
             var detail = await ErrorMessageAsync(response);
             throw new ImmichException(response.StatusCode switch
             {
+                // Nextcloud selbst: abgemeldet oder CSRF-Token abgelaufen
+                HttpStatusCode.Unauthorized or HttpStatusCode.PreconditionFailed when _proxy != null && !detail.Contains("API key", StringComparison.OrdinalIgnoreCase)
+                                                                                    && (response.StatusCode == HttpStatusCode.PreconditionFailed || detail.Contains("logged in", StringComparison.OrdinalIgnoreCase)) =>
+                    "Die Anmeldung bei Nextcloud ist abgelaufen. Bitte die Seite neu laden.",
                 HttpStatusCode.Unauthorized => "Immich hat den API-Key abgelehnt. Bitte den Key in den Immich-Einstellungen prüfen.",
                 HttpStatusCode.Forbidden => $"Der API-Key darf das nicht ({detail}). Er braucht in Immich die Rechte album.read, " +
                                             "person.read, asset.read, asset.view, asset.download und face.read.",
                 HttpStatusCode.NotFound => $"Immich kennt {what} nicht (404). Stimmt die Adresse {ServerUrl}?",
+                // Fehler der Weiterleitung in Nextcloud (Server nicht erreichbar oder nicht eingetragen)
+                HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout when _proxy != null =>
+                    $"{detail} ({ServerUrl})",
                 _ => $"Immich meldet einen Fehler bei {what}: {(int)response.StatusCode} {detail}",
             });
         }

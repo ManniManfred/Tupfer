@@ -40,10 +40,11 @@ public partial class ImmichBrowserViewModel : ObservableObject
         _settings = settings;
         _insert = insert;
         _close = close;
-        _serverUrl = settings.ImmichUrl;
+        // In Nextcloud gilt der dort eingetragene Server
+        _serverUrl = ImmichClient.Proxy?.ServerUrl ?? settings.ImmichUrl;
         _apiKey = settings.ImmichApiKey;
         _downloadOriginal = settings.ImmichOriginal;
-        _showSettings = settings.ImmichUrl.Length == 0 || settings.ImmichApiKey.Length == 0;
+        _showSettings = _serverUrl.Length == 0 || settings.ImmichApiKey.Length == 0;
     }
 
     /// <summary>Gefälschter HTTP-Handler für Tests; null = echte Verbindung.</summary>
@@ -59,8 +60,11 @@ public partial class ImmichBrowserViewModel : ObservableObject
     [ObservableProperty] bool _downloadOriginal;
     [ObservableProperty] bool _showSettings;
 
-    /// <summary>Hinweis für den Browser: Immich erlaubt Zugriffe anderer Seiten (CORS) meist nicht.</summary>
-    public static bool ShowCorsHint => !MainWindowViewModel.IsDesktop;
+    /// <summary>Hinweis für den Browser: Immich erlaubt Zugriffe anderer Seiten (CORS) meist nicht (in Nextcloud kein Thema).</summary>
+    public static bool ShowCorsHint => !MainWindowViewModel.IsDesktop && !ImmichClient.HasFixedServer;
+
+    /// <summary>In Nextcloud: Die Adresse hat der Administrator eingetragen, Zugriffe laufen über Nextcloud.</summary>
+    public static bool IsServerFixed => ImmichClient.HasFixedServer;
 
     partial void OnDownloadOriginalChanged(bool value)
     {

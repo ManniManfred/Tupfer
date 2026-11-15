@@ -1303,7 +1303,10 @@
               <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"
                          Text="Adresse des Immich-Servers und ein API-Key (in Immich unter Kontoeinstellungen → API-Schlüssel; Rechte: album.read, person.read, asset.read, asset.view, asset.download, face.read). Beides wird in den Einstellungen dieses Programms gespeichert, nicht im Projekt." />
               <TextBlock Classes="label" Text="Adresse" />
-              <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://fotos.example.org" />
+              <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://fotos.example.org"
+                       IsReadOnly="{x:Static vm:ImmichBrowserViewModel.IsServerFixed}" />
+              <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" IsVisible="{x:Static vm:ImmichBrowserViewModel.IsServerFixed}"
+                         Text="In Nextcloud gilt der Immich-Server, den der Administrator eingetragen hat; die Zugriffe laufen über den Nextcloud-Server." />
               <TextBlock Classes="label" Text="API-Key" />
               <TextBox Text="{Binding ApiKey}" PasswordChar="•" />
               <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" IsVisible="{x:Static vm:ImmichBrowserViewModel.ShowCorsHint}"

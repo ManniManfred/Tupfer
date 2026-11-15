@@ -11,6 +11,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\FeaturePolicy;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\Util;
@@ -20,6 +21,7 @@ class PageController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private IURLGenerator $urlGenerator,
+		private IConfig $config,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -34,6 +36,9 @@ class PageController extends Controller {
 		$response = new TemplateResponse(Application::APP_ID, 'main', [
 			'editorUrl' => $editorUrl,
 			'installed' => EditorController::isInstalled(),
+			// Eingetragener Immich-Server und die Weiterleitung dorthin (für „Bild aus Immich“)
+			'immichUrl' => ImmichController::serverUrl($this->config),
+			'immichProxy' => $this->urlGenerator->linkToRoute('tupfer.immich.get', ['path' => 'x']),
 		]);
 
 		$csp = new ContentSecurityPolicy();
