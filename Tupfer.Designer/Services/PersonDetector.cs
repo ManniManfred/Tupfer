@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Avalonia;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Tupfer.Designer.Model;
@@ -172,7 +173,7 @@ public static class PersonDetector
     /// größer als das Gesicht, um <paramref name="rotation"/> Grad im Uhrzeigersinn gedreht (Vielfache von 90°,
     /// für Fotos, deren Pixel gedreht gespeichert sind). null, wenn er sich nicht zeichnen lässt.
     /// </summary>
-    public static Bitmap? FaceImage(Bitmap bitmap, Rect face, double rotation = 0)
+    public static Bitmap? FaceImage(IImage bitmap, Rect face, double rotation = 0)
     {
         try
         {

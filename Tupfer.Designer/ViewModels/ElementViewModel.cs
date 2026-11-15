@@ -286,7 +286,7 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     [NotifyPropertyChangedFor(nameof(AlignOption))]
     TextAlign _align;
 
-    public Bitmap? Image => IsImage ? Project.LoadImage(ImagePath) : null;
+    public IImage? Image => IsImage ? Project.LoadImage(ImagePath) : null;
 
     public IBrush ColorBrush => Avalonia.Media.Color.TryParse(Color, out var c) ? new SolidColorBrush(c) : Brushes.Black;
 

@@ -120,6 +120,11 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
 ## Funktionen
 
 - **Seiten:** Fotos und Bilder einfügen – auch per Drag&Drop aus dem Explorer – (drehen, skalieren, zuschneiden – rechteckig, als Kreis/Ellipse oder als Polygon mit Bögen) und Texte setzen
+  - Bilder: PNG, JPEG, BMP, GIF, WebP und **SVG**. Eine SVG-Grafik bleibt eine Vektorgrafik und
+    wird auf dem Bildschirm, im PDF und beim Drucken in der jeweiligen Auflösung gezeichnet – in jeder
+    Größe scharf, ohne sie vorher zu rastern (mit [Svg.Skia](https://github.com/wieslawsoltes/Svg.Skia),
+    auch Verläufe, Transparenz und Texte). Sie wird in ihrer eigenen Größe eingefügt. Wer die Grafik
+    dagegen in einzelne bearbeitbare Formen und Texte zerlegen will, nimmt *SVG importieren* (unten).
   (Schriftart, Größe, Farbe, Ausrichtung), farbige Flächen (Rechteck, Kreis/Ellipse oder Polygon mit Bögen, mit oder ohne Rand und Füllung, auch mit den Zeichenwerkzeugen aufgezogen) als Hintergrund. Die Zeichenreihenfolge lässt sich ändern – eine Ebene
   oder ganz nach vorne/hinten (Strg+Bild↑/↓, mit Umschalt ganz); die Liste *Bilder, Texte und Farbflächen*
   zeigt die Reihenfolge, wählt auch verdeckte Elemente aus und sortiert per Drag & Drop um (mit der Maus am Eintrag, per Finger am Griff links). OID-Flächen liegen immer über

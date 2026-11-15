@@ -90,6 +90,7 @@ public static class SvgExporter
             ".gif" => "image/gif",
             ".webp" => "image/webp",
             ".bmp" => "image/bmp",
+            ".svg" => "image/svg+xml",
             _ => "image/png",
         };
         var href = $"data:{mime};base64,{Convert.ToBase64String(File.ReadAllBytes(e.ImagePath))}";

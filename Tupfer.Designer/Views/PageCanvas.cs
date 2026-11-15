@@ -151,7 +151,7 @@ public class PageCanvas : Control
     static readonly IPen DrawingPen = new Pen(new SolidColorBrush(Color.FromRgb(220, 110, 0)), 1.5, new DashStyle(new double[] { 4, 2 }, 0));
 
     public static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-        { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
+        { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp", ".svg" };
 
     static PageCanvas()
     {

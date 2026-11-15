@@ -42,7 +42,7 @@ public static class SvgImporter
 
     /// <summary>Verlinkte Bilder, die übernommen werden (wie PageCanvas.ImageExtensions).</summary>
     static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-        { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
+        { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp", ".svg" };
 
     /// <summary>Größte Abweichung der unterteilten Kurven (mm).</summary>
     const double CurveTolerance = 0.05;

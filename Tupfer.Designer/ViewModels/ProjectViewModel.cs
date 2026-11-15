@@ -2,6 +2,7 @@ using Tupfer.Designer.Gme;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -108,13 +109,16 @@ public partial class ProjectViewModel : ObservableObject
 
     partial void OnSelectedPageChanged(PageViewModel? value) => History.Attach(value);
 
-    readonly Dictionary<string, Bitmap?> _images = new(StringComparer.OrdinalIgnoreCase);
+    readonly Dictionary<string, IImage?> _images = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Bilder, die sich nicht laden ließen, mit dem Stand der Datei damals (ändert sie sich, neuer Versuch).</summary>
     readonly Dictionary<string, DateTime> _failedImages = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Lädt ein Bild (zwischengespeichert, damit z. B. Rückgängig nicht neu lädt). null, wenn es fehlt.</summary>
-    public Bitmap? LoadImage(string path)
+    /// <summary>
+    /// Lädt ein Bild (zwischengespeichert, damit z. B. Rückgängig nicht neu lädt): eine Rastergrafik als
+    /// <see cref="Bitmap"/>, eine SVG-Grafik als <see cref="SvgImage"/>. null, wenn es fehlt.
+    /// </summary>
+    public IImage? LoadImage(string path)
     {
         if (string.IsNullOrEmpty(path))
             return null;
@@ -125,7 +129,7 @@ public partial class ProjectViewModel : ObservableObject
             return null;
         try
         {
-            bmp = new Bitmap(path);
+            bmp = SvgImage.IsSvg(path) ? SvgImage.Load(path) : new Bitmap(path);
         }
         catch (Exception ex)
         {

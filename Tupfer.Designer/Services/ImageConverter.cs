@@ -78,7 +78,7 @@ public static class ImageConverter
     /// eines schwarzen Bilds der Größe <paramref name="totalWidth"/> × <paramref name="totalHeight"/>;
     /// liefert die RGB-Daten Zeile für Zeile.
     /// </summary>
-    public static byte[] RenderRegion(Bitmap bitmap, Rect source, Rect destination, int totalWidth, int totalHeight)
+    public static byte[] RenderRegion(IImage bitmap, Rect source, Rect destination, int totalWidth, int totalHeight)
     {
         using var target = new RenderTargetBitmap(new PixelSize(totalWidth, totalHeight), new Vector(96, 96));
         using (var ctx = target.CreateDrawingContext())

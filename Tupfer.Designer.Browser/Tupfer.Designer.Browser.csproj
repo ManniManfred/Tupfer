@@ -49,6 +49,8 @@
     <!-- Aufnahmen als Ogg Vorbis (MIT, reines C#, auch im Browser) -->
     <PackageReference Include="OggVorbisEncoder" Version="1.2.2" />
     <PackageReference Include="NVorbis" Version="0.10.5" />
+    <!-- SVG-Grafiken als Bilder (MIT), Version passend zum SkiaSharp von Avalonia -->
+    <PackageReference Include="Svg.Skia" Version="5.1.1" />
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
   </ItemGroup>
 

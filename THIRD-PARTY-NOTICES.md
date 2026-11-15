@@ -53,9 +53,12 @@ Dateien, Aufruf über JavaScript). Sie behalten ihre GPL-Lizenz.
 | Avalonia.Fonts.Inter – Schrift [Inter](https://github.com/rsms/inter) | MIT (Paket), SIL Open Font License 1.1 (Schrift) |
 | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | MIT |
 | [Microsoft.ML.OnnxRuntime](https://github.com/microsoft/onnxruntime) (Piper-Stimmen, nur Desktop) | MIT |
+| [Svg.Skia](https://github.com/wieslawsoltes/Svg.Skia) mit Svg.Model, Svg.SceneGraph, Svg.Animation (SVG-Grafiken als Bilder) | MIT |
+| Svg.Custom – Fork von [SVG.NET](https://github.com/svg-net/SVG) (über Svg.Skia) | MS-PL |
+| [ExCSS](https://github.com/TylerBrinks/ExCSS) (über Svg.Skia) | MIT |
 | [System.Speech](https://github.com/dotnet/runtime) | MIT |
 | [YamlDotNet](https://github.com/aaubry/YamlDotNet) | MIT |
-| xunit, Microsoft.NET.Test.Sdk (nur Tests) | Apache 2.0 bzw. MIT |
+| xunit, Microsoft.NET.Test.Sdk, Avalonia.Headless (nur Tests) | Apache 2.0 bzw. MIT |
 
 ## Zur Laufzeit aus dem Netz geladen
 

@@ -926,7 +926,7 @@ public partial class MainWindowViewModel : ObservableObject
     Task InsertImage() => Guard("Bild einfügen", async () =>
     {
         if (Project.SelectedPage is not { } page) return;
-        var path = await Dialogs!.OpenAsync("Bild einfügen", "Bilder", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif", "*.webp");
+        var path = await Dialogs!.OpenAsync("Bild einfügen", "Bilder", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif", "*.webp", "*.svg");
         if (path == null) return;
         if (page.AddImage(path) != null)
             AreasOnly = false;

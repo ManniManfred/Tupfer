@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using Avalonia;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Tupfer.Designer.Model;
 
@@ -152,14 +154,16 @@ public partial class PageViewModel : ObservableObject
     void OnItemChanged(object? sender, PropertyChangedEventArgs e) => Changed?.Invoke(sender!, e.PropertyName);
 
     /// <summary>
-    /// Fügt ein Bild ein (bei 150 dpi, höchstens 80 % der Seite), zentriert um <paramref name="centerMm"/>
+    /// Fügt ein Bild ein (Rastergrafik bei 150 dpi, SVG in ihrer eigenen Größe, höchstens 80 % der Seite), zentriert um <paramref name="centerMm"/>
     /// oder in der Mitte der Seite.
     /// </summary>
     public ElementViewModel? AddImage(string path, Point? centerMm = null)
     {
-        if (Project.LoadImage(path) is not { } bmp)
+        if (Project.LoadImage(path) is not { } image)
             return null;
-        double w = bmp.PixelSize.Width / 150.0 * 25.4, h = bmp.PixelSize.Height / 150.0 * 25.4;
+        var (w, h) = image is Bitmap bmp
+            ? (bmp.PixelSize.Width / 150.0 * 25.4, bmp.PixelSize.Height / 150.0 * 25.4)
+            : (image.Size.Width / 96 * 25.4, image.Size.Height / 96 * 25.4);
         double f = Math.Min(1, Math.Min(WidthMm * 0.8 / w, HeightMm * 0.8 / h));
         w = Math.Round(w * f, 1);
         h = Math.Round(h * f, 1);
