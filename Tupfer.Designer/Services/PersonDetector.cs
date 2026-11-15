@@ -1,4 +1,7 @@
+using System.Runtime.InteropServices;
 using Avalonia;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Tupfer.Designer.Model;
 using Tupfer.Designer.ViewModels;
 
@@ -99,11 +102,17 @@ public static class PersonDetector
     /// </summary>
     public delegate byte[] Renderer(Rect region, int width, int height);
 
+    /// <summary>Eine erkannte Person: ihre Flächen in Seitenkoordinaten (mm) und ein Ausschnitt mit dem Kopf.</summary>
+    public sealed record Person(List<List<AreaPoint>> Outlines, Bitmap? Face);
+
+    /// <summary>Kantenlänge des Kopf-Ausschnitts in Pixeln (für die Abfrage der Namen).</summary>
+    public const int FaceImageSize = 96;
+
     /// <summary>
-    /// Umrisse der Personen auf dem sichtbaren Ausschnitt des Bilds, in Seitenkoordinaten (mm): je Person
-    /// eine oder mehrere Flächen (mehrere, wenn etwas vor der Person steht), von links nach rechts.
+    /// Personen auf dem sichtbaren Ausschnitt des Bilds: je Person eine oder mehrere Flächen in
+    /// Seitenkoordinaten (mm; mehrere, wenn etwas vor der Person steht), von links nach rechts.
     /// </summary>
-    public static async Task<List<List<List<AreaPoint>>>> DetectAsync(ElementViewModel image)
+    public static async Task<List<Person>> DetectAsync(ElementViewModel image)
     {
         if (Segmenter == null)
             throw new PlatformNotSupportedException("Die Personenerkennung ist hier nicht verfügbar.");
@@ -130,12 +139,58 @@ public static class PersonDetector
 
         var persons = await DetectAsync(Render, viewWidth, viewHeight);
         var entry = image.ToEntry(null);
-        return persons.Select(person => person.Select(outline => outline.Select(p =>
+        return persons.Select(person => new Person(person.Select(outline => outline.Select(p =>
         {
             var q = ElementViewModel.ToPage(entry, new Point(
                 Math.Clamp(p.X / viewWidth, 0, 1) * image.Width, Math.Clamp(p.Y / viewHeight, 0, 1) * image.Height));
             return new AreaPoint(Math.Round(q.X, 2), Math.Round(q.Y, 2));
-        }).ToList()).ToList()).ToList();
+        }).ToList()).ToList(), FaceImage(person, Render))).ToList();
+    }
+
+    /// <summary>
+    /// Ausschnitt mit dem Kopf der Person: ein Quadrat am oberen Rand ihrer Umrisse, so breit wie die
+    /// Person (höchstens so hoch wie sie). null, wenn er sich nicht zeichnen lässt.
+    /// </summary>
+    static Bitmap? FaceImage(List<List<(double X, double Y)>> person, Renderer render)
+    {
+        try
+        {
+            var head = HeadRegion(person.SelectMany(o => o));
+            if (head.Width <= 0 || head.Height <= 0)
+                return null;
+            var rgb = render(head, FaceImageSize, FaceImageSize);
+            var bitmap = new WriteableBitmap(new PixelSize(FaceImageSize, FaceImageSize), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+            using (var buffer = bitmap.Lock())
+            {
+                var bgra = new byte[FaceImageSize * FaceImageSize * 4];
+                for (int i = 0, j = 0; j < rgb.Length; i += 4, j += 3)
+                {
+                    bgra[i] = rgb[j + 2];
+                    bgra[i + 1] = rgb[j + 1];
+                    bgra[i + 2] = rgb[j];
+                    bgra[i + 3] = 255;
+                }
+                for (int y = 0; y < FaceImageSize; y++)
+                    Marshal.Copy(bgra, y * FaceImageSize * 4, buffer.Address + y * buffer.RowBytes, FaceImageSize * 4);
+            }
+            return bitmap;
+        }
+        catch (Exception)
+        {
+            // Ohne Ausschnitt lässt sich der Name trotzdem eingeben
+            return null;
+        }
+    }
+
+    /// <summary>Quadrat um den Kopf: oben an den Umrissen, so breit wie die Person, waagrecht mittig.</summary>
+    public static Rect HeadRegion(IEnumerable<(double X, double Y)> points)
+    {
+        var list = points.ToList();
+        if (list.Count == 0)
+            return default;
+        double x0 = list.Min(p => p.X), x1 = list.Max(p => p.X), y0 = list.Min(p => p.Y), y1 = list.Max(p => p.Y);
+        double side = Math.Min(x1 - x0, y1 - y0);
+        return new Rect((x0 + x1 - side) / 2, y0, side, side);
     }
 
     /// <summary>

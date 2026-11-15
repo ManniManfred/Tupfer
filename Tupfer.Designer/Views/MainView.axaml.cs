@@ -31,6 +31,10 @@ public partial class MainView : UserControl
                         LogBox.CaretIndex = LogBox.Text?.Length ?? 0;
                     else if (e.PropertyName == nameof(MainWindowViewModel.ShowLog))
                         UpdateLogRow();
+                    else if (e.PropertyName == nameof(MainWindowViewModel.IsNamingPersons) && vm.IsNamingPersons)
+                        // Gleich den ersten Namen eingeben können
+                        Dispatcher.UIThread.Post(() => PersonNameList.GetVisualDescendants().OfType<TextBox>().FirstOrDefault()?.Focus(),
+                            DispatcherPriority.Background);
                 };
                 UpdateLogRow();
             }

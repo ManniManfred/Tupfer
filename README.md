@@ -130,8 +130,12 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   sagen, wählt man als Ziel *Sprachausgabe* und dann einen Text oder legt mit **+** gleich einen
   neuen an und tippt ihn dort ein (mit Knopf zum Anhören); das Skript `P(name)` legt der Designer selbst an.
 - **Personen erkennen:** Bild wählen und *Personen erkennen* klicken – für jede Person auf dem Foto
-  entsteht eine OID-Fläche als Polygon entlang ihres Umrisses, mit eigenem Text („Person 1“ …, von
-  links nach rechts), den man danach ändert oder aufnimmt. Jede Person bekommt ihre eigene Fläche,
+  entsteht eine OID-Fläche als Polygon entlang ihres Umrisses, mit eigenem Text, den man danach ändert
+  oder aufnimmt. Nach dem Erkennen fragt der Designer mit einem Ausschnitt des Kopfs nach dem Namen
+  jeder Person (von links nach rechts); Fläche, Text und Skript heißen dann gleich richtig, z. B.
+  „Änni“ → Skript und Text `aenni` (klein geschrieben, Umlaute ersetzt, Leerzeichen als `_`). Ist der
+  Name schon als Skript oder Text vergeben, wird nummeriert (`anni2`), vorhandene Skripte bleiben
+  unberührt. Ohne Namen gilt der Platzhalter `person1`/„Person 1“ …; *Abbrechen* legt nichts an. Jede Person bekommt ihre eigene Fläche,
   auch wenn sich alle berühren, jemand ein Kind auf dem Arm hat oder von hinten zu sehen ist
   (Instanz-Segmentierung RF-DETR-Seg von Roboflow). Bei großen Gruppen wird zusätzlich in
   Ausschnitten passend zur Gesichtsgröße gesucht (Gesichter mit YuNet). Verdeckt etwas eine Person

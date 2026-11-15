@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Tupfer.Designer.Gme;
@@ -1076,9 +1077,10 @@ public partial class MainWindowViewModel : ObservableObject
     public static bool CanDetectPersons => PersonDetector.Segmenter != null;
 
     /// <summary>
-    /// Erkennt die Personen auf dem gewählten Bild und legt für jede eine OID-Fläche (Polygon) an,
-    /// die einen eigenen Text abspielt („person1“ …, zunächst „Person 1“). Ist die Person durch etwas
-    /// davor geteilt, bekommt jeder Teil eine Fläche mit demselben Text.
+    /// Erkennt die Personen auf dem gewählten Bild, fragt nach ihren Namen und legt für jede eine
+    /// OID-Fläche (Polygon) an, die einen eigenen Text abspielt (Skript und Text heißen wie die Person,
+    /// z. B. „anni“; ohne Namen „person1“ … mit dem Text „Person 1“). Ist die Person durch etwas davor
+    /// geteilt, bekommt jeder Teil eine Fläche mit demselben Text.
     /// </summary>
     [RelayCommand]
     Task DetectPersons() => Guard("der Personenerkennung", async () =>
@@ -1092,19 +1094,37 @@ public partial class MainWindowViewModel : ObservableObject
             Notice("Auf dem Bild wurden keine Personen gefunden.");
             return;
         }
+        if (await AskPersonNamesAsync(persons) is not { } names)
+        {
+            Log("Personenerkennung abgebrochen.");
+            return;
+        }
+        var assigned = AddPersonAreas(page, persons.Select(p => p.Outlines).ToList(), names);
+        Notice(assigned.Count == 1
+            ? $"1 Person erkannt: OID-Fläche „{assigned[0].Label}“ angelegt. Text im Tab „Sprachausgabe“ ändern oder aufnehmen."
+            : $"{assigned.Count} Personen erkannt: OID-Flächen {string.Join(", ", assigned.Select(a => $"„{a.Label}“"))} angelegt. Texte im Tab „Sprachausgabe“ ändern oder aufnehmen.");
+    });
+
+    /// <summary>
+    /// Legt für jede Person (von links nach rechts) einen Text und ihre Flächen an; Skript, Text und
+    /// Flächen bekommen den Namen aus <paramref name="names"/> (leer: Platzhalter, siehe <see cref="PersonNames.Assign"/>).
+    /// Die neuen Flächen sind danach gewählt. Liefert die vergebenen Namen.
+    /// </summary>
+    public List<PersonName> AddPersonAreas(PageViewModel page, IReadOnlyList<List<List<AreaPoint>>> persons, IReadOnlyList<string?> names)
+    {
+        var assigned = PersonNames.Assign(
+            persons.Select((_, i) => i < names.Count ? names[i] : null).ToList(),
+            name => Project.Scripts.Any(s => s.Name == name) || Project.Speak.Any(s => s.Name == name));
         var areas = new List<AreaViewModel>();
         Project.History.Change(() =>
         {
-            foreach (var outlines in persons)
+            for (int i = 0; i < persons.Count; i++)
             {
-                int n = 1;
-                while (Project.Speak.Any(s => s.Name == $"person{n}"))
-                    n++;
-                var speak = Project.AddSpeak($"person{n}");
-                speak.Text = $"Person {n}";
-                foreach (var outline in outlines)
+                var speak = Project.AddSpeak(assigned[i].Name);
+                speak.Text = assigned[i].Label;
+                foreach (var outline in persons[i])
                 {
-                    var area = new AreaViewModel(Project) { Label = $"Person {n}" };
+                    var area = new AreaViewModel(Project) { Label = assigned[i].Label };
                     area.SetPolygon(outline);
                     page.Areas.Add(area);
                     area.SpeakEntry = speak;
@@ -1113,10 +1133,38 @@ public partial class MainWindowViewModel : ObservableObject
             }
         });
         page.Select(areas);
-        Notice(persons.Count == 1
-            ? "1 Person erkannt: OID-Fläche „Person 1“ angelegt. Text im Tab „Sprachausgabe“ ändern oder aufnehmen."
-            : $"{persons.Count} Personen erkannt (von links nach rechts nummeriert): OID-Flächen angelegt. Texte im Tab „Sprachausgabe“ ändern oder aufnehmen.");
-    });
+        return assigned;
+    }
+
+    /// <summary>Eingabe der Namen nach „Personen erkennen“ (als Ebene über der Ansicht, auch im Browser).</summary>
+    public ObservableCollection<PersonNameEntry> PersonNameEntries { get; } = [];
+
+    [ObservableProperty] bool _isNamingPersons;
+
+    TaskCompletionSource<bool>? _personNaming;
+
+    /// <summary>Fragt nach den Namen der Personen; null bei Abbruch, sonst je Person der Name (leer: Platzhalter).</summary>
+    async Task<List<string>?> AskPersonNamesAsync(IReadOnlyList<PersonDetector.Person> persons)
+    {
+        PersonNameEntries.Clear();
+        for (int i = 0; i < persons.Count; i++)
+            PersonNameEntries.Add(new PersonNameEntry(persons[i].Face, $"Person {i + 1}"));
+        _personNaming = new TaskCompletionSource<bool>();
+        IsNamingPersons = true;
+        try
+        {
+            return await _personNaming.Task ? PersonNameEntries.Select(e => e.Name).ToList() : null;
+        }
+        finally
+        {
+            IsNamingPersons = false;
+            PersonNameEntries.Clear();
+            _personNaming = null;
+        }
+    }
+
+    [RelayCommand] void ApplyPersonNames() => _personNaming?.TrySetResult(true);
+    [RelayCommand] void CancelPersonNames() => _personNaming?.TrySetResult(false);
 
     [RelayCommand]
     void EditAreaScript()
