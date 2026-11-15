@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Chrome;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Input.GestureRecognizers;
 using Avalonia.Interactivity;
@@ -80,6 +81,17 @@ public partial class MainView : UserControl
         // Nur auf dem Desktop sichtbar: schließen das Hauptfenster
         QuitItem.Click += (_, _) => (TopLevel.GetTopLevel(this) as Window)?.Close();
         QuitButton.Click += (_, _) => (TopLevel.GetTopLevel(this) as Window)?.Close();
+        // Felder, die erst beim Verlassen übernehmen (Klasse „commit“): Eingabetaste übernimmt sofort
+        AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key == Key.Enter && (e.Source as Visual)?.FindAncestorOfType<TextBox>(includeSelf: true) is { } box
+                && box.Classes.Contains("commit"))
+            {
+                BindingOperations.GetBindingExpressionBase(box, TextBox.TextProperty)?.UpdateSource();
+                box.SelectAll();
+                e.Handled = true;
+            }
+        }, RoutingStrategies.Tunnel);
     }
 
     // ---------- Titelleiste ----------

@@ -1,5 +1,7 @@
 using Tupfer.Designer.Gme;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Text.RegularExpressions;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Tupfer.Designer.Model;
@@ -15,6 +17,14 @@ public partial class ProjectViewModel : ObservableObject
     {
         _log = log;
         History = new PageHistory(this);
+        // Texte kennen ihr Projekt, damit Umbenennen die Skripte nachzieht
+        Speak.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+                return;
+            foreach (SpeakViewModel speak in e.NewItems ?? Array.Empty<SpeakViewModel>())
+                speak.Project = this;
+        };
     }
 
     [ObservableProperty] uint _productId = 900;
@@ -207,6 +217,42 @@ public partial class ProjectViewModel : ObservableObject
         AssignCodes();
         return name;
     }
+
+    /// <summary>Gültiger neuer Name für einen Text: nicht leer, ohne Anführungszeichen im Skript nutzbar und noch frei.</summary>
+    public bool IsValidSpeakName(SpeakViewModel speak, string name) =>
+        name.Length > 0 && name.All(c => char.IsLetterOrDigit(c) || c is '_' or '.')
+        && Speak.All(s => s == speak || s.Name != name);
+
+    /// <summary>
+    /// Ein Text wurde umbenannt: Aufrufe in den Skripten (P, PA, P*, …) und in der Begrüßung anpassen; ein Skript,
+    /// das so hieß wie der Text, heißt danach ebenfalls neu (die Flächen ziehen mit).
+    /// </summary>
+    internal void OnSpeakRenamed(string oldName, string newName)
+    {
+        if (oldName.Length == 0 || oldName == newName)
+            return;
+        foreach (var script in Scripts.Where(s => !s.Generated).ToList())
+        {
+            script.Text = PlayCall().Replace(script.Text, m =>
+                m.Groups["head"].Value + RenameInList(m.Groups["names"].Value, oldName, newName) + ")");
+            if (script.Name == oldName && !Scripts.Any(s => s.Name == newName))
+                script.Name = newName;
+        }
+        Welcome = RenameInList(Welcome, oldName, newName);
+        RefreshAreas();
+    }
+
+    [GeneratedRegex(@"(?<head>(?<![\w$.])PA?\*?\??\s*\()(?<names>[^)]*)\)")]
+    private static partial Regex PlayCall();
+
+    static string RenameInList(string list, string oldName, string newName) =>
+        string.Join(",", list.Split(',').Select(item =>
+        {
+            var name = item.Trim();
+            if (name != oldName && name != $"\"{oldName}\"")
+                return item;
+            return item.Replace(name, newName);
+        }));
 
     /// <summary>Neuer, leerer Text mit eindeutigem Namen (aus <paramref name="prefix"/>, sonst „textN“).</summary>
     public SpeakViewModel AddSpeak(string? prefix = null)

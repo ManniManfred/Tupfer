@@ -752,6 +752,9 @@
                       </Button>
                     </Grid>
                     <StackPanel IsVisible="{Binding HasSpeakEntry}" Margin="0,4,0,0">
+                      <TextBlock Classes="label" Text="Name" Margin="0,0,0,4" />
+                      <TextBox Classes="commit" Text="{Binding SpeakEntry.EditName, UpdateSourceTrigger=LostFocus, FallbackValue=''}" Margin="0,0,0,4"
+                               ToolTip.Tip="Name, mit dem Skripte den Text abspielen (P(name)); Umbenennen passt die Skripte an. Erlaubt: Buchstaben, Ziffern, _ und ." />
                       <Grid ColumnDefinitions="*,4,Auto">
                         <TextBox Text="{Binding SpeakEntry.Text, FallbackValue=''}" AcceptsReturn="True" TextWrapping="Wrap"
                                  PlaceholderText="Text, den der Stift spricht"
@@ -807,7 +810,7 @@
                         </StackPanel>
                       </Grid>
                       <TextBlock Classes="hint" TextWrapping="Wrap" Margin="0,4,0,0"
-                                 Text="Mikrofonknopf nimmt auf (noch einmal klicken beendet), Ordnerknopf übernimmt eine Audiodatei. Name und Stimme im Tab „Sprachausgabe“." />
+                                 Text="Mikrofonknopf nimmt auf (noch einmal klicken beendet), Ordnerknopf übernimmt eine Audiodatei. Die Stimme im Tab „Sprachausgabe“." />
                     </StackPanel>
                   </StackPanel>
                   <TextBlock Classes="label" Text="OID-Code" />
@@ -1057,7 +1060,8 @@
                 <DataTemplate x:DataType="vm:SpeakViewModel">
                   <!-- Breit: eine Zeile; auf dem Handy oben Name und Stimme, darunter Text und Knöpfe (Stile oben) -->
                   <Grid Classes="speakrow" ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto">
-                    <TextBox Classes="speakname" Text="{Binding Name}" Margin="0,0,8,0" />
+                    <TextBox Classes="speakname commit" Text="{Binding EditName, UpdateSourceTrigger=LostFocus}" Margin="0,0,8,0"
+                             ToolTip.Tip="Name, mit dem Skripte den Text abspielen (P(name)); Umbenennen passt die Skripte an" />
                     <TextBox Classes="speaktext" Text="{Binding Text}" IsVisible="{Binding !HasRecording}" />
                     <Border Classes="speaktext" IsVisible="{Binding HasRecording}" Background="#E8F5E9" CornerRadius="4"
                             Padding="8,0" ToolTip.Tip="{Binding Recording}">

@@ -43,7 +43,28 @@ public partial class ScriptViewModel : ObservableObject
 
 public partial class SpeakViewModel : ObservableObject
 {
-    [ObservableProperty] string _name = "";
+    /// <summary>Projekt, zu dem der Text gehört (wird beim Hinzufügen gesetzt).</summary>
+    internal ProjectViewModel? Project { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EditName))]
+    string _name = "";
+
+    partial void OnNameChanged(string? oldValue, string newValue) => Project?.OnSpeakRenamed(oldValue ?? "", newValue);
+
+    /// <summary>Name zum Bearbeiten: Ungültige oder schon vergebene Namen werden verworfen.</summary>
+    public string EditName
+    {
+        get => Name;
+        set
+        {
+            var name = value.Trim();
+            if (name != Name && (Project == null || Project.IsValidSpeakName(this, name)))
+                Name = name;
+            else
+                OnPropertyChanged();
+        }
+    }
     [ObservableProperty] string _text = "";
 
     /// <summary>Eigene Stimme (Id aus Gme.Voices); leer = Stimme des Projekts.</summary>

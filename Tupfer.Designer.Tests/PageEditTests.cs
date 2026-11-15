@@ -186,6 +186,34 @@ public class PageEditTests
     }
 
     [Fact]
+    public void TextUmbenennenPasstSkripteAn()
+    {
+        var (project, page) = NewProject();
+        var hallo = project.AddSpeak("hallo");
+        project.AddSpeak("tschuess");
+        var area = new AreaViewModel(project) { X = 10, Y = 10, Width = 20, Height = 20 };
+        page.Areas.Add(area);
+        area.SpeakEntry = hallo;
+        var other = project.AddScript("mehr", "$a==1? P(tschuess,hallo) J(mehr)\nPA*(\"hallo\")($a)\nP(hallo2)");
+        project.Welcome = "hallo, tschuess";
+
+        hallo.EditName = "begruessung";
+        Assert.Equal("begruessung", hallo.Name);
+        Assert.Equal("P(begruessung)", project.Scripts.First(s => s.Name == "begruessung").Text);
+        Assert.Equal("begruessung", area.Script);
+        Assert.Same(hallo, area.SpeakEntry);
+        Assert.Equal("$a==1? P(tschuess,begruessung) J(mehr)\nPA*(begruessung)($a)\nP(hallo2)", other.Text);
+        Assert.Equal("begruessung, tschuess", project.Welcome);
+
+        // Leere, ungültige und vergebene Namen werden verworfen
+        foreach (var name in new[] { "", " ", "a b", "tschuess", "x(y)" })
+        {
+            hallo.EditName = name;
+            Assert.Equal("begruessung", hallo.Name);
+        }
+    }
+
+    [Fact]
     public void FlaecheSpieltTextDirektAb()
     {
         var (project, page) = NewProject();
