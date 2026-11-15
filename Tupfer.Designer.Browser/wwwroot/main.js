@@ -37,6 +37,8 @@ const pageUrl = globalThis.location.href;
     }
 }
 await runtime.runMain(config.mainAssemblyName, [pageUrl]);
+// Ab hier läuft die App: spätere Fehler nicht mehr auf der (verdeckten) Ladeseite anzeigen
+window.tupferStarted = true;
 
 // Mit ?diagnose in der Adresse: Größenangaben des Browsers anzeigen (zur Fehlersuche bei der Darstellung)
 if (new URLSearchParams(location.search).has('diagnose')) {

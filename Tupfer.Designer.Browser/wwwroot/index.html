@@ -22,8 +22,47 @@
     <div id="loading">
       <img src="favicon.png" alt="" width="64" height="64" />
       <p>Tupfer Designer wird geladen …</p>
+      <p id="loading-slow" hidden>Das dauert ungewöhnlich lange. Hilft Neuladen nicht, bitte die Website-Daten
+        dieser Seite im Browser löschen.</p>
+      <pre id="loading-error" hidden></pre>
     </div>
   </div>
-  <script type="module" src="./main.js"></script>
+  <script>
+    // Fehler beim Start auf der Ladeseite anzeigen (auf dem Handy gibt es keine Konsole), solange die App
+    // noch nicht läuft. Meldungen der .NET-Laufzeit über console.error werden nur gesammelt (darunter auch
+    // harmlose, z. B. Rückfall auf Software-Darstellung) und erst bei einem Fehler oder langem Warten gezeigt.
+    (() => {
+      const messages = [];
+      const remember = text => {
+        messages.push(String(text));
+        if (messages.length > 8) messages.shift();
+      };
+      const show = title => {
+        if (window.tupferStarted || !document.getElementById('loading')) return;
+        const box = document.getElementById('loading-error');
+        box.textContent = title + '\n' + messages.join('\n');
+        box.hidden = false;
+      };
+      const consoleError = console.error;
+      console.error = (...args) => {
+        consoleError.apply(console, args);
+        remember(args.map(a => a?.message ?? a).join(' '));
+      };
+      const fail = text => {
+        remember(text);
+        show('Fehler beim Laden:');
+      };
+      window.addEventListener('error', e => fail(e.error?.message ?? e.message ?? `Datei konnte nicht geladen werden: ${e.target?.src ?? e.target?.href ?? '?'}`), true);
+      window.addEventListener('unhandledrejection', e => fail(e.reason?.message ?? e.reason));
+      window.tupferStartError = fail;
+      // Hängt der Start ohne Fehler, wenigstens darauf hinweisen (mit den bisherigen Meldungen)
+      setTimeout(() => {
+        if (window.tupferStarted) return;
+        document.getElementById('loading-slow').hidden = false;
+        if (messages.length > 0) show('Meldungen:');
+      }, 60000);
+    })();
+  </script>
+  <script type="module" src="./main.js" onerror="tupferStartError('main.js konnte nicht geladen werden')"></script>
 </body>
 </html>

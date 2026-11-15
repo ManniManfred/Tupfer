@@ -22,3 +22,23 @@ html, body {
   height: 100%;
   gap: 8px;
 }
+
+#loading p {
+  max-width: 90vw;
+  text-align: center;
+}
+
+#loading-error {
+  max-width: 90vw;
+  max-height: 50vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  color: #B00020;
+  background: #FFF;
+  border: 1px solid #E0E0E0;
+  border-radius: 6px;
+  padding: 8px;
+  user-select: text;
+}
