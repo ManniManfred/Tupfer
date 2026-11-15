@@ -42,7 +42,12 @@ public partial class MainWindowViewModel
     [ObservableProperty] bool _showStartScreen;
 
     // Jedes geladene oder neue Projekt beendet den Startbildschirm
-    partial void OnProjectChanged(ProjectViewModel value) => ShowStartScreen = false;
+    partial void OnProjectChanged(ProjectViewModel value)
+    {
+        ShowStartScreen = false;
+        // Die bearbeitete Aufnahme gehört zum alten Projekt
+        RecordingEditor = null;
+    }
 
     void AddRecent(string path)
     {

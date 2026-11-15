@@ -1477,18 +1477,102 @@ public partial class MainWindowViewModel : ObservableObject
         Log($"„{speak.Name}“ verwendet wieder die Sprachausgabe.");
     }
 
+    // ---------- Aufnahme schneiden und Lautstärke ändern ----------
+
+    /// <summary>Aufnahme, die gerade geschnitten wird (Editor im Tab „Sprachausgabe“); null = keine.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEditingRecording))]
+    RecordingEditorViewModel? _recordingEditor;
+
+    public bool IsEditingRecording => RecordingEditor != null;
+
+    /// <summary>Öffnet den Editor für die Aufnahme des Textes.</summary>
+    [RelayCommand]
+    Task EditRecording(SpeakViewModel speak) => Guard("Aufnahme bearbeiten", async () =>
+    {
+        if (!speak.HasRecording)
+            return;
+        var data = await File.ReadAllBytesAsync(speak.Recording!);
+        float[] samples;
+        try
+        {
+            samples = await Task.Run(() => Audio.DecodeMono(data));
+        }
+        catch (InvalidDataException ex)
+        {
+            Notice($"„{speak.RecordingName}“ lässt sich nicht bearbeiten: {ex.Message}");
+            return;
+        }
+        if (samples.Length == 0)
+        {
+            Notice($"„{speak.RecordingName}“ ist leer.");
+            return;
+        }
+        StopRecordingEditPreview();
+        Project.SelectedSpeak = speak;
+        RecordingEditor = new RecordingEditorViewModel(speak, samples);
+    });
+
+    /// <summary>Spielt den Ausschnitt in der eingestellten Lautstärke ab.</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    Task PreviewRecordingEdit() => Guard("Wiedergabe", async () =>
+    {
+        if (RecordingEditor is not { } editor)
+            return;
+        EndSpeakPlayback();
+        var wav = await Task.Run(() => Audio.Wav(editor.Result()));
+        await Audio.Device.PlayAsync(wav, ".wav");
+    });
+
+    [RelayCommand]
+    void StopRecordingEditPreview()
+    {
+        if (RecordingEditor != null)
+            Audio.Device.StopPlayback();
+    }
+
+    /// <summary>
+    /// Speichert die bearbeitete Aufnahme unter einem neuen Namen (die alte Datei bleibt, bis das Projekt gespeichert
+    /// ist; so gilt das Projekt als geändert) und schließt den Editor.
+    /// </summary>
+    [RelayCommand]
+    Task ApplyRecordingEdit() => Guard("Aufnahme bearbeiten", async () =>
+    {
+        if (RecordingEditor is not { } editor)
+            return;
+        StopRecordingEditPreview();
+        RecordingEditor = null;
+        if (editor.IsUnchanged)
+            return;
+        var speak = editor.Speak;
+        var samples = editor.Result();
+        var ogg = await Task.Run(() => Audio.SamplesToOgg(samples));
+        var path = RecordingPath(speak, ".ogg", keepOwn: false);
+        await File.WriteAllBytesAsync(path, ogg);
+        speak.Recording = path;
+        Log($"Aufnahme für „{speak.Name}“ bearbeitet ({samples.Length / (double)Audio.SampleRate:0.0} s, Lautstärke {editor.VolumeText}): {path}");
+    });
+
+    [RelayCommand]
+    void CancelRecordingEdit()
+    {
+        StopRecordingEditPreview();
+        RecordingEditor = null;
+    }
+
     /// <summary>
     /// Aufnahmen liegen im Projektverzeichnis unter aufnahmen/, benannt nach dem Text. Eine Datei, die schon
-    /// existiert (z. B. die Aufnahme eines umbenannten Textes), wird nicht überschrieben, nur die eigene.
+    /// existiert (z. B. die Aufnahme eines umbenannten Textes), wird nicht überschrieben, nur die eigene
+    /// (mit <paramref name="keepOwn"/> = false auch die nicht).
     /// </summary>
-    string RecordingPath(SpeakViewModel speak, string extension)
+    string RecordingPath(SpeakViewModel speak, string extension, bool keepOwn = true)
     {
         var dir = Path.Combine(BaseDir, "aufnahmen");
         Directory.CreateDirectory(dir);
         var name = string.Concat(speak.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) || c is '/' or '\\' ? '_' : c));
         if (name.Length == 0)
             name = "aufnahme";
-        var own = speak.HasRecording ? Path.GetFullPath(speak.Recording!, BaseDir) : null;
+        var own = speak.HasRecording && keepOwn ? Path.GetFullPath(speak.Recording!, BaseDir) : null;
         var usedByOthers = Project.Speak.Where(s => s != speak && s.HasRecording)
             .Select(s => Path.GetFullPath(s.Recording!, BaseDir))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);

@@ -1018,6 +1018,48 @@
       <!-- ================= Sprachausgabe ================= -->
       <TabItem Header="Sprachausgabe">
         <Border Classes="card">
+          <DockPanel>
+          <!-- Aufnahme schneiden und Lautstärke ändern; oben, damit es auch bei langer Liste zu sehen ist -->
+          <Border DockPanel.Dock="Top" IsVisible="{Binding IsEditingRecording}" Background="#E8F5E9" CornerRadius="6"
+                  Padding="12" Margin="0,0,0,10">
+            <StackPanel Spacing="8" DataContext="{Binding RecordingEditor}" x:DataType="vm:RecordingEditorViewModel">
+              <TextBlock Classes="section" Text="{Binding Title, FallbackValue=''}" Margin="0" />
+              <TextBlock Classes="hint" TextWrapping="Wrap"
+                         Text="Anfang und Ende an den blauen Linien ziehen; was blass ist, wird abgeschnitten. Mit „Anhören“ lässt sich das Ergebnis vorher prüfen." />
+              <views:WaveformView Height="110" Samples="{Binding Samples, FallbackValue={x:Null}}"
+                                  Start="{Binding Start}" End="{Binding End}" Gain="{Binding Gain, FallbackValue=1}" />
+              <TextBlock Text="{Binding RangeText, FallbackValue=''}" />
+              <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <TextBlock Text="Lautstärke" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <Slider Grid.Column="1" Minimum="{x:Static vm:RecordingEditorViewModel.MinVolume}"
+                        Maximum="{x:Static vm:RecordingEditorViewModel.MaxVolume}" Value="{Binding Volume}"
+                        VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding VolumeText, FallbackValue=''}" MinWidth="56" TextAlignment="Right"
+                           VerticalAlignment="Center" Margin="8,0" />
+                <Button Grid.Column="3" Content="Automatisch" Command="{Binding NormalizeCommand}"
+                        ToolTip.Tip="So laut wie möglich, ohne zu übersteuern" />
+              </Grid>
+              <TextBlock IsVisible="{Binding Clips, FallbackValue=False}" Foreground="#C62828" TextWrapping="Wrap"
+                         Text="Zu laut: Die rot markierten Stellen werden abgeschnitten und klingen verzerrt." />
+              <WrapPanel Classes="buttons">
+                <Button Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PreviewRecordingEditCommand}">
+                  <StackPanel><PathIcon Data="{StaticResource IconPlay}" /><TextBlock Text="Anhören" /></StackPanel>
+                </Button>
+                <Button Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).StopRecordingEditPreviewCommand}">
+                  <StackPanel><PathIcon Data="{StaticResource IconStop}" /><TextBlock Text="Stopp" /></StackPanel>
+                </Button>
+                <Button Classes="accent" Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).ApplyRecordingEditCommand}">
+                  <StackPanel><PathIcon Data="{StaticResource IconCut}" /><TextBlock Text="Übernehmen" /></StackPanel>
+                </Button>
+                <Button Command="{Binding ResetCommand}" ToolTip.Tip="Ganze Aufnahme in ursprünglicher Lautstärke">
+                  <StackPanel><PathIcon Data="{StaticResource IconUndo}" /><TextBlock Text="Zurücksetzen" /></StackPanel>
+                </Button>
+                <Button Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).CancelRecordingEditCommand}">
+                  <StackPanel><PathIcon Data="{StaticResource IconClose}" /><TextBlock Text="Abbrechen" /></StackPanel>
+                </Button>
+              </WrapPanel>
+            </StackPanel>
+          </Border>
           <!-- Die ganze Seite scrollt, nicht nur die Liste (auf dem Handy bleibt sonst kaum Platz) -->
           <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
@@ -1025,7 +1067,7 @@
               <TextBlock Classes="section" Text="Texte für die Sprachausgabe" />
               <TextBlock Classes="hint" Margin="0,0,0,6"
                          Classes.desktoponly="True"
-                         Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet (Wiedergabeknopf = anhören). Statt der Sprachausgabe kann jeder Text eine eigene Aufnahme bekommen: Der Mikrofonknopf nimmt auf (noch einmal klicken beendet), der Ordnerknopf übernimmt eine Audiodatei (.wav, .ogg, .mp3). Aufnahmen liegen im Projektordner unter aufnahmen/." />
+                         Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet (Wiedergabeknopf = anhören). Statt der Sprachausgabe kann jeder Text eine eigene Aufnahme bekommen: Der Mikrofonknopf nimmt auf (noch einmal klicken beendet), der Ordnerknopf übernimmt eine Audiodatei (.wav, .ogg, .mp3), die Schere schneidet eine Aufnahme zu und macht sie lauter oder leiser. Aufnahmen liegen im Projektordner unter aufnahmen/." />
               <StackPanel IsVisible="{x:Static vm:MainWindowViewModel.HasVoices}" Margin="0,2,0,4">
                 <TextBlock Classes="label" Text="Stimme des Projekts" />
                 <ComboBox Classes="voice" MinWidth="320" ItemsSource="{Binding Project.VoiceOptions}"
@@ -1071,6 +1113,12 @@
                                 Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).RemoveRecordingCommand}"
                                 CommandParameter="{Binding}">
                           <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                        </Button>
+                        <Button DockPanel.Dock="Right" Classes="tool" Padding="4" Margin="4,0,0,0"
+                                ToolTip.Tip="Aufnahme schneiden bzw. lauter oder leiser machen"
+                                Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).EditRecordingCommand}"
+                                CommandParameter="{Binding}">
+                          <PathIcon Data="{StaticResource IconCut}" Width="14" Height="14" />
                         </Button>
                         <PathIcon DockPanel.Dock="Left" Data="{StaticResource IconMic}" Width="14" Height="14"
                                   Foreground="#2E7D32" Margin="0,0,6,0" />
@@ -1125,6 +1173,7 @@
             </ListBox>
           </StackPanel>
           </ScrollViewer>
+          </DockPanel>
         </Border>
       </TabItem>
 

@@ -120,6 +120,12 @@ public static class Audio
         var samples = Resample(ReadWav(wav, out int rate), rate, SampleRate);
         if (denoise)
             samples = NoiseReduction.Apply(TrimSilence(samples, SampleRate), SampleRate);
+        return SamplesToOgg(samples, quality);
+    }
+
+    /// <summary>Kodiert Samples (mono, -1 … 1, <see cref="SampleRate"/>) als Ogg Vorbis (feste Seriennummer).</summary>
+    public static byte[] SamplesToOgg(float[] samples, float quality = OggQuality)
+    {
         var info = VorbisInfo.InitVariableBitRate(1, SampleRate, quality);
         var ogg = new OggStream(0x54757066); // „Tupf“
         using var output = new MemoryStream();
@@ -181,6 +187,82 @@ public static class Audio
         int start = Math.Max(0, first - margin), end = Math.Min(samples.Length, last + 1 + margin);
         return start == 0 && end == samples.Length ? samples : samples[start..end];
     }
+
+    /// <summary>
+    /// Liest eine Aufnahme (WAV oder Ogg Vorbis) als Samples (mono, -1 … 1) mit <see cref="SampleRate"/>,
+    /// z. B. zum Schneiden. Andere Formate lassen sich nicht lesen (InvalidDataException).
+    /// </summary>
+    public static float[] DecodeMono(byte[] data)
+    {
+        switch (ExtensionOf(data))
+        {
+            case ".wav":
+                return Resample(ReadWav(data, out int rate), rate, SampleRate);
+            case ".ogg":
+                try
+                {
+                    using (var reader = new VorbisReader(new MemoryStream(data), true))
+                    {
+                        int channels = reader.Channels;
+                        var mono = new List<float>();
+                        var buffer = new float[4096 * channels];
+                        int n;
+                        while ((n = reader.ReadSamples(buffer, 0, buffer.Length)) > 0)
+                            for (int i = 0; i + channels <= n; i += channels)
+                            {
+                                float sum = 0;
+                                for (int c = 0; c < channels; c++)
+                                    sum += buffer[i + c];
+                                mono.Add(Math.Clamp(sum / channels, -1f, 1f));
+                            }
+                        return Resample(mono.ToArray(), reader.SampleRate, SampleRate);
+                    }
+                }
+                catch (Exception ex) when (ex is not InvalidDataException)
+                {
+                    throw new InvalidDataException($"Die Ogg-Datei ist nicht lesbar ({ex.Message}).");
+                }
+            default:
+                throw new InvalidDataException("Bearbeiten geht nur mit WAV- und Ogg-Dateien.");
+        }
+    }
+
+    /// <summary>Größter Betrag der Samples im Bereich (0 … 1).</summary>
+    public static float Peak(ReadOnlySpan<float> samples)
+    {
+        float peak = 0;
+        foreach (var v in samples)
+            peak = Math.Max(peak, Math.Abs(v));
+        return peak;
+    }
+
+    /// <summary>
+    /// Schneidet die Samples auf [<paramref name="start"/>, <paramref name="end"/>) zu und ändert die Lautstärke um
+    /// <paramref name="gain"/> (1 = unverändert); zu laute Werte werden begrenzt. An geschnittenen Kanten wird
+    /// 5 ms ein- bzw. ausgeblendet, damit es nicht knackt.
+    /// </summary>
+    public static float[] Cut(float[] samples, int start, int end, float gain)
+    {
+        start = Math.Clamp(start, 0, samples.Length);
+        end = Math.Clamp(end, start, samples.Length);
+        var result = new float[end - start];
+        for (int i = 0; i < result.Length; i++)
+            result[i] = Math.Clamp(samples[start + i] * gain, -1f, 1f);
+        int fade = Math.Min(SampleRate / 200, result.Length / 2);
+        for (int i = 0; i < fade; i++)
+        {
+            float f = i / (float)fade;
+            if (start > 0)
+                result[i] *= f;
+            if (end < samples.Length)
+                result[^(i + 1)] *= f;
+        }
+        return result;
+    }
+
+    /// <summary>Erzeugt eine WAV-Datei aus Samples (mono, -1 … 1, <see cref="SampleRate"/>), z. B. zum Anhören.</summary>
+    public static byte[] Wav(float[] samples) =>
+        Wav(samples.Select(v => (short)Math.Round(Math.Clamp(v, -1f, 1f) * 32767)).ToArray());
 
     /// <summary>Anteil der Samples am Anschlag (übersteuerte Aufnahme); 0 bei unlesbaren Dateien.</summary>
     public static double ClippedFraction(byte[] wav)

@@ -154,6 +154,9 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   dem Format des Stifts – etwa ein Zehntel der WAV-Größe. Auf dem Desktop nutzt das unter Windows die eingebaute Audio-Schnittstelle, unter
   Linux/macOS `paplay`/`aplay`/`ffplay`/`afplay` zum Abspielen und `arecord`, `sox` oder `ffmpeg`
   zum Aufnehmen. Alternativ eigene Audiodateien im Medienverzeichnis.
+  Die Schere an einer Aufnahme (WAV oder Ogg) öffnet einen Editor: Anfang und Ende in der Wellenform
+  ziehen, Lautstärke einstellen („Automatisch“ macht so laut wie möglich, ohne zu übersteuern),
+  anhören und übernehmen. Die bearbeitete Aufnahme wird als neue Datei gespeichert.
 - **Testen (F8):** Ohne Drucken und Stift ausprobieren – im Testmodus führt Antippen einer Fläche ihr
   Skript aus wie der Stift: Register zählen mit, Sprünge werden verfolgt, Texte, Aufnahmen und
   Audiodateien werden nacheinander abgespielt. Rechts stehen die Registerwerte und der Ablauf

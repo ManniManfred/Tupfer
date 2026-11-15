@@ -166,4 +166,34 @@ public class RecordingTests : IDisposable
         // Unverändert eingebettet (GME-Medien sind mit einer festen Maske verschlüsselt, daher nur die Länge)
         Assert.True(gme.Length > ogg.Length);
     }
+
+    [Fact]
+    public void SchneidenUndLautstaerke()
+    {
+        var samples = Enumerable.Repeat(0.1f, 2000).ToArray();
+        var cut = Audio.Cut(samples, 500, 1500, 2);
+        Assert.Equal(1000, cut.Length);
+        Assert.Equal(0.2f, cut[500], 0.0001f);
+        // An den Schnittkanten wird kurz ein- und ausgeblendet
+        Assert.Equal(0, cut[0]);
+        Assert.True(cut[^1] < 0.01f);
+        // Nicht geschnittene Kanten bleiben, zu laute Werte werden begrenzt
+        var loud = Audio.Cut(samples, 0, 2000, 20);
+        Assert.Equal(1f, loud[0]);
+        Assert.Equal(1f, loud[^1]);
+        Assert.Equal(0.1f, Audio.Peak(samples));
+    }
+
+    [Fact]
+    public void AufnahmeLesen()
+    {
+        var tone = Sine(Audio.SampleRate, 44100);
+        var fromWav = Audio.DecodeMono(Audio.Wav(tone, 44100));
+        Assert.InRange(fromWav.Length, Audio.SampleRate / 2 - 2, Audio.SampleRate / 2 + 2);
+        var fromOgg = Audio.DecodeMono(Audio.SamplesToOgg(fromWav));
+        Assert.Equal(fromWav.Length, fromOgg.Length);
+        Assert.InRange(Audio.Peak(fromOgg), 0.2f, 0.3f);
+        Assert.Throws<InvalidDataException>(() => Audio.DecodeMono("ID3 keine Aufnahme"u8.ToArray()));
+        Assert.Throws<InvalidDataException>(() => Audio.DecodeMono("OggS kaputt"u8.ToArray()));
+    }
 }

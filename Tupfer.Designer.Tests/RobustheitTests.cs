@@ -233,6 +233,61 @@ public class RobustheitTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task AufnahmeSchneidenUndLauterMachen()
+    {
+        var previous = Audio.Device;
+        Audio.Device = new FakeAudio();
+        try
+        {
+            var vm = OpenProject(new Dialogs(discard: true));
+            var speak = vm.Project.Speak.Single();
+            // Ton mit 1/4 Aussteuerung, 4000 Samples
+            var original = Path.Combine(_dir, "ton.wav");
+            File.WriteAllBytes(original, Audio.Wav(Enumerable.Range(0, 4000)
+                .Select(i => (short)(8192 * Math.Sin(2 * Math.PI * 441 * i / Audio.SampleRate))).ToArray()));
+            speak.Recording = original;
+            var originalData = File.ReadAllBytes(original);
+
+            await vm.EditRecordingCommand.ExecuteAsync(speak);
+            var editor = vm.RecordingEditor!;
+            Assert.Equal(4000, editor.Samples.Length);
+            // Ende vor den Anfang ziehen geht nicht
+            editor.Start = 0.25;
+            editor.End = 0.1;
+            Assert.True(editor.End > editor.Start);
+            editor.End = 0.75;
+            editor.NormalizeCommand.Execute(null);
+            Assert.InRange(editor.Volume, 350, 360);
+            Assert.False(editor.Clips);
+            editor.Volume = 5000;
+            Assert.Equal(RecordingEditorViewModel.MaxVolume, editor.Volume);
+            Assert.True(editor.Clips);
+            editor.Volume = 300;
+
+            await vm.ApplyRecordingEditCommand.ExecuteAsync(null);
+            Assert.Null(vm.RecordingEditor);
+            // Neue Datei (so gilt das Projekt als geändert), die alte Aufnahme bleibt unverändert
+            Assert.NotEqual(original, speak.Recording);
+            Assert.Equal(originalData, File.ReadAllBytes(original));
+            var edited = Audio.DecodeMono(File.ReadAllBytes(speak.Recording!));
+            Assert.Equal(2000, edited.Length);
+            Assert.InRange(Audio.Peak(edited), 0.7f, 0.8f);
+
+            // Abbrechen ändert nichts
+            var recording = speak.Recording;
+            await vm.EditRecordingCommand.ExecuteAsync(speak);
+            vm.RecordingEditor!.Start = 0.5;
+            vm.CancelRecordingEditCommand.Execute(null);
+            Assert.Null(vm.RecordingEditor);
+            Assert.Equal(recording, speak.Recording);
+        }
+        finally
+        {
+            Audio.Device = previous;
+        }
+    }
+
     // ---------- Ungespeicherte Änderungen ----------
 
     [Fact]
