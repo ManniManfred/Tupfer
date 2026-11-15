@@ -158,28 +158,78 @@ public static class PersonDetector
             var head = HeadRegion(person.SelectMany(o => o));
             if (head.Width <= 0 || head.Height <= 0)
                 return null;
-            var rgb = render(head, FaceImageSize, FaceImageSize);
-            var bitmap = new WriteableBitmap(new PixelSize(FaceImageSize, FaceImageSize), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
-            using (var buffer = bitmap.Lock())
-            {
-                var bgra = new byte[FaceImageSize * FaceImageSize * 4];
-                for (int i = 0, j = 0; j < rgb.Length; i += 4, j += 3)
-                {
-                    bgra[i] = rgb[j + 2];
-                    bgra[i + 1] = rgb[j + 1];
-                    bgra[i + 2] = rgb[j];
-                    bgra[i + 3] = 255;
-                }
-                for (int y = 0; y < FaceImageSize; y++)
-                    Marshal.Copy(bgra, y * FaceImageSize * 4, buffer.Address + y * buffer.RowBytes, FaceImageSize * 4);
-            }
-            return bitmap;
+            return ToFaceBitmap(render(head, FaceImageSize, FaceImageSize));
         }
         catch (Exception)
         {
             // Ohne Ausschnitt lässt sich der Name trotzdem eingeben
             return null;
         }
+    }
+
+    /// <summary>
+    /// Kopf-Ausschnitt um den Rahmen eines Gesichts (in Einheiten von <c>bitmap.Size</c>): ein Quadrat, etwas
+    /// größer als das Gesicht, um <paramref name="rotation"/> Grad im Uhrzeigersinn gedreht (Vielfache von 90°,
+    /// für Fotos, deren Pixel gedreht gespeichert sind). null, wenn er sich nicht zeichnen lässt.
+    /// </summary>
+    public static Bitmap? FaceImage(Bitmap bitmap, Rect face, double rotation = 0)
+    {
+        try
+        {
+            double side = Math.Max(face.Width, face.Height) * 1.4;
+            if (side <= 0)
+                return null;
+            var region = new Rect(face.Center.X - side / 2, face.Center.Y - side / 2, side, side);
+            var clip = region.Intersect(new Rect(bitmap.Size));
+            if (clip.Width <= 0 || clip.Height <= 0)
+                return null;
+            double scale = FaceImageSize / side;
+            var destination = new Rect((clip.X - region.X) * scale, (clip.Y - region.Y) * scale, clip.Width * scale, clip.Height * scale);
+            var rgb = ImageConverter.RenderRegion(bitmap, clip, destination, FaceImageSize, FaceImageSize);
+            int turns = ((int)Math.Round(rotation / 90) % 4 + 4) % 4;
+            for (int i = 0; i < turns; i++)
+                rgb = RotateClockwise(rgb, FaceImageSize);
+            return ToFaceBitmap(rgb);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Dreht ein quadratisches RGB-Bild um 90° im Uhrzeigersinn.</summary>
+    static byte[] RotateClockwise(byte[] rgb, int size)
+    {
+        var result = new byte[rgb.Length];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                // (x, y) → (size - 1 - y, x)
+                int from = (y * size + x) * 3, to = (x * size + size - 1 - y) * 3;
+                result[to] = rgb[from];
+                result[to + 1] = rgb[from + 1];
+                result[to + 2] = rgb[from + 2];
+            }
+        return result;
+    }
+
+    static Bitmap ToFaceBitmap(byte[] rgb)
+    {
+        var bitmap = new WriteableBitmap(new PixelSize(FaceImageSize, FaceImageSize), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+        using (var buffer = bitmap.Lock())
+        {
+            var bgra = new byte[FaceImageSize * FaceImageSize * 4];
+            for (int i = 0, j = 0; j < rgb.Length; i += 4, j += 3)
+            {
+                bgra[i] = rgb[j + 2];
+                bgra[i + 1] = rgb[j + 1];
+                bgra[i + 2] = rgb[j];
+                bgra[i + 3] = 255;
+            }
+            for (int y = 0; y < FaceImageSize; y++)
+                Marshal.Copy(bgra, y * FaceImageSize * 4, buffer.Address + y * buffer.RowBytes, FaceImageSize * 4);
+        }
+        return bitmap;
     }
 
     /// <summary>Quadrat um den Kopf: oben an den Umrissen, so breit wie die Person, waagrecht mittig.</summary>

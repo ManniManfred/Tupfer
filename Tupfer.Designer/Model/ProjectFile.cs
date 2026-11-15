@@ -116,6 +116,10 @@ public class ElementEntry
     public double CropWidth { get; set; } = 1;
     public double CropHeight { get; set; } = 1;
 
+    /// <summary>Kennung des Fotos in Immich, wenn das Bild von dort stammt (für die Gesichter bei „Personen erkennen“).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ImmichAsset { get; set; }
+
     // Text
     public string Text { get; set; } = "";
     public double FontSize { get; set; } = 24;

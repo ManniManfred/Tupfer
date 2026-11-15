@@ -226,6 +226,9 @@
             <MenuItem Header="_Bild einfügen …" Command="{Binding InsertImageCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconImage}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Bild aus I_mmich …" Command="{Binding InsertImmichImageCommand}">
+              <MenuItem.Icon><PathIcon Data="{StaticResource IconImage}" Width="14" Height="14" /></MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="_Text einfügen" Command="{Binding InsertTextCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconText}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
@@ -428,6 +431,9 @@
                   <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
                   <Button Classes="tool" Command="{Binding InsertImageCommand}" ToolTip.Tip="Foto oder Bild einfügen">
                     <StackPanel><PathIcon Data="{StaticResource IconImage}" /><TextBlock Text="Bild" /></StackPanel>
+                  </Button>
+                  <Button Classes="tool" Command="{Binding InsertImmichImageCommand}" ToolTip.Tip="Fotos aus Immich (eigener Fotoserver) einfügen – mit den Namen der Personen darauf">
+                    <StackPanel><PathIcon Data="{StaticResource IconImage}" /><TextBlock Text="Immich" /></StackPanel>
                   </Button>
                   <Button Classes="tool" Command="{Binding InsertTextCommand}" ToolTip.Tip="Text einfügen">
                     <StackPanel><PathIcon Data="{StaticResource IconText}" /><TextBlock Text="Text" /></StackPanel>
@@ -691,13 +697,11 @@
                   <Button Content="Ganzes Bild" Command="{Binding Project.SelectedPage.SelectedElement.ResetCropCommand, FallbackValue={x:Null}}"
                           IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
                           ToolTip.Tip="Zuschnitt aufheben" />
-                  <Panel IsVisible="{x:Static vm:MainWindowViewModel.CanDetectPersons}">
-                    <Button Command="{Binding DetectPersonsCommand}" Margin="0,0,6,6"
-                            IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
-                            ToolTip.Tip="Personen auf dem Bild erkennen und für jede eine OID-Fläche mit eigenem Text anlegen">
-                      <StackPanel><PathIcon Data="{StaticResource IconPerson}" /><TextBlock Text="Personen erkennen" /></StackPanel>
-                    </Button>
-                  </Panel>
+                  <Button Command="{Binding DetectPersonsCommand}"
+                          IsVisible="{Binding Project.SelectedPage.SelectedElement.CanDetectPersons, FallbackValue=False}"
+                          ToolTip.Tip="Personen auf dem Bild erkennen und für jede eine OID-Fläche mit eigenem Text anlegen (bei Fotos aus Immich mit den Gesichtern und Namen von dort)">
+                    <StackPanel><PathIcon Data="{StaticResource IconPerson}" /><TextBlock Text="Personen erkennen" /></StackPanel>
+                  </Button>
                   <Button Content="Auf Seite einpassen" Command="{Binding FitElementToPageCommand}" />
                   <Button Command="{Binding DuplicateElementCommand}">
                     <StackPanel><PathIcon Data="{StaticResource IconCopy}" /><TextBlock Text="Duplizieren" /></StackPanel>
@@ -1259,6 +1263,117 @@
         <TextBox IsReadOnly="True" TextWrapping="Wrap" Classes="code" FontSize="12" Text="{Binding LogText}" x:Name="LogBox"
                  BorderThickness="0" Background="Transparent" Padding="14,4,14,8" />
       </DockPanel>
+    </Border>
+
+    <!-- ================= Fotos aus Immich ================= -->
+    <!-- Ebene über der ganzen Ansicht statt eines Fensters, damit es auch im Browser geht -->
+    <Border Grid.Row="0" Grid.RowSpan="4" IsVisible="{Binding IsBrowsingImmich}" Background="#80000000">
+      <Border Classes="card" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="16" Padding="20"
+              MaxWidth="760" MaxHeight="720" DataContext="{Binding ImmichBrowser}" x:DataType="vm:ImmichBrowserViewModel">
+        <DockPanel>
+          <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+            <Button DockPanel.Dock="Right" Content="Zugang …" Command="{Binding EditSettingsCommand}"
+                    IsVisible="{Binding !ShowSettings}" ToolTip.Tip="Adresse und API-Key des Immich-Servers ändern" />
+            <TextBlock Text="Fotos aus Immich" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
+
+          <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"
+                       IsVisible="{Binding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <DockPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Right">
+                <Button Classes="accent" MinWidth="90" HorizontalContentAlignment="Center" IsVisible="{Binding ShowPhotos}"
+                        Command="{Binding InsertCommand}" IsEnabled="{Binding !IsBusy}">
+                  <TextBlock Text="{Binding SelectedCount, StringFormat='Einfügen ({0})'}" />
+                </Button>
+                <Button Content="Schließen" IsCancel="True" MinWidth="90" HorizontalContentAlignment="Center"
+                        Command="{Binding CloseCommand}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding ShowPhotos}">
+                <CheckBox Content="Original statt großer Vorschau" IsChecked="{Binding DownloadOriginal}"
+                          ToolTip.Tip="Aus: große Vorschau von Immich (meist 1440 Pixel, reicht zum Drucken); an: Original in voller Auflösung (HEIC und RAW werden durch die Vorschau ersetzt)" />
+                <ProgressBar IsIndeterminate="True" Width="60" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DockPanel>
+          </StackPanel>
+
+          <Panel>
+            <!-- Zugang: Adresse und API-Key (werden in den Einstellungen gespeichert, nicht im Projekt) -->
+            <StackPanel Spacing="6" IsVisible="{Binding ShowSettings}">
+              <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"
+                         Text="Adresse des Immich-Servers und ein API-Key (in Immich unter Kontoeinstellungen → API-Schlüssel; Rechte: album.read, person.read, asset.read, asset.view, asset.download, face.read). Beides wird in den Einstellungen dieses Programms gespeichert, nicht im Projekt." />
+              <TextBlock Classes="label" Text="Adresse" />
+              <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://fotos.example.org" />
+              <TextBlock Classes="label" Text="API-Key" />
+              <TextBox Text="{Binding ApiKey}" PasswordChar="•" />
+              <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" IsVisible="{x:Static vm:ImmichBrowserViewModel.ShowCorsHint}"
+                         Text="Hinweis für die Web-Version: Immich erlaubt Zugriffe von anderen Seiten (CORS) nur, wenn der Webserver vor Immich sie freigibt; läuft der Designer über https, muss auch Immich über https erreichbar sein. Ohne Freigabe geht es nur in der Desktop-Version (siehe README)." />
+              <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+                <Button Content="Verbinden" Classes="accent" IsDefault="True" Command="{Binding ConnectCommand}" IsEnabled="{Binding !IsBusy}" />
+                <ProgressBar IsIndeterminate="True" Width="60" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
+
+            <!-- Übersicht: Alben bzw. Personen -->
+            <DockPanel IsVisible="{Binding ShowCollections}">
+              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+                <RadioButton Content="Alben" GroupName="ImmichMode" IsChecked="{Binding AlbumMode}" />
+                <RadioButton Content="Personen" GroupName="ImmichMode" IsChecked="{Binding PeopleMode}" />
+                <ProgressBar IsIndeterminate="True" Width="60" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" />
+              </StackPanel>
+              <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding Collections}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ImmichItem">
+                      <Button Width="132" Margin="0,0,8,8" Padding="4" Background="Transparent"
+                              Command="{Binding $parent[ItemsControl].((vm:ImmichBrowserViewModel)DataContext).OpenCommand, FallbackValue={x:Null}}"
+                              CommandParameter="{Binding}" ToolTip.Tip="{Binding Title}">
+                        <StackPanel Orientation="Vertical" Spacing="2">
+                          <Border Width="120" Height="120" CornerRadius="6" ClipToBounds="True" Background="{StaticResource CardBorder}">
+                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                          </Border>
+                          <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource TextSecondary}" FontSize="11" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </DockPanel>
+
+            <!-- Fotos eines Albums bzw. einer Person zum Ankreuzen -->
+            <DockPanel IsVisible="{Binding ShowPhotos}">
+              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                <Button Content="← Zurück" Command="{Binding BackCommand}" />
+                <TextBlock Text="{Binding Current.Title, FallbackValue=''}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </StackPanel>
+              <ScrollViewer>
+                <StackPanel>
+                  <ItemsControl ItemsSource="{Binding Photos}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ImmichItem">
+                        <ToggleButton Width="120" Height="120" Margin="0,0,6,6" Padding="3" IsChecked="{Binding IsChecked}"
+                                      ToolTip.Tip="{Binding Title}">
+                          <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                        </ToggleButton>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Content="Weitere Fotos laden" HorizontalAlignment="Center" Margin="0,6,0,0"
+                          IsVisible="{Binding HasMore}" Command="{Binding LoadMoreCommand}" />
+                </StackPanel>
+              </ScrollViewer>
+            </DockPanel>
+          </Panel>
+        </DockPanel>
+      </Border>
     </Border>
 
     <!-- ================= Namen der erkannten Personen ================= -->

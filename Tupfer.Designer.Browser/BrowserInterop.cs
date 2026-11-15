@@ -56,6 +56,14 @@ static partial class BrowserInterop
     [JSImport("confirmMessage", "tupfer")]
     public static partial bool Confirm(string text);
 
+    /// <summary>Gespeicherte Einstellungen (JSON) aus localStorage, leer wenn keine.</summary>
+    [JSImport("settingsLoad", "tupfer")]
+    public static partial string SettingsLoad();
+
+    /// <summary>Speichert die Einstellungen (JSON) in localStorage.</summary>
+    [JSImport("settingsSave", "tupfer")]
+    public static partial void SettingsSave(string json);
+
     /// <summary>Setzt den Titel des Browser-Tabs.</summary>
     [JSImport("setTitle", "tupfer")]
     public static partial void SetTitle(string title);

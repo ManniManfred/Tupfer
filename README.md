@@ -143,6 +143,35 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   Erkennung läuft auf dem eigenen Rechner bzw. im Browser (Modelle zusammen 39 MB, werden
   mitgeliefert); das Foto verlässt ihn nicht. Sie dauert am Desktop wenige Sekunden, im Browser bei
   großen Gruppen bis etwa eine halbe Minute. Die Ecken lassen sich wie bei jedem Polygon nachbessern.
+- **Fotos aus Immich:** *Bearbeiten → Bild aus Immich …* (oder der Knopf *Immich*) holt Fotos vom
+  eigenen [Immich](https://immich.app)-Server. Beim ersten Mal fragt der Designer nach der Adresse
+  (z. B. `https://fotos.example.org`, mit oder ohne `/api`) und einem API-Key (in Immich unter
+  *Kontoeinstellungen → API-Schlüssel*; nötige Rechte: `album.read`, `person.read`, `asset.read`,
+  `asset.view`, `asset.download`, `face.read`). Danach zeigt er die Alben bzw. die Personen mit Namen,
+  jeweils mit Vorschaubildern; darin wählt man ein oder mehrere Fotos und fügt sie ein – als große
+  Vorschau (meist 1440 Pixel an der langen Seite, reicht zum Drucken) oder mit *Original statt großer
+  Vorschau* in voller Auflösung. Originale, die sich nicht anzeigen lassen (HEIC, RAW), werden durch die
+  Vorschau ersetzt; in Immich bearbeitete Fotos kommen in der bearbeiteten Fassung. Die Fotos werden
+  wie eine normale Bilddatei Teil des Projekts (im `*.tupfer` unter `dateien/`). Laut EXIF gedreht
+  gespeicherte Fotos stehen richtig herum, weil das Bild-Element entsprechend gedreht wird.
+  Adresse und API-Key stehen in den Einstellungen des Programms (am Desktop
+  `einstellungen.json` neben `zuletzt.json` im Benutzerprofil, unter Linux/macOS nur für den Benutzer
+  lesbar; im Browser im Speicher der Seite), **nie im Projekt**; im Projekt steht nur die Kennung des Fotos.
+  *Zugang …* ändert sie. Verständliche Meldungen gibt es, wenn der Server nicht erreichbar ist, der Key
+  abgelehnt wird oder ihm Rechte fehlen.
+- **Personen erkennen bei Fotos aus Immich:** Immich kennt die Gesichter auf seinen Fotos und meist auch
+  die Namen. Bei einem Foto aus Immich nimmt *Personen erkennen* deshalb Lage und Namen der Gesichter
+  von dort, statt selbst zu suchen: Jedes Gesicht wird eine rechteckige OID-Fläche, und die Abfrage der
+  Namen erscheint mit den Namen aus Immich vorausgefüllt (Gesichter ohne Namen bleiben leer → „Person 1“),
+  sodass man nur noch korrigiert. Die Rahmen von Immich gelten für das richtig gedrehte Bild in Immichs
+  Größe und werden auf das eingefügte Bild umgerechnet – mit Auflösung, EXIF-Drehung, Zuschnitt,
+  Skalierung und Drehung auf der Seite; Gesichter außerhalb des Zuschnitts entfallen. Kennt Immich auf
+  dem Foto keine Gesichter oder ist der Server nicht erreichbar, sagt der Designer das und sucht
+  stattdessen selbst auf dem Bild. Verwendete Endpunkte (geprüft gegen die API-Beschreibung von
+  Immich 3.4, sie gehen auch mit älteren Versionen): `GET /api/users/me`, `GET /api/albums`,
+  `GET /api/people`, `POST /api/search/metadata` (mit `albumIds`/`personIds`),
+  `GET /api/assets/{id}/thumbnail`, `GET /api/assets/{id}/original`, `GET /api/faces?id={id}` und
+  `GET /api/people/{id}/thumbnail`, jeweils mit dem Header `x-api-key`.
 - **Mehrere Objekte anordnen:** Mit Strg- oder Umschalt-Klick (auf dem Handy: *Mehrere wählen*)
   bzw. Strg+A mehrere Flächen, Bilder und Texte wählen. Sie lassen sich gemeinsam verschieben (Ziehen,
   Pfeiltasten) und löschen, links/rechts/oben/unten bündig oder mittig **ausrichten** und ab drei
@@ -246,6 +275,26 @@ Unterschiede zur Desktop-Version:
   Sprachausgabe); die Modelle kommen von der eigenen Seite.
 - **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
   fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als Ogg Vorbis (mono, 22 kHz).
+- **Fotos aus Immich** gehen im Browser nur, wenn der Immich-Server Zugriffe von der Seite des
+  Designers erlaubt (CORS). Immich selbst schaltet CORS nur im Entwicklungsmodus ein; ohne Freigabe
+  meldet der Designer „nicht erreichbar … CORS“. Abhilfe: die Desktop-Version nehmen oder im
+  Webserver vor Immich die Freigabe ergänzen, z. B. bei nginx (Adresse des Designers anpassen):
+
+  ```nginx
+  location /api/ {
+      if ($request_method = OPTIONS) {
+          add_header Access-Control-Allow-Origin "https://mannimanfred.github.io" always;
+          add_header Access-Control-Allow-Headers "x-api-key, content-type, accept" always;
+          add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+          return 204;
+      }
+      add_header Access-Control-Allow-Origin "https://mannimanfred.github.io" always;
+      proxy_pass http://immich-server:2283;
+  }
+  ```
+
+  Läuft der Designer über `https` (z. B. GitHub Pages), muss auch Immich über `https` erreichbar sein;
+  `http://`-Adressen blockiert der Browser.
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.
 - Schriftarten: Es steht nur die eingebaute Schrift (Inter) zur Verfügung.
 
@@ -289,6 +338,18 @@ Web-Version; einmal gespeichert, sind sie ein `*.tupfer`.
 - **Exporte** (GME, PDF, SVG, YAML) landen neben dem Projekt in Nextcloud. Bei einem noch nicht
   gespeicherten Projekt werden sie wie im Browser heruntergeladen. *Drucken* und *Auf den Stift*
   funktionieren wie im Browser.
+
+**Fotos aus Immich** in Nextcloud: Die Sicherheitsregeln der App erlauben zunächst keine Zugriffe
+auf fremde Server. Der Administrator trägt den Immich-Server ein, dann lässt die App Zugriffe dorthin zu:
+
+```bash
+sudo -u www-data php occ config:app:set tupfer immich_url --value=https://fotos.example.org
+```
+
+Zusätzlich muss Immich wie bei der Web-Version Zugriffe vom Nextcloud-Server erlauben (CORS, siehe
+„Tupfer Designer im Browser“, als Adresse die der Nextcloud). Adresse und API-Key gibt jeder Benutzer
+im Designer selbst ein; sie liegen im Speicher des Browsers für die Nextcloud-Adresse, nicht in
+Nextcloud und nicht im Projekt.
 
 Die natürliche Sprachausgabe lädt ihre Stimmen wie im Browser von cdnjs, jsDelivr und Hugging Face.
 Die App erlaubt dafür diese Adressen in ihren Sicherheitsregeln (Content-Security-Policy). Ist der

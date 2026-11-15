@@ -156,6 +156,21 @@ export function confirmMessage(text) {
     return window.confirm(text);
 }
 
+/** Einstellungen des Programms (JSON, u. a. Zugang zu Immich) im Speicher der Seite. */
+export function settingsLoad() {
+    try {
+        return localStorage.getItem('tupfer-einstellungen') ?? '';
+    } catch {
+        return '';
+    }
+}
+
+export function settingsSave(json) {
+    try {
+        localStorage.setItem('tupfer-einstellungen', json);
+    } catch { }
+}
+
 export function setTitle(title) {
     document.title = title;
     // In der Nextcloud-App auch den Titel des umgebenden Fensters

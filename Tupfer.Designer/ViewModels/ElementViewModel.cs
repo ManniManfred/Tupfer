@@ -131,6 +131,14 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     [ObservableProperty] double _cropWidth = 1;
     [ObservableProperty] double _cropHeight = 1;
 
+    /// <summary>Kennung des Fotos in Immich, wenn das Bild von dort stammt.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanDetectPersons))]
+    string? _immichAsset;
+
+    /// <summary>„Personen erkennen“ geht: lokal (wo verfügbar) oder mit den Gesichtern aus Immich.</summary>
+    public bool CanDetectPersons => IsImage && (MainWindowViewModel.CanDetectPersons || ImmichAsset != null);
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Caption))]
     string _text = "";
@@ -410,7 +418,7 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     {
         Kind = Kind, X = X, Y = Y, Width = Width, Height = Height, Rotation = Rotation,
         ImagePath = baseDir == null || string.IsNullOrEmpty(ImagePath) ? ImagePath : Path.GetRelativePath(baseDir, ImagePath),
-        CropX = CropX, CropY = CropY, CropWidth = CropWidth, CropHeight = CropHeight,
+        CropX = CropX, CropY = CropY, CropWidth = CropWidth, CropHeight = CropHeight, ImmichAsset = ImmichAsset,
         Text = Text, FontSize = FontSize, FontFamily = FontFamily, Color = Color, Bold = Bold, Italic = Italic, Align = Align,
         Shape = Shape, Points = IsPolygon ? Points.ToList() : null, StrokeWidth = StrokeWidth, StrokeColor = StrokeColor,
     };
@@ -419,7 +427,7 @@ public partial class ElementViewModel : ObservableObject, IPolygonShape
     {
         X = e.X, Y = e.Y, Width = e.Width, Height = e.Height, Rotation = e.Rotation,
         ImagePath = baseDir == null || string.IsNullOrEmpty(e.ImagePath) ? e.ImagePath : Path.GetFullPath(e.ImagePath, baseDir),
-        CropX = e.CropX, CropY = e.CropY, CropWidth = e.CropWidth, CropHeight = e.CropHeight,
+        CropX = e.CropX, CropY = e.CropY, CropWidth = e.CropWidth, CropHeight = e.CropHeight, ImmichAsset = e.ImmichAsset,
         Text = e.Text, FontSize = e.FontSize, FontFamily = e.FontFamily, Color = e.Color, Bold = e.Bold, Italic = e.Italic, Align = e.Align,
         // Projekte aus 1.18 kennen nur „Ellipse“
         Shape = e.Ellipse && e.Shape == AreaShape.Rectangle ? AreaShape.Ellipse : e.Shape,

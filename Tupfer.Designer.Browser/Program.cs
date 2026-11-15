@@ -10,6 +10,13 @@ using Tupfer.Designer.ViewModels;
 
 namespace Tupfer.Designer;
 
+/// <summary>Einstellungen im Browser: localStorage der Seite (in Nextcloud im Ursprung von Nextcloud).</summary>
+class BrowserSettingsStore : ISettingsStore
+{
+    public string? Read() => BrowserInterop.SettingsLoad();
+    public void Write(string json) => BrowserInterop.SettingsSave(json);
+}
+
 static class Program
 {
     static Task Main(string[] args)
@@ -35,11 +42,13 @@ static class Program
         };
         Audio.Device = new BrowserAudio();
         MainWindowViewModel.AutoSaveStore = new BrowserAutoSaveStore();
+        Settings.Store = new BrowserSettingsStore();
         BrowserInterop.SetTitle(MainWindowViewModel.AppName);
         MainWindowViewModel.CanSaveToPen = BrowserInterop.CanPickSaveFile();
 
         // main.js übergibt die Adresse der Seite
         var pageUri = new Uri(args[0]);
+        ImmichClient.PageIsSecure = pageUri.Scheme == Uri.UriSchemeHttps;
         MainWindowViewModel.Examples = Examples.Create(pageUri);
         var query = System.Web.HttpUtility.ParseQueryString(pageUri.Query);
         App.StartExample = MainWindowViewModel.Examples.FirstOrDefault(e => e.Id == query["beispiel"]);

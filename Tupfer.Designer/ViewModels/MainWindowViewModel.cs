@@ -1080,29 +1080,45 @@ public partial class MainWindowViewModel : ObservableObject
     /// Erkennt die Personen auf dem gewählten Bild, fragt nach ihren Namen und legt für jede eine
     /// OID-Fläche (Polygon) an, die einen eigenen Text abspielt (Skript und Text heißen wie die Person,
     /// z. B. „anni“; ohne Namen „person1“ … mit dem Text „Person 1“). Ist die Person durch etwas davor
-    /// geteilt, bekommt jeder Teil eine Fläche mit demselben Text.
+    /// geteilt, bekommt jeder Teil eine Fläche mit demselben Text. Bei Fotos aus Immich kommen Gesichter
+    /// (rechteckige Flächen) und Namen von dort; die Namen lassen sich in der Abfrage noch ändern.
     /// </summary>
     [RelayCommand]
     Task DetectPersons() => Guard("der Personenerkennung", async () =>
     {
         if (Project.SelectedPage is not { SelectedElement: { IsImage: true } image } page)
             return;
-        Log($"Suche Personen auf „{image.FileName}“ …");
-        var persons = await PersonDetector.DetectAsync(image);
+        // Fotos aus Immich: Gesichter und Namen von dort
+        List<PersonDetector.Person> persons;
+        List<string>? known = null;
+        bool fromImmich = false;
+        if (image.ImmichAsset is { } assetId && await ImmichPersonsAsync(image, assetId) is { } immich)
+        {
+            (persons, known) = immich;
+            fromImmich = true;
+        }
+        else
+        {
+            if (!CanDetectPersons)
+                return;
+            Log($"Suche Personen auf „{image.FileName}“ …");
+            persons = await PersonDetector.DetectAsync(image);
+        }
         if (persons.Count == 0)
         {
             Notice("Auf dem Bild wurden keine Personen gefunden.");
             return;
         }
-        if (await AskPersonNamesAsync(persons) is not { } names)
+        if (await AskPersonNamesAsync(persons, known) is not { } names)
         {
             Log("Personenerkennung abgebrochen.");
             return;
         }
         var assigned = AddPersonAreas(page, persons.Select(p => p.Outlines).ToList(), names);
+        var source = fromImmich ? " (Gesichter aus Immich)" : "";
         Notice(assigned.Count == 1
-            ? $"1 Person erkannt: OID-Fläche „{assigned[0].Label}“ angelegt. Text im Tab „Sprachausgabe“ ändern oder aufnehmen."
-            : $"{assigned.Count} Personen erkannt: OID-Flächen {string.Join(", ", assigned.Select(a => $"„{a.Label}“"))} angelegt. Texte im Tab „Sprachausgabe“ ändern oder aufnehmen.");
+            ? $"1 Person erkannt{source}: OID-Fläche „{assigned[0].Label}“ angelegt. Text im Tab „Sprachausgabe“ ändern oder aufnehmen."
+            : $"{assigned.Count} Personen erkannt{source}: OID-Flächen {string.Join(", ", assigned.Select(a => $"„{a.Label}“"))} angelegt. Texte im Tab „Sprachausgabe“ ändern oder aufnehmen.");
     });
 
     /// <summary>
@@ -1143,12 +1159,15 @@ public partial class MainWindowViewModel : ObservableObject
 
     TaskCompletionSource<bool>? _personNaming;
 
-    /// <summary>Fragt nach den Namen der Personen; null bei Abbruch, sonst je Person der Name (leer: Platzhalter).</summary>
-    async Task<List<string>?> AskPersonNamesAsync(IReadOnlyList<PersonDetector.Person> persons)
+    /// <summary>
+    /// Fragt nach den Namen der Personen, vorbelegt mit <paramref name="known"/> (z. B. aus Immich); null bei
+    /// Abbruch, sonst je Person der Name (leer: Platzhalter).
+    /// </summary>
+    async Task<List<string>?> AskPersonNamesAsync(IReadOnlyList<PersonDetector.Person> persons, IReadOnlyList<string>? known = null)
     {
         PersonNameEntries.Clear();
         for (int i = 0; i < persons.Count; i++)
-            PersonNameEntries.Add(new PersonNameEntry(persons[i].Face, $"Person {i + 1}"));
+            PersonNameEntries.Add(new PersonNameEntry(persons[i].Face, $"Person {i + 1}") { Name = known != null && i < known.Count ? known[i] : "" });
         _personNaming = new TaskCompletionSource<bool>();
         IsNamingPersons = true;
         try
