@@ -61,7 +61,7 @@ public partial class ProjectViewModel : ObservableObject
             }
             catch (ScriptParseException ex)
             {
-                return $"Hier stehen Namen von Texten aus dem Tab „Sprachausgabe“ (z. B. willkommen), kein Satz: {ex.Message}";
+                return $"Hier stehen Namen von Texten aus dem Tab „Sprachausgabe“ (z. B. willkommen), kein Satz ({ex.Message}). Beim Bauen wird der Satz automatisch als Text angelegt.";
             }
         }
     }

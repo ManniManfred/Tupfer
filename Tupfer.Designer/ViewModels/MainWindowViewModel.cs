@@ -292,7 +292,17 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Übersetzt das C#-Programm, falls vorhanden. false bei Fehlern.</summary>
     /// <summary>Ohne Übersetzer (Web-App) werden die zuletzt übersetzten, gespeicherten Skripte verwendet.</summary>
-    bool EnsureProgram() => string.IsNullOrWhiteSpace(Project.Program) || !ProgramCompiler.IsAvailable || TryCompileProgram(quiet: true);
+    bool EnsureProgram()
+    {
+        // Ein Satz in der Begrüßung ist keine Namensliste: als Text anlegen, damit er vorgelesen wird
+        if (Project.HasWelcomeProblem)
+        {
+            var sentence = Project.Welcome.Trim();
+            Project.WelcomeAsTextCommand.Execute(null);
+            Log($"Begrüßung „{sentence}“ als Text „{Project.Welcome}“ angelegt (Tab „Sprachausgabe“).");
+        }
+        return string.IsNullOrWhiteSpace(Project.Program) || !ProgramCompiler.IsAvailable || TryCompileProgram(quiet: true);
+    }
 
     [RelayCommand]
     void CompileProgram()

@@ -129,6 +129,32 @@ public class RobustheitTests : IDisposable
         Assert.True(File.Exists(Path.Combine(work, "aufnahme.ogg")));
     }
 
+    // ---------- Begrüßung ----------
+
+    class YamlDialogs(string path) : IFileDialogs
+    {
+        public Task<string?> OpenAsync(string title, string filterName, params string[] patterns) => Task.FromResult<string?>(null);
+        public Task<string?> SaveAsync(string title, string suggestedName, string filterName, string extension) => Task.FromResult<string?>(path);
+        public Task<string> PrintAsync(string pdfPath) => Task.FromResult("");
+        public Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create) => Task.FromResult<string?>(null);
+    }
+
+    [Fact]
+    public async Task BegruessungAlsSatzWirdBeimBauenVorgelesen()
+    {
+        var yaml = Path.Combine(_dir, "familie.yaml");
+        var vm = new MainWindowViewModel { Dialogs = new YamlDialogs(yaml) };
+        vm.Project.Welcome = "Willkommen bei Familie Roßkamp";
+
+        await vm.ExportYamlCommand.ExecuteAsync(null);
+
+        Assert.Equal("begruessung", vm.Project.Welcome);
+        Assert.Equal("Willkommen bei Familie Roßkamp", vm.Project.Speak.Single(s => s.Name == "begruessung").Text);
+        var text = File.ReadAllText(yaml);
+        Assert.Contains("welcome: 'begruessung'", text);
+        Assert.Contains("Willkommen bei Familie Roßkamp", text);
+    }
+
     // ---------- Aufnahmen ----------
 
     class FakeAudio : IAudioDevice
