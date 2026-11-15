@@ -33,8 +33,9 @@ public interface IFileDialogs
     Task<bool> ConfirmAsync(string message) => Task.FromResult(true);
 
     /// <summary>
-    /// Druckt die PDF-Datei direkt (Desktop: Standarddrucker, Browser: Druckdialog) und löscht sie danach,
-    /// sobald sie nicht mehr gebraucht wird. Liefert einen Hinweis, wie es weitergeht.
+    /// Druckt die PDF-Datei direkt (Desktop: Standarddrucker bzw. unter Linux/macOS nach Auswahl des Druckers,
+    /// Browser: Druckdialog) und löscht sie danach, sobald sie nicht mehr gebraucht wird. Liefert einen Hinweis,
+    /// wie es weitergeht, oder „“, wenn die Druckerauswahl abgebrochen wurde.
     /// </summary>
     Task<string> PrintAsync(string pdfPath);
 
@@ -821,6 +822,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         PdfWriter.Write(path, pages, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
         var hint = await Dialogs!.PrintAsync(path);
+        if (hint == "") return;
         Notice($"{hint} Ohne Skalierung drucken („Tatsächliche Größe“ / 100 %), sonst erkennt der Stift die Codes nicht.");
     });
 
@@ -859,6 +861,7 @@ public partial class MainWindowViewModel : ObservableObject
         var path = Path.Combine(dir, $"{name}-broschuere-{DateTime.Now:yyyyMMdd-HHmmss}.pdf");
         PdfWriter.Write(path, sheets, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
         var hint = await Dialogs!.PrintAsync(path);
+        if (hint == "") return;
         Notice($"{hint} {BookletHint}");
     });
 

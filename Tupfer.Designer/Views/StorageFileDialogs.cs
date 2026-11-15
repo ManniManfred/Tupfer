@@ -89,6 +89,16 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         var printers = printer.Printers();
         if (printers.Count == 0)
             return null;
+        var info = $"Gedruckt wird in Originalgröße mit {dpi} dpi (sofern der Drucker das kann), ohne PDF-Programm."
+                   + (booklet ? " Als Broschüre: je zwei Seiten nebeneinander, beidseitig an der kurzen Kante gewendet." : "");
+        if (await ChoosePrinterAsync(owner, printers, printer.DefaultPrinter(), info) is not { } chosen)
+            return "";
+        return await Task.Run(() => printer.Print(pages, dpi, pixelSize, chosen, booklet));
+    }
+
+    /// <summary>Fragt nach dem Drucker (<paramref name="preferred"/> vorausgewählt); null bei Abbruch.</summary>
+    static async Task<string?> ChoosePrinterAsync(Window owner, IReadOnlyList<string> printers, string? preferred, string info)
+    {
         await WhenVisible(owner);
 
         // Drucker wählen; der Standarddrucker ist vorausgewählt
@@ -102,7 +112,7 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
             ShowInTaskbar = false,
         };
         var list = new ComboBox { ItemsSource = printers, MinWidth = 320, HorizontalAlignment = HorizontalAlignment.Stretch };
-        list.SelectedItem = printer.DefaultPrinter() is { } d && printers.Contains(d) ? d : printers[0];
+        list.SelectedItem = preferred != null && printers.Contains(preferred) ? preferred : printers[0];
         var print = new Button { Content = "Drucken", IsDefault = true, MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
         var cancel = new Button { Content = "Abbrechen", IsCancel = true, MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
         print.Click += (_, _) => { chosen = list.SelectedItem as string; dialog.Close(); };
@@ -118,8 +128,7 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
                 list,
                 new TextBlock
                 {
-                    Text = $"Gedruckt wird in Originalgröße mit {dpi} dpi (sofern der Drucker das kann), ohne PDF-Programm."
-                           + (booklet ? " Als Broschüre: je zwei Seiten nebeneinander, beidseitig an der kurzen Kante gewendet." : ""),
+                    Text = info,
                     TextWrapping = TextWrapping.Wrap,
                     Opacity = 0.7,
                 },
@@ -127,9 +136,7 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
             },
         };
         await dialog.ShowDialog(owner);
-        if (chosen == null)
-            return "";
-        return await Task.Run(() => printer.Print(pages, dpi, pixelSize, chosen, booklet));
+        return chosen;
     }
 
     public async Task<bool> ConfirmAsync(string message)
@@ -206,30 +213,69 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         }
         else
         {
-            // CUPS (Linux, macOS): an den Standarddrucker, ohne an die Seite anzupassen
-            try
+            // CUPS (Linux, macOS): Drucker wählen (es gibt nicht immer einen Standarddrucker), ohne an die Seite anzupassen
+            var printers = Lpstat("-e")?.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+            if (printers.Length > 0 && topLevel is Window owner)
             {
-                using var lp = Process.Start(new ProcessStartInfo("lp", ["-o", "print-scaling=none", pdfPath])
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                });
-                if (lp != null)
-                {
-                    await lp.WaitForExitAsync();
-                    if (lp.ExitCode == 0)
-                        return "An den Standarddrucker gesendet.";
-                }
-            }
-            catch (Win32Exception)
-            {
-                // lp ist nicht installiert
+                var info = "Gedruckt wird über CUPS ohne PDF-Programm, in Originalgröße („print-scaling=none“).";
+                if (await ChoosePrinterAsync(owner, printers, CupsDefaultPrinter(), info) is not { } chosen)
+                    return "";
+                var (exitCode, error) = await RunAsync("lp", "-d", chosen, "-o", "print-scaling=none", pdfPath);
+                if (exitCode == 0)
+                    return $"An „{chosen}“ gesendet.";
+                OpenInViewer(pdfPath);
+                return $"Drucken über CUPS ging nicht ({error.Trim()}), das PDF wurde im PDF-Programm geöffnet – bitte dort drucken.";
             }
         }
 
         // Sonst im PDF-Programm öffnen und dort drucken
         OpenInViewer(pdfPath);
         return "Direktes Drucken ist hier nicht möglich, das PDF wurde im PDF-Programm geöffnet – bitte dort drucken.";
+    }
+
+    /// <summary>Ausgabe von <c>lpstat</c> (englisch, damit sie sich auswerten lässt); null, wenn es CUPS nicht gibt.</summary>
+    static string? Lpstat(string option)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("lpstat", [option]) { RedirectStandardOutput = true, RedirectStandardError = true };
+            psi.Environment["LC_ALL"] = "C";
+            using var process = Process.Start(psi);
+            if (process == null)
+                return null;
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+            return process.ExitCode == 0 ? output : null;
+        }
+        catch (Win32Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Standarddrucker von CUPS („system default destination: Name“), sonst null.</summary>
+    static string? CupsDefaultPrinter() =>
+        Lpstat("-d") is { } output && output.IndexOf(':') is var colon and >= 0
+            && output.StartsWith("system default destination", StringComparison.Ordinal)
+            ? output[(colon + 1)..].Trim()
+            : null;
+
+    static async Task<(int ExitCode, string Error)> RunAsync(string program, params string[] args)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(program, args) { RedirectStandardOutput = true, RedirectStandardError = true });
+            if (process == null)
+                return (-1, $"{program} ließ sich nicht starten");
+            var error = process.StandardError.ReadToEndAsync();
+            await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            return (process.ExitCode, await error);
+        }
+        catch (Win32Exception)
+        {
+            return (-1, $"{program} ist nicht installiert");
+        }
     }
 
     public async Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create)
