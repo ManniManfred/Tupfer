@@ -750,7 +750,24 @@
                     <StackPanel IsVisible="{Binding HasSpeakEntry}" Margin="0,4,0,0">
                       <Grid ColumnDefinitions="*,4,Auto">
                         <TextBox Text="{Binding SpeakEntry.Text, FallbackValue=''}" AcceptsReturn="True" TextWrapping="Wrap"
-                                 PlaceholderText="Text, den der Stift spricht" />
+                                 PlaceholderText="Text, den der Stift spricht"
+                                 IsVisible="{Binding !SpeakEntry.HasRecording, FallbackValue=True}" />
+                        <!-- Mit eigener Aufnahme statt Sprachausgabe -->
+                        <Border IsVisible="{Binding SpeakEntry.HasRecording, FallbackValue=False}" Background="#E8F5E9" CornerRadius="4"
+                                Padding="8,4" ToolTip.Tip="{Binding SpeakEntry.Recording, FallbackValue=''}">
+                          <DockPanel VerticalAlignment="Center">
+                            <Button DockPanel.Dock="Right" Classes="tool" Padding="4" Margin="4,0,-6,0"
+                                    ToolTip.Tip="Aufnahme entfernen (wieder die Sprachausgabe verwenden)"
+                                    Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).RemoveRecordingCommand}"
+                                    CommandParameter="{Binding SpeakEntry}">
+                              <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                            </Button>
+                            <PathIcon DockPanel.Dock="Left" Data="{StaticResource IconMic}" Width="14" Height="14"
+                                      Foreground="#2E7D32" Margin="0,0,6,0" />
+                            <TextBlock Text="{Binding SpeakEntry.RecordingName, FallbackValue=''}" Foreground="#2E7D32"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                          </DockPanel>
+                        </Border>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
                           <Button Classes="tool" ToolTip.Tip="Anhören" IsVisible="{Binding SpeakEntry.IsNotPlaying, FallbackValue=True}"
                                   Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PlaySpeakCommand}"
@@ -770,10 +787,23 @@
                                   CommandParameter="{Binding SpeakEntry}">
                             <PathIcon Data="{StaticResource IconStop}" />
                           </Button>
+                          <Button Classes="tool" ToolTip.Tip="Mit dem Mikrofon aufnehmen bzw. Aufnahme beenden"
+                                  Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).RecordSpeakCommand}"
+                                  CommandParameter="{Binding SpeakEntry}">
+                            <Panel>
+                              <PathIcon Data="{StaticResource IconMic}" IsVisible="{Binding !SpeakEntry.IsRecording, FallbackValue=True}" />
+                              <PathIcon Data="{StaticResource IconStop}" Foreground="#C62828" IsVisible="{Binding SpeakEntry.IsRecording, FallbackValue=False}" />
+                            </Panel>
+                          </Button>
+                          <Button Classes="tool" ToolTip.Tip="Audiodatei als Aufnahme übernehmen"
+                                  Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).ImportRecordingCommand}"
+                                  CommandParameter="{Binding SpeakEntry}">
+                            <PathIcon Data="{StaticResource IconOpen}" />
+                          </Button>
                         </StackPanel>
                       </Grid>
                       <TextBlock Classes="hint" TextWrapping="Wrap" Margin="0,4,0,0"
-                                 Text="Name, Stimme und eigene Aufnahme im Tab „Sprachausgabe“." />
+                                 Text="Mikrofonknopf nimmt auf (noch einmal klicken beendet), Ordnerknopf übernimmt eine Audiodatei. Name und Stimme im Tab „Sprachausgabe“." />
                     </StackPanel>
                   </StackPanel>
                   <TextBlock Classes="label" Text="OID-Code" />
