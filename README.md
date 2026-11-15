@@ -24,6 +24,7 @@ Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 | `examples/tic-tac-toi/` | Beispiel: Tic-Tac-Toe als Designer-Projekt mit Spielfeld-Grafik (auch in der Web-App) |
 | `examples/meine-leute/` | Vorlage „Meine Leute“: Familienseite für die Kleinsten mit eigenen Fotos und Stimmen (auch in der Web-App) |
 | `examples/wo-ist/` | Suchspiel „Wo ist …?“ mit acht Tieren für Vorschulkinder (auch in der Web-App) |
+| `examples/weihnachten/` | Beispiel: Die Weihnachtsgeschichte als Comic-Broschüre (4 Seiten A5, Seiten als SVG-Grafiken; auch in der Web-App) |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
 | `deploy/setup/` | Setups für Windows (Inno Setup), Linux (.deb, AppImage) und macOS (.dmg) |
 | `nextcloud/` | App für Nextcloud: die Web-App mit Dateien aus Nextcloud (siehe „Tupfer Designer in Nextcloud“) |
@@ -75,6 +76,23 @@ Schaf, Huhn). Vorschau: `examples/wo-ist/vorschau.png`.
 Auf dem Stift zuerst *Start* antippen (Produkt-Code `902`). Die Texte lassen sich durch eigene
 Aufnahmen ersetzen, zum Beispiel echte Tiergeräusche. Die Tierbilder stammen aus
 [Twemoji](https://github.com/jdecked/twemoji) (CC-BY 4.0, siehe `THIRD-PARTY-NOTICES.md`).
+
+## Beispiel: Die Weihnachtsgeschichte
+
+Die Weihnachtsgeschichte nach Lukas und Matthäus als Comic für Kinder: vier Seiten A5, die als
+Broschüre auf ein A4-Blatt passen. Vorschau: `examples/weihnachten/vorschau.png`.
+
+- **Titelseite:** Stern, Maria, Jesuskind, Josef und die Schafe lassen sich antippen.
+- **Seiten 2 und 3:** Jedes der acht Comic-Bilder erzählt seine Szene – erst der Erzähler, dann die
+  Figuren mit den Sätzen aus den Sprechblasen, mit eigenen Stimmen für Maria, Engel, Josef, Kaiser,
+  Wirt, Hirten und Könige.
+- **Seite 4:** „Wusstest du schon?“ (Christmette, Krippe, Sternsinger, C+M+B) und ein Weihnachtsgebet.
+
+Die Zeichnungen sind SVG-Grafiken (`seite1.svg` … `seite4.svg`) und bleiben im Druck scharf; die
+Texte in Sprechblasen und Kästen sind normale Texte und lassen sich im Designer ändern. Auf dem Stift
+zuerst den Titel antippen (Produkt-Code `903`). Drucken mit *Broschüre drucken*: beidseitig, an der
+kurzen Kante wenden, ohne Skalierung. Die Bilder sind ohne Schwarzanteil eingestellt, damit der Stift
+die Codes auch auf dem dunklen Nachthimmel liest.
 
 ## Herunterladen
 

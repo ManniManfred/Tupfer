@@ -14,6 +14,7 @@ public static class HeadlessSkia
 {
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<Application>()
         .UseSkia()
+        .WithInterFont()
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 
     static readonly Lazy<HeadlessUnitTestSession> Session = new(() => HeadlessUnitTestSession.StartNew(typeof(HeadlessSkia)));
@@ -117,5 +118,24 @@ public class SvgImageTests : IDisposable
         File.WriteAllText(bad, "kein svg");
         var loaded = HeadlessSkia.Run(() => new ProjectViewModel(_ => { }).LoadImage(bad) != null);
         Assert.False(loaded);
+    }
+
+    [Fact]
+    public void BeispielWeihnachtenZeigtDieSeitenAlsSvg()
+    {
+        var dir = Path.Combine(AppContext.BaseDirectory, "Programme", "weihnachten");
+        var file = ProjectStore.Load(Path.Combine(dir, "weihnachten.tupfer.json"));
+        var result = HeadlessSkia.Run(() =>
+        {
+            var project = ProjectViewModel.FromFile(file, dir, _ => { });
+            var images = project.Pages.Select(p => p.Elements.First().Image).ToList();
+            var cover = ImageConverter.RenderPage(project.Pages[0], 100)!;
+            return (images, cover);
+        });
+        Assert.Equal(4, result.images.Count);
+        Assert.All(result.images, i => Assert.IsType<SvgImage>(i));
+        // Titelseite: dunkelblauer Grund (#13234A) am Rand, kein leeres Weiß
+        double px = 100 / 25.4;
+        Assert.Equal((0x13, 0x23, 0x4A), Pixel(result.cover, (int)(2 * px), (int)(100 * px)));
     }
 }

@@ -1,0 +1,1084 @@
+{
+  "Version": 1,
+  "ProductId": 903,
+  "Comment": "Die Weihnachtsgeschichte – Comic-Broschüre für Kinder (4 Seiten A5, als Broschüre auf ein A4-Blatt)",
+  "Language": "de",
+  "GmeLang": "",
+  "Init": "",
+  "Welcome": "willkommen",
+  "MediaPath": "",
+  "ExtraYaml": "",
+  "Dpi": 1200,
+  "PixelSize": 2,
+  "CmykWithoutBlack": true,
+  "Scripts": [
+    {
+      "Name": "titel",
+      "Lines": [
+        "P(titel)"
+      ]
+    },
+    {
+      "Name": "halleluja",
+      "Lines": [
+        "P(halleluja)"
+      ]
+    },
+    {
+      "Name": "stern",
+      "Lines": [
+        "P(t_stern)"
+      ]
+    },
+    {
+      "Name": "maria",
+      "Lines": [
+        "PA(t_maria, t_maria_sagt)"
+      ]
+    },
+    {
+      "Name": "jesus",
+      "Lines": [
+        "P(t_jesus)"
+      ]
+    },
+    {
+      "Name": "josef",
+      "Lines": [
+        "PA(t_josef, t_josef_sagt)"
+      ]
+    },
+    {
+      "Name": "schafe",
+      "Lines": [
+        "PA(maeh, t_schafe)"
+      ]
+    },
+    {
+      "Name": "seite2",
+      "Lines": [
+        "P(s2_titel)"
+      ]
+    },
+    {
+      "Name": "bild1",
+      "Lines": [
+        "PA(b1_erz, b1_engel, b1_maria)"
+      ]
+    },
+    {
+      "Name": "bild2",
+      "Lines": [
+        "PA(b2_erz, b2_kaiser)"
+      ]
+    },
+    {
+      "Name": "bild3",
+      "Lines": [
+        "PA(b3_erz, b3_josef)"
+      ]
+    },
+    {
+      "Name": "bild4",
+      "Lines": [
+        "PA(b4_erz, b4_wirt, b4_josef)"
+      ]
+    },
+    {
+      "Name": "seite3",
+      "Lines": [
+        "P(s3_titel)"
+      ]
+    },
+    {
+      "Name": "bild5",
+      "Lines": [
+        "PA(b5_erz, b5_maria)"
+      ]
+    },
+    {
+      "Name": "bild6",
+      "Lines": [
+        "PA(b6_erz, b6_hirte, b6_engel, b6_chor)"
+      ]
+    },
+    {
+      "Name": "bild7",
+      "Lines": [
+        "PA(b7_erz, b7_hirte)"
+      ]
+    },
+    {
+      "Name": "bild8",
+      "Lines": [
+        "PA(b8_erz, b8_koenig)"
+      ]
+    },
+    {
+      "Name": "frohe",
+      "Lines": [
+        "P(frohe)"
+      ]
+    },
+    {
+      "Name": "wissen1",
+      "Lines": [
+        "P(w1)"
+      ]
+    },
+    {
+      "Name": "wissen2",
+      "Lines": [
+        "P(w2)"
+      ]
+    },
+    {
+      "Name": "wissen3",
+      "Lines": [
+        "P(w3)"
+      ]
+    },
+    {
+      "Name": "wissen4",
+      "Lines": [
+        "P(w4)"
+      ]
+    },
+    {
+      "Name": "sternsinger",
+      "Lines": [
+        "P(sternsinger)"
+      ]
+    },
+    {
+      "Name": "gebet",
+      "Lines": [
+        "P(gebet)"
+      ]
+    }
+  ],
+  "Speak": [
+    {
+      "Name": "willkommen",
+      "Text": "Hallo! Hier ist die Weihnachtsgeschichte. Tipp auf die Bilder, dann erzähle ich dir, was passiert ist."
+    },
+    {
+      "Name": "titel",
+      "Text": "Die Weihnachtsgeschichte. Gott wird ein Kind. Jesus ist geboren!"
+    },
+    {
+      "Name": "halleluja",
+      "Text": "Halleluja! Halleluja!",
+      "Voice": "de_DE-ramona-low"
+    },
+    {
+      "Name": "t_stern",
+      "Text": "Das ist der Stern von Betlehem. Er leuchtet über dem Stall und zeigt allen den Weg zu Jesus."
+    },
+    {
+      "Name": "t_maria",
+      "Text": "Das ist Maria, die Mutter von Jesus."
+    },
+    {
+      "Name": "t_maria_sagt",
+      "Text": "Schau, wie klein und süß er ist!",
+      "Voice": "de_DE-kerstin-low"
+    },
+    {
+      "Name": "t_jesus",
+      "Text": "Das ist das Jesuskind in der Krippe. Jesus ist der Sohn Gottes. Weil er geboren wurde, feiern wir Weihnachten."
+    },
+    {
+      "Name": "t_josef",
+      "Text": "Das ist Josef. Er passt gut auf Maria und das Kind auf."
+    },
+    {
+      "Name": "t_josef_sagt",
+      "Text": "Psst! Das Kind schläft.",
+      "Voice": "de_DE-karlsson-low"
+    },
+    {
+      "Name": "maeh",
+      "Text": "Mäh! Mäh!",
+      "Voice": "de_DE-kerstin-low"
+    },
+    {
+      "Name": "t_schafe",
+      "Text": "Auch die Schafe sind gekommen, um das Kind zu sehen."
+    },
+    {
+      "Name": "s2_titel",
+      "Text": "Ein Engel bei Maria."
+    },
+    {
+      "Name": "b1_erz",
+      "Text": "In Nazaret lebte ein junges Mädchen: Maria. Eines Tages schickte Gott den Engel Gabriel zu ihr."
+    },
+    {
+      "Name": "b1_engel",
+      "Text": "Sei gegrüßt, Maria, voll der Gnade! Der Herr ist mit dir. Du bekommst ein Kind. Es soll Jesus heißen, und es ist der Sohn Gottes!",
+      "Voice": "de_DE-ramona-low"
+    },
+    {
+      "Name": "b1_maria",
+      "Text": "Ich bin die Magd des Herrn. Mir geschehe, wie du gesagt hast.",
+      "Voice": "de_DE-kerstin-low"
+    },
+    {
+      "Name": "b2_erz",
+      "Text": "Maria war mit Josef verlobt. Da befahl Kaiser Augustus in Rom:"
+    },
+    {
+      "Name": "b2_kaiser",
+      "Text": "Alle Menschen werden gezählt! Jeder in seiner Heimatstadt!",
+      "Voice": "de_DE-thorsten_emotional-medium#angry"
+    },
+    {
+      "Name": "b3_erz",
+      "Text": "Josef stammte aus Betlehem. Also wanderten Josef und Maria dorthin. Der Weg war weit, und Maria bekam bald ihr Kind."
+    },
+    {
+      "Name": "b3_josef",
+      "Text": "Halte durch, Maria! Es ist nicht mehr weit.",
+      "Voice": "de_DE-karlsson-low"
+    },
+    {
+      "Name": "b4_erz",
+      "Text": "In Betlehem suchten sie ein Zimmer für die Nacht. Aber überall war alles voll."
+    },
+    {
+      "Name": "b4_wirt",
+      "Text": "Tut mir leid, kein Platz mehr! Aber da hinten ist ein Stall.",
+      "Voice": "de_DE-thorsten_emotional-medium#sleepy"
+    },
+    {
+      "Name": "b4_josef",
+      "Text": "Danke! Das ist gut.",
+      "Voice": "de_DE-karlsson-low"
+    },
+    {
+      "Name": "s3_titel",
+      "Text": "Die Heilige Nacht."
+    },
+    {
+      "Name": "b5_erz",
+      "Text": "In dieser Nacht wurde Jesus geboren. Maria wickelte ihn in Windeln und legte ihn in eine Futterkrippe."
+    },
+    {
+      "Name": "b5_maria",
+      "Text": "Willkommen, kleiner Jesus!",
+      "Voice": "de_DE-kerstin-low"
+    },
+    {
+      "Name": "b6_erz",
+      "Text": "Auf dem Feld hüteten Hirten ihre Schafe. Plötzlich wurde es ganz hell!"
+    },
+    {
+      "Name": "b6_hirte",
+      "Text": "Oh!",
+      "Voice": "de_DE-thorsten_emotional-medium#surprised"
+    },
+    {
+      "Name": "b6_engel",
+      "Text": "Fürchtet euch nicht! Ich bringe euch eine große Freude: Heute ist euch der Retter geboren, Christus, der Herr. Ihr findet ein Kind, in Windeln gewickelt, das in einer Krippe liegt.",
+      "Voice": "de_DE-ramona-low"
+    },
+    {
+      "Name": "b6_chor",
+      "Text": "Ehre sei Gott in der Höhe, und Friede auf Erden den Menschen!",
+      "Voice": "de_DE-ramona-low"
+    },
+    {
+      "Name": "b7_erz",
+      "Text": "Die Hirten liefen schnell nach Betlehem zum Stall. Dort fanden sie Maria, Josef und das Kind in der Krippe."
+    },
+    {
+      "Name": "b7_hirte",
+      "Text": "Genau wie der Engel gesagt hat!",
+      "Voice": "de_DE-thorsten_emotional-medium#surprised"
+    },
+    {
+      "Name": "b8_erz",
+      "Text": "Später folgten Sterndeuter aus dem Osten einem hellen Stern. Wir nennen sie die Heiligen Drei Könige: Caspar, Melchior und Balthasar."
+    },
+    {
+      "Name": "b8_koenig",
+      "Text": "Wir bringen Gold, Weihrauch und Myrrhe für den neugeborenen König!",
+      "Voice": "de_DE-thorsten-high"
+    },
+    {
+      "Name": "frohe",
+      "Text": "Frohe Weihnachten!",
+      "Voice": "de_DE-thorsten_emotional-medium#amused"
+    },
+    {
+      "Name": "w1",
+      "Text": "An Weihnachten feiern wir den Geburtstag von Jesus. In der Christmette in der Heiligen Nacht feiern wir zusammen Gottesdienst."
+    },
+    {
+      "Name": "w2",
+      "Text": "Der heilige Franz von Assisi baute im Jahr 1223 eine der ersten Krippen, mit einem echten Ochsen und einem echten Esel!"
+    },
+    {
+      "Name": "w3",
+      "Text": "Am 6. Januar ist das Fest der Heiligen Drei Könige. Die Sternsinger bringen den Segen in die Häuser und sammeln Geld für Kinder in Not."
+    },
+    {
+      "Name": "w4",
+      "Text": "C plus M plus B heißt: Christus mansionem benedicat. Das ist Latein und bedeutet: Christus segne dieses Haus!"
+    },
+    {
+      "Name": "sternsinger",
+      "Text": "Wir kommen daher aus dem Morgenland, wir kommen geführt von Gottes Hand. Wir wünschen euch ein fröhliches Jahr!",
+      "Voice": "de_DE-thorsten_emotional-medium#amused"
+    },
+    {
+      "Name": "gebet",
+      "Text": "Lieber Jesus, du bist als kleines Kind zu uns gekommen. Danke, dass du alle Menschen lieb hast. Schenke Frieden auf der ganzen Welt und segne alle Kinder. Amen."
+    }
+  ],
+  "Pages": [
+    {
+      "Name": "Seite 1 – Titel",
+      "WidthMm": 148.5,
+      "HeightMm": 210,
+      "Elements": [
+        {
+          "Kind": "Image",
+          "X": 0,
+          "Y": 0,
+          "Width": 148.5,
+          "Height": 210,
+          "ImagePath": "seite1.svg"
+        },
+        {
+          "Kind": "Text",
+          "X": 6,
+          "Y": 39.95,
+          "Width": 136.5,
+          "Height": 5.76,
+          "Text": "Gott wird ein Kind – Jesus ist geboren!",
+          "FontSize": 10.1,
+          "FontFamily": "",
+          "Color": "#FFFFFF",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 6,
+          "Y": 190.71,
+          "Width": 136.5,
+          "Height": 4.44,
+          "Text": "Ein Comic für Kinder nach dem Lukas- und Matthäus-Evangelium",
+          "FontSize": 7.1,
+          "FontFamily": "",
+          "Color": "#CFD8FF",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        }
+      ],
+      "Areas": [
+        {
+          "Label": "Start (Titel)",
+          "X": 6.0,
+          "Y": 11.0,
+          "Width": 136.5,
+          "Height": 26.0,
+          "Target": "Product",
+          "Script": ""
+        },
+        {
+          "Label": "Halleluja",
+          "X": 115.2,
+          "Y": 81.9,
+          "Width": 29.0,
+          "Height": 15.1,
+          "Target": "Script",
+          "Script": "halleluja"
+        },
+        {
+          "Label": "Stern",
+          "X": 57.9,
+          "Y": 55.4,
+          "Width": 32.7,
+          "Height": 32.1,
+          "Shape": "Ellipse",
+          "Target": "Script",
+          "Script": "stern"
+        },
+        {
+          "Label": "Maria",
+          "X": 36.9,
+          "Y": 130.0,
+          "Width": 24.2,
+          "Height": 49.7,
+          "Target": "Script",
+          "Script": "maria"
+        },
+        {
+          "Label": "Jesuskind",
+          "X": 61.8,
+          "Y": 152.2,
+          "Width": 25.5,
+          "Height": 27.5,
+          "Target": "Script",
+          "Script": "jesus"
+        },
+        {
+          "Label": "Josef",
+          "X": 88.6,
+          "Y": 130.0,
+          "Width": 25.5,
+          "Height": 49.7,
+          "Target": "Script",
+          "Script": "josef"
+        },
+        {
+          "Label": "Schaf links",
+          "X": 20.6,
+          "Y": 164.7,
+          "Width": 15.7,
+          "Height": 19.0,
+          "Target": "Script",
+          "Script": "schafe"
+        },
+        {
+          "Label": "Schaf rechts",
+          "X": 114.8,
+          "Y": 164.7,
+          "Width": 16.4,
+          "Height": 19.0,
+          "Target": "Script",
+          "Script": "schafe"
+        }
+      ]
+    },
+    {
+      "Name": "Seite 2 – Ein Engel bei Maria",
+      "WidthMm": 148.5,
+      "HeightMm": 210,
+      "Elements": [
+        {
+          "Kind": "Image",
+          "X": 0,
+          "Y": 0,
+          "Width": 148.5,
+          "Height": 210,
+          "ImagePath": "seite2.svg"
+        },
+        {
+          "Kind": "Text",
+          "X": 10.79,
+          "Y": 24.79,
+          "Width": 126.91,
+          "Height": 4.15,
+          "Text": "In Nazaret lebte ein junges Mädchen: Maria. Eines Tages schickte Gott den Engel Gabriel zu ihr.",
+          "FontSize": 6.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 15.45,
+          "Y": 33.97,
+          "Width": 52.14,
+          "Height": 10.57,
+          "Text": "Sei gegrüßt, Maria, voll der Gnade! Du bekommst ein Kind: Jesus, den Sohn Gottes!",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 94,
+          "Y": 33.97,
+          "Width": 39.05,
+          "Height": 7.38,
+          "Text": "Ich bin die Magd des Herrn. Mir geschehe, wie du gesagt hast.",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 10.79,
+          "Y": 89.78,
+          "Width": 44.73,
+          "Height": 7.32,
+          "Text": "Maria war mit Josef verlobt. Da befahl Kaiser Augustus in Rom:",
+          "FontSize": 6.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 14.68,
+          "Y": 101.65,
+          "Width": 51.38,
+          "Height": 8.35,
+          "Text": "Alle Menschen werden gezählt – jeder in seiner Heimatstadt!",
+          "FontSize": 7.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 78.54,
+          "Y": 89.78,
+          "Width": 44.74,
+          "Height": 7.32,
+          "Text": "Josef und Maria wanderten nach Betlehem. Der Weg war weit.",
+          "FontSize": 6.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 103.91,
+          "Y": 102.61,
+          "Width": 31.17,
+          "Height": 7.38,
+          "Text": "Halte durch, Maria! Es ist nicht mehr weit.",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 10.79,
+          "Y": 142.78,
+          "Width": 73.51,
+          "Height": 4.15,
+          "Text": "In Betlehem suchten sie ein Zimmer. Aber überall war alles voll.",
+          "FontSize": 6.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 14.14,
+          "Y": 151.97,
+          "Width": 33.81,
+          "Height": 10.57,
+          "Text": "Tut mir leid, kein Platz mehr! Aber da hinten ist ein Stall …",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 79.6,
+          "Y": 151.41,
+          "Width": 23.34,
+          "Height": 4.19,
+          "Text": "Danke! Das ist gut.",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 8,
+          "Y": 203.56,
+          "Width": 8,
+          "Height": 4.44,
+          "Text": "2",
+          "FontSize": 6.7,
+          "FontFamily": "",
+          "Color": "#777777",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        }
+      ],
+      "Areas": [
+        {
+          "Label": "Überschrift",
+          "X": 8.0,
+          "Y": 8.0,
+          "Width": 132.5,
+          "Height": 12.0,
+          "Target": "Script",
+          "Script": "seite2"
+        },
+        {
+          "Label": "Bild 1: Engel Gabriel",
+          "X": 8.0,
+          "Y": 23.0,
+          "Width": 132.5,
+          "Height": 62.0,
+          "Target": "Script",
+          "Script": "bild1"
+        },
+        {
+          "Label": "Bild 2: Kaiser Augustus",
+          "X": 8.0,
+          "Y": 88.0,
+          "Width": 64.7,
+          "Height": 50.0,
+          "Target": "Script",
+          "Script": "bild2"
+        },
+        {
+          "Label": "Bild 3: Weg nach Betlehem",
+          "X": 75.7,
+          "Y": 88.0,
+          "Width": 64.8,
+          "Height": 50.0,
+          "Target": "Script",
+          "Script": "bild3"
+        },
+        {
+          "Label": "Bild 4: Herberge",
+          "X": 8.0,
+          "Y": 141.0,
+          "Width": 132.5,
+          "Height": 58.0,
+          "Target": "Script",
+          "Script": "bild4"
+        }
+      ]
+    },
+    {
+      "Name": "Seite 3 – Die Heilige Nacht",
+      "WidthMm": 148.5,
+      "HeightMm": 210,
+      "Elements": [
+        {
+          "Kind": "Image",
+          "X": 0,
+          "Y": 0,
+          "Width": 148.5,
+          "Height": 210,
+          "ImagePath": "seite3.svg"
+        },
+        {
+          "Kind": "Text",
+          "X": 10.79,
+          "Y": 24.79,
+          "Width": 97.58,
+          "Height": 7.32,
+          "Text": "In dieser Nacht wurde Jesus geboren. Maria wickelte ihn in Windeln und legte ihn in eine Futterkrippe.",
+          "FontSize": 6.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 16.76,
+          "Y": 42.44,
+          "Width": 31.19,
+          "Height": 7.38,
+          "Text": "Willkommen, kleiner Jesus!",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 10.79,
+          "Y": 85.78,
+          "Width": 47.83,
+          "Height": 7.32,
+          "Text": "Hirten hüteten ihre Schafe. Plötzlich wurde es hell!",
+          "FontSize": 6.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 95.31,
+          "Y": 112.72,
+          "Width": 39.05,
+          "Height": 10.57,
+          "Text": "Fürchtet euch nicht! Ich bringe euch eine große Freude: Heute ist euch der Retter geboren!",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 14.14,
+          "Y": 99.11,
+          "Width": 10.25,
+          "Height": 4.19,
+          "Text": "Oh!",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 65.2,
+          "Y": 117.77,
+          "Width": 8.94,
+          "Height": 4.19,
+          "Text": "Mäh!",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 10.79,
+          "Y": 140.78,
+          "Width": 44.41,
+          "Height": 4.15,
+          "Text": "Die Hirten liefen schnell zum Stall.",
+          "FontSize": 6.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 12.97,
+          "Y": 154.36,
+          "Width": 23.59,
+          "Height": 7.38,
+          "Text": "Genau wie der Engel gesagt hat!",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 63.79,
+          "Y": 140.78,
+          "Width": 73.92,
+          "Height": 7.32,
+          "Text": "Sterndeuter folgten einem hellen Stern. Wir nennen sie die Heiligen Drei Könige: Caspar, Melchior und Balthasar.",
+          "FontSize": 6.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 66.85,
+          "Y": 159.03,
+          "Width": 42.85,
+          "Height": 10.57,
+          "Text": "Wir bringen Gold, Weihrauch und Myrrhe für den neugeborenen König!",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 132.49,
+          "Y": 203.56,
+          "Width": 8,
+          "Height": 4.44,
+          "Text": "3",
+          "FontSize": 6.7,
+          "FontFamily": "",
+          "Color": "#777777",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Right"
+        }
+      ],
+      "Areas": [
+        {
+          "Label": "Überschrift",
+          "X": 8.0,
+          "Y": 8.0,
+          "Width": 132.5,
+          "Height": 12.0,
+          "Target": "Script",
+          "Script": "seite3"
+        },
+        {
+          "Label": "Bild 5: Geburt",
+          "X": 8.0,
+          "Y": 23.0,
+          "Width": 132.5,
+          "Height": 58.0,
+          "Target": "Script",
+          "Script": "bild5"
+        },
+        {
+          "Label": "Bild 6: Hirten und Engel",
+          "X": 8.0,
+          "Y": 84.0,
+          "Width": 132.5,
+          "Height": 52.0,
+          "Target": "Script",
+          "Script": "bild6"
+        },
+        {
+          "Label": "Bild 7: Hirten am Stall",
+          "X": 8.0,
+          "Y": 139.0,
+          "Width": 50.0,
+          "Height": 60.0,
+          "Target": "Script",
+          "Script": "bild7"
+        },
+        {
+          "Label": "Bild 8: Heilige Drei Könige",
+          "X": 61.0,
+          "Y": 139.0,
+          "Width": 79.5,
+          "Height": 60.0,
+          "Target": "Script",
+          "Script": "bild8"
+        }
+      ]
+    },
+    {
+      "Name": "Seite 4 – Frohe Weihnachten",
+      "WidthMm": 148.5,
+      "HeightMm": 210,
+      "Elements": [
+        {
+          "Kind": "Image",
+          "X": 0,
+          "Y": 0,
+          "Width": 148.5,
+          "Height": 210,
+          "ImagePath": "seite4.svg"
+        },
+        {
+          "Kind": "Text",
+          "X": 18.03,
+          "Y": 36.54,
+          "Width": 118.45,
+          "Height": 9.13,
+          "Text": "An Weihnachten feiern wir den Geburtstag von Jesus. In der Christmette in der Heiligen Nacht feiern wir zusammen Gottesdienst.",
+          "FontSize": 7.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": false,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 18.03,
+          "Y": 45.87,
+          "Width": 118.45,
+          "Height": 9.13,
+          "Text": "Der heilige Franz von Assisi baute im Jahr 1223 eine der ersten Krippen – mit einem echten Ochsen und einem echten Esel!",
+          "FontSize": 7.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": false,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 18.03,
+          "Y": 55.19,
+          "Width": 118.45,
+          "Height": 9.13,
+          "Text": "Am 6. Januar ist das Fest der Heiligen Drei Könige. Die Sternsinger bringen den Segen in die Häuser und sammeln für Kinder in Not.",
+          "FontSize": 7.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": false,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 18.03,
+          "Y": 64.52,
+          "Width": 118.45,
+          "Height": 5.06,
+          "Text": "C+M+B heißt „Christus mansionem benedicat“: Christus segne dieses Haus!",
+          "FontSize": 7.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": false,
+          "Italic": false,
+          "Align": "Left"
+        },
+        {
+          "Kind": "Text",
+          "X": 15.45,
+          "Y": 82.55,
+          "Width": 62.61,
+          "Height": 4.19,
+          "Text": "Wir kommen daher aus dem Morgenland …",
+          "FontSize": 6.6,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 12.03,
+          "Y": 161.15,
+          "Width": 124.45,
+          "Height": 19.04,
+          "Text": "Lieber Jesus, du bist als kleines Kind zu uns gekommen.\nDanke, dass du alle Menschen lieb hast.\nSchenke Frieden auf der ganzen Welt\nund segne alle Kinder. Amen.",
+          "FontSize": 8.4,
+          "FontFamily": "",
+          "Color": "#1B1B1B",
+          "Bold": false,
+          "Italic": true,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 8,
+          "Y": 184.71,
+          "Width": 132.5,
+          "Height": 4.17,
+          "Text": "Zum Nachlesen in der Bibel: Lukas 1,26–38 · Lukas 2,1–20 · Matthäus 2,1–12",
+          "FontSize": 6.3,
+          "FontFamily": "",
+          "Color": "#555555",
+          "Bold": false,
+          "Italic": false,
+          "Align": "Center"
+        },
+        {
+          "Kind": "Text",
+          "X": 8,
+          "Y": 203.56,
+          "Width": 8,
+          "Height": 4.44,
+          "Text": "4",
+          "FontSize": 6.7,
+          "FontFamily": "",
+          "Color": "#777777",
+          "Bold": true,
+          "Italic": false,
+          "Align": "Left"
+        }
+      ],
+      "Areas": [
+        {
+          "Label": "Frohe Weihnachten",
+          "X": 8.0,
+          "Y": 8.0,
+          "Width": 132.5,
+          "Height": 15.0,
+          "Target": "Script",
+          "Script": "frohe"
+        },
+        {
+          "Label": "Wusstest du schon 1",
+          "X": 12.0,
+          "Y": 36.5,
+          "Width": 124.4,
+          "Height": 8.1,
+          "Target": "Script",
+          "Script": "wissen1"
+        },
+        {
+          "Label": "Wusstest du schon 2",
+          "X": 12.0,
+          "Y": 45.9,
+          "Width": 124.4,
+          "Height": 8.1,
+          "Target": "Script",
+          "Script": "wissen2"
+        },
+        {
+          "Label": "Wusstest du schon 3",
+          "X": 12.0,
+          "Y": 55.2,
+          "Width": 124.4,
+          "Height": 8.1,
+          "Target": "Script",
+          "Script": "wissen3"
+        },
+        {
+          "Label": "Wusstest du schon 4",
+          "X": 12.0,
+          "Y": 64.5,
+          "Width": 124.4,
+          "Height": 7.0,
+          "Target": "Script",
+          "Script": "wissen4"
+        },
+        {
+          "Label": "Sternsinger",
+          "X": 8.0,
+          "Y": 75.8,
+          "Width": 132.5,
+          "Height": 72.0,
+          "Target": "Script",
+          "Script": "sternsinger"
+        },
+        {
+          "Label": "Gebet",
+          "X": 8.0,
+          "Y": 150.8,
+          "Width": 132.5,
+          "Height": 31.4,
+          "Target": "Script",
+          "Script": "gebet"
+        }
+      ]
+    }
+  ]
+}

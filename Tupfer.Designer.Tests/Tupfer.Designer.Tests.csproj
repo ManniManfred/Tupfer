@@ -11,6 +11,7 @@
     <None Include="../examples/tic-tac-toi/tic-tac-toi.tupfer.json" Link="Programme/tic-tac-toi.tupfer.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../examples/meine-leute/meine-leute.tupfer.json" Link="Programme/meine-leute.tupfer.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../examples/wo-ist/wo-ist.tupfer.json" Link="Programme/wo-ist.tupfer.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../examples/weihnachten/weihnachten.tupfer.json;../examples/weihnachten/*.svg" Link="Programme/weihnachten/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

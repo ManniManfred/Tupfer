@@ -150,6 +150,23 @@ public class PenSimulatorTests
     }
 
     [Fact]
+    public void WeihnachtenErzaehltBildFuerBild()
+    {
+        var file = ProjectStore.Load(Path.Combine(AppContext.BaseDirectory, "Programme", "weihnachten", "weihnachten.tupfer.json"));
+        var pen = new PenSimulator();
+        pen.Load(file);
+        Assert.Equal(["willkommen"], pen.Start().Media);
+        // Ein Bild: erst der Erzähler, dann die Figuren in der Reihenfolge der Sprechblasen
+        Assert.Equal(["b1_erz", "b1_engel", "b1_maria"], pen.Tap("bild1").Media);
+        Assert.Equal(["b6_erz", "b6_hirte", "b6_engel", "b6_chor"], pen.Tap("bild6").Media);
+        Assert.Equal(["gebet"], pen.Tap("gebet").Media);
+        // Jedes Skript spielt nur vorhandene Texte
+        var texts = file.Speak.Select(s => s.Name).ToHashSet();
+        foreach (var script in file.Scripts)
+            Assert.All(pen.Tap(script.Name).Media, m => Assert.Contains(m, texts));
+    }
+
+    [Fact]
     public void WoIstFragtNachTierenUndWechseltDieReihenfolge()
     {
         var file = ProjectStore.Load(Path.Combine(AppContext.BaseDirectory, "Programme", "wo-ist.tupfer.json"));

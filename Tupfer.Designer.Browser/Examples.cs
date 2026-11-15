@@ -16,6 +16,8 @@ static class Examples
             [.. new[] { "mama", "papa", "oma", "opa", "geschwister", "ich" }.Select(p => $"meine-leute/foto-{p}.png")]),
         ("wo-ist", "Wo ist …? (Suchspiel)", "wo-ist/wo-ist.tupfer.json",
             [.. new[] { "katze", "hund", "kuh", "ente", "pferd", "schwein", "schaf", "huhn", "lupe", "ohr" }.Select(p => $"wo-ist/{p}.png")]),
+        ("weihnachten", "Die Weihnachtsgeschichte (Comic-Broschüre)", "weihnachten/weihnachten.tupfer.json",
+            [.. Enumerable.Range(1, 4).Select(n => $"weihnachten/seite{n}.svg")]),
     ];
 
     public static IReadOnlyList<ExampleProject> Create(Uri baseUri)
