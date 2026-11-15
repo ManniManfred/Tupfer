@@ -52,7 +52,6 @@ Dateien, Aufruf über JavaScript). Sie behalten ihre GPL-Lizenz.
 | [Avalonia](https://github.com/AvaloniaUI/Avalonia) (inkl. Desktop, Browser, Themes.Fluent) | MIT |
 | Avalonia.Fonts.Inter – Schrift [Inter](https://github.com/rsms/inter) | MIT (Paket), SIL Open Font License 1.1 (Schrift) |
 | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | MIT |
-| [Microsoft.CodeAnalysis.CSharp](https://github.com/dotnet/roslyn) (Roslyn) | MIT |
 | [Microsoft.ML.OnnxRuntime](https://github.com/microsoft/onnxruntime) (Piper-Stimmen, nur Desktop) | MIT |
 | [System.Speech](https://github.com/dotnet/runtime) | MIT |
 | [YamlDotNet](https://github.com/aaubry/YamlDotNet) | MIT |

@@ -87,7 +87,6 @@ public partial class MainWindowViewModel
             Log(s.FilePath != null
                 ? $"Letzten Bearbeitungsstand wiederhergestellt ({Path.GetFileName(s.FilePath)})."
                 : "Letzten Bearbeitungsstand wiederhergestellt (noch nicht gespeichertes Projekt).");
-            AfterLoad();
             if (s.Modified)
                 _saved = null;
             else

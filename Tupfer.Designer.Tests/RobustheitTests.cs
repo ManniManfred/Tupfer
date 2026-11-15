@@ -24,6 +24,23 @@ public class RobustheitTests : IDisposable
 
     // ---------- Skripte ----------
 
+    [Fact]
+    public void Alte_Projekte_mit_CSharp_Programm_lassen_sich_laden()
+    {
+        // Frühere Versionen speicherten ein C#-Programm und davon erzeugte Skripte: die Felder werden ignoriert
+        var file = ProjectStore.FromJson("""
+            {
+              "Program": "class F : TipToi { }",
+              "Scripts": [ { "Name": "apfel", "Code": 1, "Lines": [ "P(ok)" ], "Generated": true, "Helper": false },
+                           { "Name": "hilfe", "Lines": [ "P(ok)" ], "Generated": true, "Helper": true } ]
+            }
+            """);
+        var project = ProjectViewModel.FromFile(file, _dir, _ => { });
+        Assert.Equal(["apfel", "hilfe"], project.Scripts.Select(s => s.Name));
+        Assert.Equal(1, project.Scripts[0].Code);
+        Assert.DoesNotContain("Program", ProjectStore.ToJson(project.ToFile(_dir)));
+    }
+
     [Theory]
     [InlineData("$x := 99999999999999999999", 65535)]
     [InlineData("$x := 0x1234567890ABCDEF12345", 0x2345)]

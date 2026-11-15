@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Tupfer.Designer.Compiler;
 using Tupfer.Designer.Gme;
 using Tupfer.Designer.Model;
 using Tupfer.Designer.Oid;
@@ -187,10 +186,6 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Die Anfasser eines Bilds schneiden zu statt zu skalieren.</summary>
     [ObservableProperty] bool _cropMode;
     [ObservableProperty] int _selectedTab;
-    [ObservableProperty] string _programErrors = "";
-    [ObservableProperty] string _programOutput = "";
-
-    const int ProgramTab = 2;
 
     /// <summary>Programmversion (aus Directory.Build.props), z. B. „1.2.0“.</summary>
     public static string Version { get; } = typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "";
@@ -277,7 +272,6 @@ public partial class MainWindowViewModel : ObservableObject
         _archiveDir = null;
         FilePath = null;
         Dialogs?.ProjectCreated();
-        ProgramErrors = ProgramOutput = "";
         MarkSaved();
         if (path != null)
         {
@@ -288,11 +282,8 @@ public partial class MainWindowViewModel : ObservableObject
             Log("Neues Projekt angelegt.");
     });
 
-    // ---------- C#-Programm ----------
-
-    /// <summary>Übersetzt das C#-Programm, falls vorhanden. false bei Fehlern.</summary>
-    /// <summary>Ohne Übersetzer (Web-App) werden die zuletzt übersetzten, gespeicherten Skripte verwendet.</summary>
-    bool EnsureProgram()
+    /// <summary>Bereitet das Projekt auf Bauen, Export und Test vor.</summary>
+    void PrepareProject()
     {
         // Ein Satz in der Begrüßung ist keine Namensliste: als Text anlegen, damit er vorgelesen wird
         if (Project.HasWelcomeProblem)
@@ -301,102 +292,6 @@ public partial class MainWindowViewModel : ObservableObject
             Project.WelcomeAsTextCommand.Execute(null);
             Log($"Begrüßung „{sentence}“ als Text „{Project.Welcome}“ angelegt (Tab „Sprachausgabe“).");
         }
-        return string.IsNullOrWhiteSpace(Project.Program) || !ProgramCompiler.IsAvailable || TryCompileProgram(quiet: true);
-    }
-
-    [RelayCommand]
-    void CompileProgram()
-    {
-        if (!ProgramCompiler.IsAvailable)
-            return;
-        if (string.IsNullOrWhiteSpace(Project.Program))
-        {
-            ProgramErrors = "Noch kein Programm – „Beispiel einfügen“ zeigt, wie es geht.";
-            return;
-        }
-        TryCompileProgram(quiet: false);
-    }
-
-    bool TryCompileProgram(bool quiet)
-    {
-        var result = ProgramCompiler.Compile(Project.Program);
-        if (!result.Success)
-        {
-            ProgramErrors = string.Join(Environment.NewLine, result.Errors);
-            Notice($"C#-Programm: {result.Errors.Count} Fehler – siehe Tab „Programm (C#)“.");
-            SelectedTab = ProgramTab;
-            return false;
-        }
-        if (Project.ApplyProgram(result) is { } error)
-        {
-            ProgramErrors = error;
-            Notice(error);
-            SelectedTab = ProgramTab;
-            return false;
-        }
-        int helpers = result.Scripts.Count - result.EntryPoints.Count;
-        ProgramErrors = $"Keine Fehler. {result.EntryPoints.Count} Skripte zum Antippen, {helpers} Hilfsskripte.";
-        var sb = new System.Text.StringBuilder();
-        if (result.Init != "")
-            sb.AppendLine($"init: {result.Init}").AppendLine();
-        foreach (var s in result.Scripts)
-        {
-            var code = Project.Scripts.FirstOrDefault(x => x.Name == s.Name)?.Code;
-            sb.AppendLine($"{s.Name}:   # OID {code}{(result.EntryPoints.Contains(s.Name) ? "" : ", Hilfsskript")}");
-            foreach (var l in s.Lines)
-                sb.AppendLine($"- {l}");
-        }
-        ProgramOutput = sb.ToString();
-        if (!quiet)
-            Log($"C#-Programm übersetzt: {result.EntryPoints.Count} Skripte zum Antippen, {helpers} Hilfsskripte.");
-        return true;
-    }
-
-    [RelayCommand]
-    void InsertProgramExample()
-    {
-        if (!string.IsNullOrWhiteSpace(Project.Program))
-        {
-            Notice("Das Programm ist nicht leer – das Beispiel wird nur in ein leeres Programm eingefügt.");
-            return;
-        }
-        Project.Program = ProgramExample;
-    }
-
-    const string ProgramExample = """
-        // Jede Methode mit [Oid] wird ein Skript zum Antippen (in „Seiten“ einer Fläche zuordnen).
-        // Felder der Klasse sind die Register des Stifts: ganze Zahlen von 0 bis 65535 oder bool.
-        // Play("name") spielt einen Text aus „Sprachausgabe“ oder eine Audiodatei.
-
-        class MeinSpiel : TipToi
-        {
-            int punkte;
-
-            [Oid] void Apfel()
-            {
-                if (punkte < 5)
-                {
-                    punkte++;
-                    Play("richtig");
-                }
-                else
-                {
-                    punkte = 0;
-                    Play("fertig");
-                }
-            }
-        }
-        """;
-
-    void AfterLoad()
-    {
-        ProgramErrors = ProgramOutput = "";
-        if (string.IsNullOrWhiteSpace(Project.Program))
-            return;
-        if (ProgramCompiler.IsAvailable)
-            TryCompileProgram(quiet: true);
-        else
-            Log("Hinweis: Das C#-Programm lässt sich hier nicht bearbeiten – es werden die zuletzt übersetzten Skripte verwendet.");
     }
 
     // Im Browser kehrt die Dateiauswahl nach Abbrechen teils nie zurück: Befehl trotzdem freigeben
@@ -465,7 +360,6 @@ public partial class MainWindowViewModel : ObservableObject
         FilePath = path;
         AddRecent(path);
         Log($"Projekt geladen: {Dialogs?.DisplayPath(path) ?? path}");
-        AfterLoad();
         MarkSaved();
     }
 
@@ -475,7 +369,6 @@ public partial class MainWindowViewModel : ObservableObject
         Project = ProjectViewModel.FromFile(file, Path.GetDirectoryName(path)!, Log);
         _archiveDir = null;
         FilePath = null;
-        AfterLoad();
         MarkSaved();
         Log($"Importiert: {path} ({file.Scripts.Count} Skripte, {file.Speak.Count} Texte).");
         if (!string.IsNullOrWhiteSpace(file.ExtraYaml))
@@ -581,7 +474,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task ExportYaml() => Guard("YAML-Export", async () =>
     {
-        if (!EnsureProgram()) return;
+        PrepareProject();
         var name = ProjectBaseName ?? "projekt";
         var path = await Dialogs!.SaveAsync("tttool-YAML exportieren", name + ".yaml", "tttool YAML", ".yaml");
         if (path == null) return;
@@ -612,7 +505,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task SaveToPen() => Guard("Auf den Stift speichern", async () =>
     {
-        if (!EnsureProgram()) return;
+        PrepareProject();
         var name = (ProjectBaseName ?? "projekt") + ".gme";
         string? built = null;
         var target = await Dialogs!.SaveToPenAsync(name, async () => built = await CreateGme());
@@ -629,7 +522,7 @@ public partial class MainWindowViewModel : ObservableObject
     /// </summary>
     async Task<string?> CreateGme()
     {
-        if (!EnsureProgram()) return null;
+        PrepareProject();
         if (!IsDesktop)
         {
             var path = Path.Combine(BaseDir, (ProjectBaseName ?? "projekt") + ".gme");
@@ -799,7 +692,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task ExportPdf() => Guard("PDF-Export", async () =>
     {
-        if (!EnsureProgram()) return;
+        PrepareProject();
         Project.AssignCodes();
         var name = ProjectBaseName ?? "seiten";
         var path = await Dialogs!.SaveAsync("Seiten als PDF exportieren", name + ".pdf", "PDF", ".pdf");
@@ -814,7 +707,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task PrintPages() => Guard("Drucken", async () =>
     {
-        if (!EnsureProgram()) return;
+        PrepareProject();
         Project.AssignCodes();
         var pages = CreatePageSpecs();
         // Windows: selbst drucken; mit CMYK-Bildern nur über das PDF (GDI druckt RGB)
@@ -854,7 +747,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task PrintBooklet() => Guard("Broschüre drucken", async () =>
     {
-        if (!EnsureProgram()) return;
+        PrepareProject();
         Project.AssignCodes();
         var sheets = CreateBookletSpecs();
         if (sheets.Count == 0) return;
@@ -878,7 +771,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task ExportBookletPdf() => Guard("Broschüre als PDF", async () =>
     {
-        if (!EnsureProgram()) return;
+        PrepareProject();
         Project.AssignCodes();
         var name = ProjectBaseName ?? "seiten";
         var path = await Dialogs!.SaveAsync("Broschüre als PDF exportieren", name + "-broschuere.pdf", "PDF", ".pdf");
@@ -916,7 +809,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task ExportOidTable() => Guard("OID-Tabelle", async () =>
     {
-        if (!EnsureProgram()) return;
+        PrepareProject();
         Project.AssignCodes();
         var name = ProjectBaseName ?? "projekt";
         var path = await Dialogs!.SaveAsync("OID-Tabelle exportieren", name + "-oids.pdf", "PDF", ".pdf");
@@ -925,7 +818,7 @@ public partial class MainWindowViewModel : ObservableObject
         var entries = new List<(string, int)> { ("Produkt", (int)Project.ProductId) };
         if (Project.Replay is { } r) entries.Add(("Wiederholen", r));
         if (Project.Stop is { } s) entries.Add(("Stopp", s));
-        entries.AddRange(Project.Scripts.Where(x => x.Code.HasValue && !x.Helper).Select(x => (x.Name, x.Code!.Value)));
+        entries.AddRange(Project.Scripts.Where(x => x.Code.HasValue).Select(x => (x.Name, x.Code!.Value)));
 
         PdfWriter.WriteOidTable(path, Project.Comment, entries, Project.Dpi, Project.PixelSize, Project.CmykWithoutBlack);
         Dialogs.OpenInViewer(path);
@@ -1251,11 +1144,6 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     void RemoveScript()
     {
-        if (Project.SelectedScript is { Generated: true })
-        {
-            Notice("Dieses Skript stammt aus dem C#-Programm – bitte dort ändern.");
-            return;
-        }
         if (Project.SelectedScript is { } s)
             Project.RemoveScript(s);
         Project.SelectedScript = Project.Scripts.FirstOrDefault();

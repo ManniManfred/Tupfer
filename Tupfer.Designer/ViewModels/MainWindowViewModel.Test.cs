@@ -80,8 +80,7 @@ public partial class MainWindowViewModel
 
     Task RunTest(Func<PenResult> action) => Guard("Test", async () =>
     {
-        if (!EnsureProgram())
-            return;
+        PrepareProject();
         try
         {
             _pen.Load(Project.ToFile(BaseDir));

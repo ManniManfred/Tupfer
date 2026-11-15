@@ -2,7 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Tupfer.Designer.ViewModels"
              xmlns:views="using:Tupfer.Designer.Views"
-             xmlns:compiler="using:Tupfer.Designer.Compiler"
              xmlns:gme="using:Tupfer.Designer.Gme"
              x:Class="Tupfer.Designer.Views.MainView"
              x:DataType="vm:MainWindowViewModel"
@@ -15,7 +14,6 @@
     <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintPagesCommand}" />
     <KeyBinding Gesture="F5" Command="{Binding BuildGmeCommand}" />
     <KeyBinding Gesture="Shift+F5" Command="{Binding SaveToPenCommand}" />
-    <KeyBinding Gesture="F6" Command="{Binding CompileProgramCommand}" />
     <KeyBinding Gesture="F8" Command="{Binding ToggleTestModeCommand}" />
     <KeyBinding Gesture="Ctrl+PageUp" Command="{Binding BringForwardCommand}" />
     <KeyBinding Gesture="Ctrl+PageDown" Command="{Binding SendBackwardCommand}" />
@@ -246,10 +244,6 @@
             <MenuItem Header="_Testen (Stift simulieren)" InputGesture="F8" ToggleType="CheckBox"
                       IsChecked="{Binding TestMode, Mode=TwoWay}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconTap}" Width="14" Height="14" /></MenuItem.Icon>
-            </MenuItem>
-            <MenuItem Header="C#-Programm _übersetzen" InputGesture="F6" Command="{Binding CompileProgramCommand}"
-                      IsVisible="{x:Static compiler:ProgramCompiler.IsAvailable}">
-              <MenuItem.Icon><PathIcon Data="{StaticResource IconCode}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
             <MenuItem Header="Seiten _drucken …" InputGesture="Ctrl+P" Command="{Binding PrintPagesCommand}">
@@ -928,13 +922,9 @@
               <ListBox ItemsSource="{Binding Project.Scripts}" SelectedItem="{Binding Project.SelectedScript}">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="vm:ScriptViewModel">
-                    <Grid ColumnDefinitions="*,Auto,Auto">
+                    <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                      <Border Grid.Column="1" Background="#E8F5E9" CornerRadius="4" Padding="5,1" Margin="6,0"
-                              VerticalAlignment="Center" IsVisible="{Binding Generated}">
-                        <TextBlock Foreground="#2E7D32" FontSize="11" FontWeight="SemiBold" Text="C#" />
-                      </Border>
-                      <TextBlock Grid.Column="2" Foreground="{StaticResource TextSecondary}" Text="{Binding Code}" />
+                      <TextBlock Grid.Column="1" Margin="6,0,0,0" Foreground="{StaticResource TextSecondary}" Text="{Binding Code}" />
                     </Grid>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -952,18 +942,16 @@
                   <Grid ColumnDefinitions="*,16,Auto">
                     <StackPanel>
                       <TextBlock Classes="label" Text="Name" Margin="0,0,0,4" />
-                      <TextBox Text="{Binding Name}" IsReadOnly="{Binding Generated}" />
+                      <TextBox Text="{Binding Name}" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                       <TextBlock Classes="label" Text="OID-Code" Margin="0,0,0,4" />
                       <TextBlock Classes="value" FontSize="18" Text="{Binding Code}" Margin="0,4,0,0" />
                     </StackPanel>
                   </Grid>
-                  <TextBlock Classes="hint" Margin="0,8,0,0" IsVisible="{Binding Generated}"
-                             Text="Dieses Skript wird aus dem C#-Programm erzeugt und kann nur dort geändert werden." />
                   <TextBlock Classes="label" Text="Zeilen (eine Bedingung/Aktion pro Zeile)" />
                 </StackPanel>
-                <TextBox Classes="code" AcceptsReturn="True" TextWrapping="NoWrap" Text="{Binding Text}" IsReadOnly="{Binding Generated}" />
+                <TextBox Classes="code" AcceptsReturn="True" TextWrapping="NoWrap" Text="{Binding Text}" />
               </DockPanel>
             </Panel>
           </Border>
@@ -976,41 +964,6 @@
                            Text="P(name)        Ton/Text abspielen&#10;P(a,b)         zufällig einen abspielen&#10;P(&quot;a b.ogg&quot;)   Dateiname mit Sonderzeichen&#10;PA(a,b)        alle nacheinander&#10;P?(name)       vielleicht abspielen&#10;J(skript)      zu Skript springen&#10;$r := 1        Register setzen&#10;$r += 1        rechnen (-=, *=, /=, %=)&#10;$r == 1?       Bedingung (!=, &lt;, &gt;, &lt;=, &gt;=)&#10;&#10;Beispiel:&#10;$feld == 0? $feld := 1 P(ok)&#10;$feld == 1? P(schon_belegt)&#10;&#10;Jede Zeile wird von oben geprüft,&#10;die erste passende wird ausgeführt.&#10;&#10;Namen in P(...) beziehen sich auf&#10;die Sprachausgabe oder auf Audio-&#10;dateien im Medienverzeichnis." />
               </StackPanel>
             </ScrollViewer>
-          </Border>
-        </Grid>
-      </TabItem>
-
-      <!-- ================= Programm (C#) ================= -->
-      <TabItem Header="Programm (C#)" IsVisible="{x:Static compiler:ProgramCompiler.IsAvailable}">
-        <Grid ColumnDefinitions="3*,12,2*" RowDefinitions="Auto,*">
-          <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="6" Margin="0,0,0,10">
-            <Button Classes="accent" Command="{Binding CompileProgramCommand}">
-              <StackPanel><PathIcon Data="{StaticResource IconCode}" /><TextBlock Text="Übersetzen (F6)" /></StackPanel>
-            </Button>
-            <Button Command="{Binding InsertProgramExampleCommand}">
-              <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Beispiel einfügen" /></StackPanel>
-            </Button>
-            <TextBlock Classes="hint" VerticalAlignment="Center" Margin="8,0,0,0"
-                       Text="Das Programm wird beim Bauen der GME-Datei und beim Export automatisch übersetzt." />
-          </StackPanel>
-          <Border Grid.Row="1" Classes="card" Padding="0">
-            <TextBox Classes="code" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
-                     BorderThickness="0" CornerRadius="10" Padding="12,10"
-                     Text="{Binding Project.Program}" />
-          </Border>
-          <Border Grid.Row="1" Grid.Column="2" Classes="card">
-            <Grid RowDefinitions="Auto,Auto,Auto,*">
-              <TextBlock Classes="section" Text="Meldungen" />
-              <SelectableTextBlock Grid.Row="1" TextWrapping="Wrap" MaxHeight="160" Text="{Binding ProgramErrors}" />
-              <Expander Grid.Row="2" Header="Kurzreferenz" Margin="0,8,0,4" HorizontalAlignment="Stretch">
-                <SelectableTextBlock Classes="hint" FontFamily="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace"
-                                     Text="int punkte = 3;       Feld = Register (0–65535)&#10;bool fertig;          bool = 0/1&#10;const int Max = 9;    Konstante&#10;&#10;[Oid] void Apfel()    Skript zum Antippen&#10;[Oid(&quot;apfel&quot;)]        mit eigenem Skriptnamen&#10;void Hilfe(int n)     wird eingesetzt (inline)&#10;&#10;Play(&quot;a&quot;)             abspielen&#10;PlayAll(&quot;a&quot;, &quot;b&quot;)    nacheinander&#10;PlayRandom(&quot;a&quot;, &quot;b&quot;) zufällig einer&#10;x = Random(6);        0 bis 5&#10;Cancel();             abbrechen&#10;&#10;if / else / switch, &amp;&amp;, ||, !&#10;+ - * / % &amp; | ^ &lt;&lt; &gt;&gt;  ++ -- += …&#10;return;               Skript beenden&#10;&#10;for (int i = 0; i &lt; 5; i++)&#10;foreach (var x in new[] { 1, 2 })&#10;                      feste Anzahl, wird ausgerollt&#10;&#10;Nicht möglich: while, break, Rekursion,&#10;Rückgabewerte, Texte, Arrays." />
-              </Expander>
-              <DockPanel Grid.Row="3">
-                <TextBlock DockPanel.Dock="Top" Classes="label" Text="Erzeugte Skripte" />
-                <TextBox Classes="code" IsReadOnly="True" TextWrapping="NoWrap" FontSize="12" Text="{Binding ProgramOutput}" />
-              </DockPanel>
-            </Grid>
           </Border>
         </Grid>
       </TabItem>
@@ -1209,7 +1162,6 @@
                 </Border>
                 <TextBlock Classes="label" Text="Initialisierung (init)" />
                 <TextBox Classes="code" Text="{Binding Init}" />
-                <TextBlock Classes="hint" Margin="0,4,0,0" Text="Bei einem C#-Programm werden die Startwerte aus den Feldern übernommen." />
                 <TextBlock Classes="label" Text="Sprache für Text-to-Speech (language)" />
                 <TextBox Text="{Binding Language}" />
                 <TextBlock Classes="label" Text="GME-Sprache (gme-lang, optional)" />

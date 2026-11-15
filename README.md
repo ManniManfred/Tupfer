@@ -20,11 +20,10 @@ Bis Version 1.10 hieß das Projekt „TipToy Designer“.
 | --- | --- |
 | `Tupfer.Designer/` | Die Anwendung (Avalonia, .NET 10) |
 | `Tupfer.Designer.Browser/` | Dieselbe Anwendung als Web-App (WebAssembly, siehe „Tupfer Designer im Browser“) |
-| `Tupfer.Designer.Tests/` | Tests (OID/GME, Stift-Simulation, C#-Übersetzer, Bearbeiten) |
+| `Tupfer.Designer.Tests/` | Tests (OID/GME, Stift-Simulation, Bearbeiten) |
 | `examples/tic-tac-toi/` | Beispiel: Tic-Tac-Toe als Designer-Projekt mit Spielfeld-Grafik (auch in der Web-App) |
 | `examples/meine-leute/` | Vorlage „Meine Leute“: Familienseite für die Kleinsten mit eigenen Fotos und Stimmen (auch in der Web-App) |
 | `examples/wo-ist/` | Suchspiel „Wo ist …?“ mit acht Tieren für Vorschulkinder (auch in der Web-App) |
-| `examples/tic-tac-toi-csharp/` | Dasselbe Spiel als C#-Programm (siehe „Programmieren in C#“) |
 | `examples/druckertest/` | Drucker-Testseite (PDF + GME), um die passenden Druckeinstellungen zu finden |
 | `deploy/setup/` | Setups für Windows (Inno Setup), Linux (.deb, AppImage) und macOS (.dmg) |
 | `nextcloud/` | App für Nextcloud: die Web-App mit Dateien aus Nextcloud (siehe „Tupfer Designer in Nextcloud“) |
@@ -146,7 +145,6 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   Objekten mit gleichen Abständen **verteilen** (rechte Spalte oder *Bearbeiten → Ausrichten*).
   Ein einzelnes Objekt wird an der Seite ausgerichtet, z. B. waagerecht zentriert.
 - **Skripte:** tttool-Skripte bearbeiten, mit Kurzreferenz der Befehle.
-- **Programm (C#):** Spiellogik in C# schreiben statt in der Skriptsprache (siehe unten).
 - **Sprachausgabe:** Texte, die beim Bauen per Text-to-Speech vertont werden, mit Knopf zum Anhören.
   Jeder Text kann stattdessen eine eigene Aufnahme bekommen – direkt mit dem Mikrofon aufgenommen
   oder als Audiodatei (`.wav`, `.ogg`, `.mp3`) übernommen; sie liegt im Projektordner unter
@@ -245,9 +243,6 @@ Unterschiede zur Desktop-Version:
 - **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
   fragt beim ersten Mal nach der Erlaubnis. Gespeichert wird als Ogg Vorbis (mono, 22 kHz).
 - **tttool** kann im Browser nicht gestartet werden; die Option dafür fehlt.
-- **Kein C#-Programm:** Der Übersetzer (Roslyn) würde die Web-App mehr als verdoppeln, deshalb fehlt
-  der Tab *Programm (C#)*. Projekte mit C#-Programm lassen sich trotzdem öffnen und bauen – dann
-  mit den zuletzt (in der Desktop-Version) übersetzten Skripten.
 - Schriftarten: Es steht nur die eingebaute Schrift (Inter) zur Verfügung.
 
 ## Tupfer Designer in Nextcloud
@@ -311,59 +306,6 @@ weitergeben. Zum Bearbeiten entpackt der Designer sie in ein Arbeitsverzeichnis 
 die GME-Datei entsteht neben der Projektdatei. Ältere Projekte (`*.tupfer.json`, Pfade relativ zur
 Projektdatei) lassen sich weiter öffnen und werden beim Speichern als `*.tupfer` daneben abgelegt.
 Hintergrundbilder älterer Projekte werden beim Öffnen zu einem seitenfüllenden Bild.
-
-## Programmieren in C#
-
-Statt die Skriptsprache von tttool zu verwenden, kann die Spiellogik im Tab *Programm (C#)* als
-C#-Klasse geschrieben werden. Der Designer übersetzt sie in Skripte für den Stift (F6, oder
-automatisch beim Bauen und Exportieren):
-
-```csharp
-class Zaehlspiel : TipToi
-{
-    int punkte;
-
-    [Oid] void Apfel()
-    {
-        if (punkte < 5) { punkte++; Play("richtig"); }
-        else            { punkte = 0; Play("fertig"); }
-    }
-}
-```
-
-wird zu
-
-```yaml
-Apfel:
-- $punkte < 5? $punkte += 1 P(richtig)
-- $punkte := 0 P(fertig)
-```
-
-| C# | Stift |
-| --- | --- |
-| Felder (`int`, `bool` …), Initialwerte | Register (0 bis 65535), `init` |
-| `[Oid] void Name()` | Skript zum Antippen; in *Seiten* einer Fläche zuordnen |
-| andere Methoden (auch mit Parametern und `return`) | werden beim Aufruf eingesetzt |
-| `if`/`else`/`switch`, `&&`, `\|\|`, `!` | Zeilen mit Bedingungen (die erste passende wird ausgeführt) |
-| `+ - * / % & \| ^ << >>`, `++`, `+=` … | Rechenbefehle, Zwischenergebnisse in Hilfsregistern |
-| `Play("a")`, `PlayAll("a", "b")`, `PlayRandom("a", "b")` | `P(a)`, `PA(a,b)`, `P(a,b)` |
-| `x = Random(6);`, `Timer(n)`, `Cancel()` | Pseudo-Zufallszahl 0–5, `T(…)`, `C` |
-| `for (int i = 0; i < 5; i++)`, `foreach (var x in new[] { 2, 4 })` | wird ausgerollt (feste Anzahl, höchstens 100 Durchläufe) |
-
-Schleifen mit fester Anzahl werden beim Übersetzen ausgerollt: Jeder Durchlauf wird eine Kopie
-des Rumpfs, in der die Schleifenvariable eine Konstante ist. Bedingungen, die nur von ihr abhängen
-(`if (i == 2)`), sind damit schon beim Übersetzen entschieden und kosten nichts. Ein `if` auf
-Registern in jedem Durchlauf erzeugt dagegen pro Durchlauf einen Sprung.
-
-Nicht möglich, weil der Stift es nicht kann: `while`/`do`-Schleifen, `break`/`continue` in
-Schleifen, Rekursion, Rückgabewerte, Texte, Arrays und Objekte – der Übersetzer meldet das mit
-Zeilennummer. Code nach einem `if`,
-Bedingungen auf berechneten Werten und Zeilen mit mehr als 8 Befehlen werden auf Hilfsskripte
-verteilt, die per Sprung (`J`) folgen; der Stift springt erst, wenn die laufende Ausgabe zu Ende ist.
-
-`examples/tic-tac-toi-csharp/` enthält Tic-Tac-Toe als C#-Programm. Die Datei `TipToi.cs` dort
-liefert IntelliSense in der IDE. Die Tests in `Tupfer.Designer.Tests` vergleichen das übersetzte
-Programm mit dem echten C#-Programm (`dotnet test Tupfer.Designer.Tests`).
 
 ## Drucker testen
 

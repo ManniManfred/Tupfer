@@ -80,7 +80,6 @@ public partial class ProjectViewModel : ObservableObject
     }
     [ObservableProperty] string _mediaPath = "";
     [ObservableProperty] string _extraYaml = "";
-    [ObservableProperty] string _program = "";
     [ObservableProperty] int? _replay;
     [ObservableProperty] int? _stop;
 
@@ -165,13 +164,11 @@ public partial class ProjectViewModel : ObservableObject
         RefreshAreas();
     }
 
-    /// <param name="helper">Hilfsskript des C#-Programms: erscheint nicht in der Auswahl für Flächen.</param>
-    public ScriptViewModel AddScript(string name, string text = "", bool helper = false)
+    public ScriptViewModel AddScript(string name, string text = "")
     {
-        var script = new ScriptViewModel(this) { Name = name, Text = text, Helper = helper };
+        var script = new ScriptViewModel(this) { Name = name, Text = text };
         Scripts.Add(script);
-        if (!helper)
-            ScriptNames.Add(name);
+        ScriptNames.Add(name);
         return script;
     }
 
@@ -181,46 +178,6 @@ public partial class ProjectViewModel : ObservableObject
             return;
         ScriptNames.Remove(script.Name);
         RefreshAreas();
-    }
-
-    /// <summary>
-    /// Ersetzt die vom C#-Programm erzeugten Skripte. Codes bleiben pro Name erhalten,
-    /// damit gedruckte Seiten gültig bleiben. Liefert eine Fehlermeldung oder null.
-    /// </summary>
-    public string? ApplyProgram(Compiler.CompileResult result)
-    {
-        var manual = Scripts.Where(s => !s.Generated).Select(s => s.Name).ToHashSet();
-        var clash = result.Scripts.FirstOrDefault(s => manual.Contains(s.Name));
-        if (clash != null)
-            return $"Das C#-Programm erzeugt das Skript „{clash.Name}“, das es schon als normales Skript gibt. Bitte eines umbenennen.";
-
-        // Vorhandene Skripte gleichen Namens werden aktualisiert statt ersetzt, damit Code und
-        // Auswahl in den Flächen erhalten bleiben
-        var existing = Scripts.Where(s => s.Generated).ToDictionary(s => s.Name);
-        var selected = SelectedScript?.Name;
-        foreach (var old in existing.Values.Where(s => result.Scripts.All(cs => cs.Name != s.Name)).ToList())
-            RemoveScript(old);
-        foreach (var cs in result.Scripts)
-        {
-            bool helper = !result.EntryPoints.Contains(cs.Name);
-            var text = string.Join("\n", cs.Lines);
-            if (existing.TryGetValue(cs.Name, out var script) && script.Helper == helper)
-            {
-                script.Text = text;
-                continue;
-            }
-            int? code = script?.Code;
-            if (script != null)
-                RemoveScript(script);
-            script = AddScript(cs.Name, text, helper);
-            script.Generated = true;
-            script.Code = code;
-        }
-        Init = result.Init;
-        AssignCodes();
-        RefreshAreas();
-        SelectedScript = Scripts.FirstOrDefault(s => s.Name == selected) ?? Scripts.FirstOrDefault();
-        return null;
     }
 
     /// <summary>Zeile eines Skripts, das nur einen Text abspielt.</summary>
@@ -241,7 +198,7 @@ public partial class ProjectViewModel : ObservableObject
     /// </summary>
     public string ScriptForSpeak(SpeakViewModel speak)
     {
-        if (Scripts.FirstOrDefault(s => !s.Generated && !s.Helper && SpeakOfScript(s.Name) == speak) is { } existing)
+        if (Scripts.FirstOrDefault(s => SpeakOfScript(s.Name) == speak) is { } existing)
             return existing.Name;
         var name = Scripts.Any(s => s.Name == speak.Name) || string.IsNullOrWhiteSpace(speak.Name)
             ? UniqueScriptName(string.IsNullOrWhiteSpace(speak.Name) ? "text" : speak.Name)
@@ -264,7 +221,7 @@ public partial class ProjectViewModel : ObservableObject
     {
         if (oldName.Length == 0 || oldName == newName)
             return;
-        foreach (var script in Scripts.Where(s => !s.Generated).ToList())
+        foreach (var script in Scripts.ToList())
         {
             script.Text = PlayCall().Replace(script.Text, m =>
                 m.Groups["head"].Value + RenameInList(m.Groups["names"].Value, oldName, newName) + ")");
@@ -347,7 +304,6 @@ public partial class ProjectViewModel : ObservableObject
         Welcome = Welcome,
         MediaPath = MediaPath,
         ExtraYaml = ExtraYaml,
-        Program = Program,
         Replay = Replay,
         Stop = Stop,
         TttoolPath = TttoolPath,
@@ -380,7 +336,6 @@ public partial class ProjectViewModel : ObservableObject
             Welcome = f.Welcome,
             MediaPath = f.MediaPath,
             ExtraYaml = f.ExtraYaml,
-            Program = f.Program ?? "",
             Replay = f.Replay,
             Stop = f.Stop,
             TttoolPath = string.IsNullOrWhiteSpace(f.TttoolPath) ? "tttool" : f.TttoolPath,
@@ -392,9 +347,8 @@ public partial class ProjectViewModel : ObservableObject
         };
         foreach (var s in f.Scripts)
         {
-            var script = vm.AddScript(s.Name, string.Join("\n", s.Lines), s.Helper);
+            var script = vm.AddScript(s.Name, string.Join("\n", s.Lines));
             script.Code = s.Code;
-            script.Generated = s.Generated;
         }
         foreach (var s in f.Speak)
             vm.Speak.Add(new SpeakViewModel
