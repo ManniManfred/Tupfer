@@ -1037,7 +1037,7 @@
                 <TextBlock Grid.Column="2" Text="{Binding VolumeText, FallbackValue=''}" MinWidth="56" TextAlignment="Right"
                            VerticalAlignment="Center" Margin="8,0" />
                 <Button Grid.Column="3" Content="Automatisch" Command="{Binding NormalizeCommand}"
-                        ToolTip.Tip="So laut wie möglich, ohne zu übersteuern" />
+                        ToolTip.Tip="So laut wie die Sprachausgabe (wie „Lautstärke angleichen“)" />
               </Grid>
               <TextBlock IsVisible="{Binding Clips, FallbackValue=False}" Foreground="#C62828" TextWrapping="Wrap"
                          Text="Zu laut: Die rot markierten Stellen werden abgeschnitten und klingen verzerrt." />
@@ -1067,7 +1067,7 @@
               <TextBlock Classes="section" Text="Texte für die Sprachausgabe" />
               <TextBlock Classes="hint" Margin="0,0,0,6"
                          Classes.desktoponly="True"
-                         Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet (Wiedergabeknopf = anhören). Statt der Sprachausgabe kann jeder Text eine eigene Aufnahme bekommen: Der Mikrofonknopf nimmt auf (noch einmal klicken beendet), der Ordnerknopf übernimmt eine Audiodatei (.wav, .ogg, .mp3), die Schere schneidet eine Aufnahme zu und macht sie lauter oder leiser. Aufnahmen liegen im Projektordner unter aufnahmen/." />
+                         Text="Texte werden beim Bauen der GME-Datei vorgelesen und eingebettet (Wiedergabeknopf = anhören). Statt der Sprachausgabe kann jeder Text eine eigene Aufnahme bekommen: Der Mikrofonknopf nimmt auf (noch einmal klicken beendet), der Ordnerknopf übernimmt eine Audiodatei (.wav, .ogg, .mp3), die Schere schneidet eine Aufnahme zu und macht sie lauter oder leiser. „Lautstärke angleichen“ bringt alle Aufnahmen auf die Lautstärke der Sprachausgabe. Aufnahmen liegen im Projektordner unter aufnahmen/." />
               <StackPanel IsVisible="{x:Static vm:MainWindowViewModel.HasVoices}" Margin="0,2,0,4">
                 <TextBlock Classes="label" Text="Stimme des Projekts" />
                 <ComboBox Classes="voice" MinWidth="320" ItemsSource="{Binding Project.VoiceOptions}"
@@ -1087,6 +1087,10 @@
                 </Button>
                 <Button Classes="danger" Command="{Binding RemoveSpeakCommand}">
                   <StackPanel><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Löschen" /></StackPanel>
+                </Button>
+                <Button Command="{Binding LevelRecordingsCommand}"
+                        ToolTip.Tip="Bringt alle Aufnahmen auf die gleiche Lautstärke, so laut wie die Sprachausgabe (zu leise werden lauter, zu laute leiser)">
+                  <StackPanel><PathIcon Data="{StaticResource IconLevel}" /><TextBlock Text="Lautstärke angleichen" /></StackPanel>
                 </Button>
               </WrapPanel>
               <Grid Classes="speakheader" ColumnDefinitions="Auto,*,Auto" Margin="10,6,10,2">

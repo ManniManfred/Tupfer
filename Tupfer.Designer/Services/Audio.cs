@@ -238,7 +238,7 @@ public static class Audio
 
     /// <summary>
     /// Schneidet die Samples auf [<paramref name="start"/>, <paramref name="end"/>) zu und ändert die Lautstärke um
-    /// <paramref name="gain"/> (1 = unverändert); zu laute Werte werden begrenzt. An geschnittenen Kanten wird
+    /// <paramref name="gain"/> (1 = unverändert); zu laute Werte werden weich begrenzt (<see cref="Limit"/>). An geschnittenen Kanten wird
     /// 5 ms ein- bzw. ausgeblendet, damit es nicht knackt.
     /// </summary>
     public static float[] Cut(float[] samples, int start, int end, float gain)
@@ -247,7 +247,8 @@ public static class Audio
         end = Math.Clamp(end, start, samples.Length);
         var result = new float[end - start];
         for (int i = 0; i < result.Length; i++)
-            result[i] = Math.Clamp(samples[start + i] * gain, -1f, 1f);
+            result[i] = samples[start + i] * gain;
+        result = Limit(result);
         int fade = Math.Min(SampleRate / 200, result.Length / 2);
         for (int i = 0; i < fade; i++)
         {
@@ -256,6 +257,71 @@ public static class Audio
                 result[i] *= f;
             if (end < samples.Length)
                 result[^(i + 1)] *= f;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Sprachpegel: Effektivwert (RMS) der Abschnitte (je 20 ms), in denen gesprochen wird. Pausen zählen nicht mit,
+    /// sonst wäre eine Aufnahme mit langen Pausen „leiser“: Abschnitte über 30 dB unter dem lautesten (bzw. unter
+    /// -60 dBFS) bleiben außen vor. Die Schwelle ist relativ, damit lauter oder leiser gemachte Aufnahmen denselben
+    /// Pegel ergeben. 0, wenn nichts zu hören ist.
+    /// </summary>
+    public static double SpeechLevel(ReadOnlySpan<float> samples, int sampleRate = SampleRate)
+    {
+        int frame = Math.Max(1, sampleRate / 50);
+        var frames = new List<(double Sum, int Count)>();
+        for (int pos = 0; pos < samples.Length; pos += frame)
+        {
+            var part = samples.Slice(pos, Math.Min(frame, samples.Length - pos));
+            double frameSum = 0;
+            foreach (var v in part)
+                frameSum += (double)v * v;
+            frames.Add((frameSum, part.Length));
+        }
+        double loudest = frames.Select(f => Math.Sqrt(f.Sum / f.Count)).DefaultIfEmpty(0).Max();
+        double gate = Math.Max(0.001, loudest / 31.6);
+        double sum = 0;
+        long count = 0;
+        foreach (var (frameSum, n) in frames.Where(f => Math.Sqrt(f.Sum / f.Count) >= gate))
+        {
+            sum += frameSum;
+            count += n;
+        }
+        return count == 0 ? 0 : Math.Sqrt(sum / count);
+    }
+
+    /// <summary>
+    /// Sprachpegel (-22 dBFS), auf den „Lautstärke angleichen“ die Aufnahmen bringt: so laut wie die Sprachausgabe
+    /// (die deutschen Piper-Stimmen liegen bei 0,06–0,11).
+    /// </summary>
+    public const double TargetSpeechLevel = 0.08;
+
+    /// <summary>
+    /// Verstärkung, die den Sprachpegel auf <paramref name="target"/> bringt. Damit es nicht verzerrt, höchstens so viel,
+    /// dass nur 0,1 % der Werte über 0,97 kämen (die kappt <see cref="Limit"/> weich); 1, wenn nichts zu hören ist.
+    /// </summary>
+    public static double LevelGain(float[] samples, double target = TargetSpeechLevel)
+    {
+        double level = SpeechLevel(samples);
+        if (level <= 0)
+            return 1;
+        var magnitudes = samples.Select(Math.Abs).ToArray();
+        Array.Sort(magnitudes);
+        double loud = magnitudes[Math.Min(magnitudes.Length - 1, (int)(magnitudes.Length * 0.999))];
+        double gain = target / level;
+        return loud > 0 ? Math.Min(gain, 0.97 / loud) : gain;
+    }
+
+    /// <summary>Kappt Werte über 0,9 weich (ohne harte Kante), so dass nichts über 1 kommt.</summary>
+    public static float[] Limit(float[] samples)
+    {
+        const float knee = 0.9f;
+        var result = new float[samples.Length];
+        for (int i = 0; i < samples.Length; i++)
+        {
+            float v = samples[i], a = Math.Abs(v);
+            result[i] = a <= knee ? v : Math.Sign(v) * (knee + (1 - knee) * (float)Math.Tanh((a - knee) / (1 - knee)));
         }
         return result;
     }

@@ -19,7 +19,6 @@ public partial class RecordingEditorViewModel : ObservableObject
     {
         Speak = speak;
         Samples = samples;
-        UpdatePeak();
     }
 
     public SpeakViewModel Speak { get; }
@@ -49,7 +48,7 @@ public partial class RecordingEditorViewModel : ObservableObject
         if (clamped != value)
             Start = clamped;
         else
-            UpdatePeak();
+            OnPropertyChanged(nameof(Clips));
     }
 
     partial void OnEndChanged(double value)
@@ -58,7 +57,7 @@ public partial class RecordingEditorViewModel : ObservableObject
         if (clamped != value)
             End = clamped;
         else
-            UpdatePeak();
+            OnPropertyChanged(nameof(Clips));
     }
 
     partial void OnVolumeChanged(double value)
@@ -75,28 +74,33 @@ public partial class RecordingEditorViewModel : ObservableObject
     public string RangeText =>
         $"Von {Start * Seconds:0.00} s bis {End * Seconds:0.00} s – Länge {(End - Start) * Seconds:0.00} s von {Seconds:0.00} s";
 
-    /// <summary>Lautester Wert im Ausschnitt (vor der Lautstärkeänderung).</summary>
-    float _peak;
-
-    /// <summary>Bei dieser Lautstärke würde der Ausschnitt übersteuern (verzerrt klingen).</summary>
-    public bool Clips => _peak * Gain > 1.001;
-
-    void UpdatePeak()
+    /// <summary>
+    /// Bei dieser Lautstärke käme mehr als 0,1 % des Ausschnitts über den Anschlag: Das wird zwar weich begrenzt,
+    /// klingt aber verzerrt.
+    /// </summary>
+    public bool Clips
     {
-        var (start, end) = Range;
-        _peak = Audio.Peak(Samples.AsSpan(start, end - start));
-        OnPropertyChanged(nameof(Clips));
+        get
+        {
+            var (start, end) = Range;
+            float limit = (float)(1 / Gain);
+            int loud = 0;
+            foreach (var v in Samples.AsSpan(start, end - start))
+                if (Math.Abs(v) > limit)
+                    loud++;
+            return loud > (end - start) / 1000;
+        }
     }
 
     /// <summary>Ausschnitt in Samples.</summary>
     public (int Start, int End) Range => ((int)Math.Round(Start * Samples.Length), (int)Math.Round(End * Samples.Length));
 
-    /// <summary>Stellt die Lautstärke so ein, dass der lauteste Wert knapp unter dem Anschlag liegt (-1 dB).</summary>
+    /// <summary>Stellt die Lautstärke so ein, dass der Ausschnitt so laut ist wie die Sprachausgabe (siehe <see cref="Audio.LevelGain"/>).</summary>
     [RelayCommand]
     void Normalize()
     {
-        if (_peak > 0)
-            Volume = Math.Clamp(Math.Floor(0.89 / _peak * 100), MinVolume, MaxVolume);
+        var (start, end) = Range;
+        Volume = Math.Clamp(Math.Round(Audio.LevelGain(Samples[start..end]) * 100), MinVolume, MaxVolume);
     }
 
     /// <summary>Ganze Aufnahme in ursprünglicher Lautstärke.</summary>

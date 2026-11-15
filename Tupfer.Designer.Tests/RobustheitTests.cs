@@ -258,7 +258,8 @@ public class RobustheitTests : IDisposable
             Assert.True(editor.End > editor.Start);
             editor.End = 0.75;
             editor.NormalizeCommand.Execute(null);
-            Assert.InRange(editor.Volume, 350, 360);
+            // Sinus mit 0,25 Aussteuerung hat den Sprachpegel 0,177 → auf 0,08 leiser
+            Assert.InRange(editor.Volume, 44, 46);
             Assert.False(editor.Clips);
             editor.Volume = 5000;
             Assert.Equal(RecordingEditorViewModel.MaxVolume, editor.Volume);
@@ -286,6 +287,41 @@ public class RobustheitTests : IDisposable
         {
             Audio.Device = previous;
         }
+    }
+
+    [Fact]
+    public async Task AlleAufnahmenAngleichen()
+    {
+        var vm = OpenProject(new Dialogs(discard: true));
+        short[] Ton(double level) => Enumerable.Range(0, 8000)
+            .Select(i => (short)(level * 32767 * Math.Sin(2 * Math.PI * 441 * i / Audio.SampleRate))).ToArray();
+        // Zu leise, zu laut, passend (Sprachpegel eines Sinus = Aussteuerung / √2) und eine MP3-Datei
+        var leise = new SpeakViewModel { Name = "leise" };
+        var laut = new SpeakViewModel { Name = "laut" };
+        var passt = new SpeakViewModel { Name = "passt" };
+        var mp3 = new SpeakViewModel { Name = "mp3" };
+        File.WriteAllBytes(Path.Combine(_dir, "leise.wav"), Audio.Wav(Ton(0.02)));
+        File.WriteAllBytes(Path.Combine(_dir, "laut.wav"), Audio.Wav(Ton(0.9)));
+        File.WriteAllBytes(Path.Combine(_dir, "passt.wav"), Audio.Wav(Ton(Audio.TargetSpeechLevel * Math.Sqrt(2))));
+        File.WriteAllBytes(Path.Combine(_dir, "x.mp3"), "ID3 keine Aufnahme"u8.ToArray());
+        leise.Recording = Path.Combine(_dir, "leise.wav");
+        laut.Recording = Path.Combine(_dir, "laut.wav");
+        passt.Recording = Path.Combine(_dir, "passt.wav");
+        mp3.Recording = Path.Combine(_dir, "x.mp3");
+        // Dieselbe Datei für zwei Texte
+        var auchLaut = new SpeakViewModel { Name = "auchlaut", Recording = laut.Recording };
+        foreach (var s in new[] { leise, laut, passt, mp3, auchLaut })
+            vm.Project.Speak.Add(s);
+
+        await vm.LevelRecordingsCommand.ExecuteAsync(null);
+
+        Assert.Equal(Path.Combine(_dir, "passt.wav"), passt.Recording);
+        Assert.Equal(Path.Combine(_dir, "x.mp3"), mp3.Recording);
+        Assert.NotEqual(Path.Combine(_dir, "laut.wav"), laut.Recording);
+        Assert.Equal(laut.Recording, auchLaut.Recording);
+        foreach (var s in new[] { leise, laut })
+            Assert.Equal(Audio.TargetSpeechLevel, Audio.SpeechLevel(Audio.DecodeMono(File.ReadAllBytes(s.Recording!))), 0.005);
+        Assert.Contains("2 von 4 Aufnahmen angeglichen", vm.LogText);
     }
 
     // ---------- Ungespeicherte Änderungen ----------

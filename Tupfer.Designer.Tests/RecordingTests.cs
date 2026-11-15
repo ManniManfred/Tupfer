@@ -179,8 +179,8 @@ public class RecordingTests : IDisposable
         Assert.True(cut[^1] < 0.01f);
         // Nicht geschnittene Kanten bleiben, zu laute Werte werden begrenzt
         var loud = Audio.Cut(samples, 0, 2000, 20);
-        Assert.Equal(1f, loud[0]);
-        Assert.Equal(1f, loud[^1]);
+        Assert.InRange(loud[0], 0.99f, 1f);
+        Assert.InRange(loud[^1], 0.99f, 1f);
         Assert.Equal(0.1f, Audio.Peak(samples));
     }
 
@@ -195,5 +195,34 @@ public class RecordingTests : IDisposable
         Assert.InRange(Audio.Peak(fromOgg), 0.2f, 0.3f);
         Assert.Throws<InvalidDataException>(() => Audio.DecodeMono("ID3 keine Aufnahme"u8.ToArray()));
         Assert.Throws<InvalidDataException>(() => Audio.DecodeMono("OggS kaputt"u8.ToArray()));
+    }
+
+    [Fact]
+    public void SprachpegelOhnePausen()
+    {
+        // 0,5 s Ton (Sprachpegel 0,2) und 1 s Stille: Die Pause zählt nicht mit
+        var tone = Enumerable.Range(0, Audio.SampleRate / 2).Select(i => (float)(0.2 * Math.Sqrt(2) * Math.Sin(i * 0.2))).ToArray();
+        var withPause = tone.Concat(new float[Audio.SampleRate]).ToArray();
+        Assert.Equal(0.2, Audio.SpeechLevel(tone), 0.005);
+        Assert.Equal(0.2, Audio.SpeechLevel(withPause), 0.005);
+        Assert.Equal(0, Audio.SpeechLevel(new float[1000]));
+        Assert.Equal(Audio.TargetSpeechLevel / 0.2, Audio.LevelGain(withPause), 0.03);
+        Assert.Equal(1, Audio.LevelGain(new float[1000]));
+        // Leiser gemacht ergibt sich derselbe Pegel (leise Stellen fallen nicht aus der Messung)
+        var speech = Enumerable.Range(0, Audio.SampleRate).Select(i => (float)((i < 11000 ? 0.6 : 0.02) * Math.Sin(i * 0.2))).ToArray();
+        Assert.Equal(Audio.SpeechLevel(speech) * 0.1, Audio.SpeechLevel(speech.Select(v => v * 0.1f).ToArray()), 0.0001);
+
+        // Einzelne laute Spitzen dürfen weich begrenzt werden, viele nicht: Dann wird weniger verstärkt
+        var quiet = Enumerable.Range(0, 10000).Select(i => (float)(0.01 * Math.Sin(i * 0.2))).ToArray();
+        quiet[5000] = 0.5f;
+        Assert.InRange(Audio.LevelGain(quiet), 8.5, 12);
+        var spiky = quiet.Select((v, i) => i % 100 == 0 ? 0.5f : v).ToArray();
+        Assert.InRange(Audio.LevelGain(spiky), 1, 2);
+
+        var limited = Audio.Limit([0.5f, 0.95f, -3f, 10f]);
+        Assert.Equal(0.5f, limited[0]);
+        Assert.InRange(limited[1], 0.9f, 0.95f);
+        Assert.InRange(limited[2], -1f, -0.99f);
+        Assert.True(limited[3] <= 1f);
     }
 }

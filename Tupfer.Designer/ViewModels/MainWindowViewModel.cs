@@ -1561,6 +1561,62 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Bringt alle Aufnahmen (WAV und Ogg) auf den gleichen Sprachpegel wie die Sprachausgabe
+    /// (<see cref="Audio.TargetSpeechLevel"/>). Geänderte Aufnahmen werden wie beim Schneiden als neue Datei gespeichert;
+    /// solche, die schon passen (±0,5 dB), bleiben unverändert.
+    /// </summary>
+    [RelayCommand]
+    Task LevelRecordings() => Guard("Lautstärke angleichen", async () =>
+    {
+        // Eine Datei kann zu mehreren Texten gehören: jede nur einmal bearbeiten
+        var files = Project.Speak.Where(s => s.HasRecording)
+            .GroupBy(s => Path.GetFullPath(s.Recording!, BaseDir), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (files.Count == 0)
+        {
+            Notice("Es gibt noch keine Aufnahmen. Aufnahmen macht der Mikrofonknopf neben einem Text.");
+            return;
+        }
+        if (Dialogs != null && !await Dialogs.ConfirmAsync(
+                $"Alle {files.Count} Aufnahmen auf die gleiche Lautstärke bringen (so laut wie die Sprachausgabe)? "
+                + "Die bearbeiteten Aufnahmen werden als neue Dateien gespeichert."))
+            return;
+        CancelRecordingEdit();
+        int changed = 0;
+        var skipped = new List<string>();
+        foreach (var file in files)
+        {
+            var speak = file.First();
+            float[] samples;
+            try
+            {
+                var data = await File.ReadAllBytesAsync(file.Key);
+                samples = await Task.Run(() => Audio.DecodeMono(data));
+            }
+            catch (Exception ex) when (ex is InvalidDataException or IOException)
+            {
+                skipped.Add($"„{speak.Name}“ ({ex.Message})");
+                continue;
+            }
+            double gain = Audio.LevelGain(samples);
+            if (Math.Abs(20 * Math.Log10(gain)) < 0.5)
+                continue;
+            var ogg = await Task.Run(() => Audio.SamplesToOgg(Audio.Limit(samples.Select(v => (float)(v * gain)).ToArray())));
+            var path = RecordingPath(speak, ".ogg", keepOwn: false);
+            await File.WriteAllBytesAsync(path, ogg);
+            foreach (var s in file)
+                s.Recording = path;
+            Log($"„{speak.Name}“: Lautstärke {gain * 100:0} % ({20 * Math.Log10(gain):+0.0;-0.0} dB) → {path}");
+            changed++;
+        }
+        Log(changed == 0
+            ? "Alle Aufnahmen haben schon die gleiche Lautstärke."
+            : $"{changed} von {files.Count} Aufnahmen angeglichen.");
+        if (skipped.Count > 0)
+            Notice("Nicht angeglichen (nur WAV und Ogg lassen sich bearbeiten): " + string.Join(", ", skipped));
+    });
+
+    /// <summary>
     /// Aufnahmen liegen im Projektverzeichnis unter aufnahmen/, benannt nach dem Text. Eine Datei, die schon
     /// existiert (z. B. die Aufnahme eines umbenannten Textes), wird nicht überschrieben, nur die eigene
     /// (mit <paramref name="keepOwn"/> = false auch die nicht).
