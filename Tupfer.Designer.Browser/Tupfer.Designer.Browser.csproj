@@ -13,6 +13,10 @@
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     <!-- Prozesse (tttool, externe Sprachausgabe) werden im Browser nie gestartet; JSON-Typen bleiben erhalten (s. o.) -->
     <NoWarn>$(NoWarn);CA1416;IL2026</NoWarn>
+    <!-- SkiaSharp und HarfBuzz müssen in dotnet.native.wasm gelinkt werden. Ohne passende Workload (wasm-tools) würde
+         sonst nur gewarnt und eine Seite veröffentlicht, die beim Start mit „TypeInitialization … SKImageInfo“ abbricht;
+         so schlägt der Build fehl. Das SDK legt global.json fest (Version 10, dazu passt „wasm-tools“). -->
+    <WasmBuildNative>true</WasmBuildNative>
   </PropertyGroup>
 
   <!-- Der Designer selbst wird aus Tupfer.Designer mitübersetzt (ohne Desktop-Start, Windows-Sprachausgabe, Windows-Druck, Piper und Personenerkennung mit ONNX Runtime) -->

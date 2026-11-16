@@ -35,7 +35,7 @@
       const messages = [];
       const remember = text => {
         messages.push(String(text));
-        if (messages.length > 8) messages.shift();
+        if (messages.length > 30) messages.shift();
       };
       const show = title => {
         if (window.tupferStarted || !document.getElementById('loading')) return;

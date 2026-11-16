@@ -19,7 +19,22 @@ class BrowserSettingsStore : ISettingsStore
 
 static class Program
 {
-    static Task Main(string[] args)
+    static async Task Main(string[] args)
+    {
+        try
+        {
+            await StartAsync(args);
+        }
+        catch (Exception ex)
+        {
+            // Vollständig (mit inneren Ausnahmen) ausgeben: Die Ladeseite zeigt console.error an,
+            // die Meldung der Ausnahme allein nennt im Browser oft nur den äußeren Typ
+            Console.Error.WriteLine(ex.ToString());
+            throw;
+        }
+    }
+
+    static Task StartAsync(string[] args)
     {
         BrowserFileDialogs.NewWorkDir();
         App.CreateDialogs = topLevel => new BrowserFileDialogs(topLevel);
