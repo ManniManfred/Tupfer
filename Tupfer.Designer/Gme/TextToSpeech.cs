@@ -17,13 +17,15 @@ namespace Tupfer.Designer.Gme;
 public class TextToSpeech
 {
     /// <summary>
-    /// Eingebaute Sprachausgabe (Sprache, Text → WAV-Daten), ersetzt die externen Programme.
-    /// Wird im Browser gesetzt, wo keine Programme gestartet werden können.
+    /// Eingebaute Sprachausgabe (Sprache, Text → WAV-Daten), ersetzt die externen Programme (für Tests).
     /// </summary>
     public static Func<string, string, byte[]>? Synthesizer { get; set; }
 
-    /// <summary>Lädt die eingebaute Sprachausgabe für die Sprache (vor <see cref="Synthesizer"/>).</summary>
-    public static Func<string, Task>? LoadAsync { get; set; }
+    /// <summary>
+    /// Ob es ohne natürliche Stimme eine einfache Sprachausgabe gibt (externe Programme oder
+    /// <see cref="Synthesizer"/>). Im Browser nicht: Dort spricht nur die natürliche Stimme.
+    /// </summary>
+    public static bool SimpleVoiceAvailable { get; set; } = true;
 
     /// <summary>
     /// Natürlich klingende Sprachausgabe (Stimme aus <see cref="Voices"/>, Text → WAV-Daten), asynchron.
@@ -57,16 +59,12 @@ public class TextToSpeech
     }
 
     /// <summary>
-    /// Vor <see cref="Speak"/> aufrufen: lädt die eingebaute Sprachausgabe und spricht die Texte, wenn
-    /// möglich, mit der natürlichen Stimme vor (Ergebnisse landen im Cache). Einträge: Schlüssel wie
+    /// Vor <see cref="Speak"/> aufrufen: spricht die Texte, wenn möglich, mit der natürlichen Stimme vor (Ergebnisse landen im Cache). Einträge: Schlüssel wie
     /// <see cref="Voices.SpeechKey(string?, string?, string?)"/> und Text.
     /// </summary>
     public async Task PrepareAsync(IEnumerable<(string SpeechKey, string Text)> items)
     {
         var todo = items.Where(t => !string.IsNullOrWhiteSpace(t.Text)).Distinct().ToList();
-        if (LoadAsync is { } load)
-            foreach (var language in todo.Select(t => Voices.Parse(t.SpeechKey).Language).Distinct())
-                await load(language);
         if (NaturalSynthesizer is not { } natural)
             return;
         Directory.CreateDirectory(_cacheDir);
@@ -89,7 +87,9 @@ public class TextToSpeech
             {
                 NaturalLoaded.Remove(voice);
                 NaturalFailed.Add(voice);
-                _notice($"Natürliche Stimme nicht verfügbar ({ex.Message}) – es spricht die einfache Stimme.");
+                _notice(SimpleVoiceAvailable
+                    ? $"Natürliche Stimme nicht verfügbar ({ex.Message}) – es spricht die einfache Stimme."
+                    : $"Natürliche Stimme nicht verfügbar ({ex.Message}).");
             }
         }
     }
@@ -109,6 +109,10 @@ public class TextToSpeech
         }
         // Ohne natürliche Stimme zählt nur die Sprache
         var language = Voices.Parse(speechKey).Language;
+        if (!SimpleVoiceAvailable)
+            throw new InvalidOperationException(
+                $"Keine Sprachausgabe für „{text}“: Die natürliche Stimme ließ sich nicht laden (Internetverbindung nötig). " +
+                "Alternativ den Text selbst aufnehmen oder eine Audiodatei verwenden.");
         Directory.CreateDirectory(_cacheDir);
         var key = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(language + "\n" + text)))[..16].ToLowerInvariant();
         var ogg = Path.Combine(_cacheDir, $"tts-{key}-{language}.ogg");

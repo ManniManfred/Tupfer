@@ -72,10 +72,6 @@ static partial class BrowserInterop
     [JSImport("openUrl", "tupfer")]
     public static partial void OpenUrl(string url);
 
-    /// <summary>Lädt die Sprachausgabe (meSpeak) und die Stimme für die Sprache.</summary>
-    [JSImport("loadSpeech", "tupfer")]
-    public static partial Task LoadSpeechAsync(string language);
-
     /// <summary>Startet die Wiedergabe von Audiodaten (MIME-Typ wie „audio/wav“); eine laufende wird beendet.</summary>
     [JSImport("playAudio", "tupfer")]
     public static partial void PlayAudio([JSMarshalAs<JSType.MemoryView>] Span<byte> data, string mimeType);
@@ -128,9 +124,4 @@ static partial class BrowserInterop
     /// <summary>Gesichtserkennung (YuNet mit onnxruntime-web) für das übergebene Bild; float32-Werte Base64-kodiert.</summary>
     [JSImport("detectFaces", "tupfer")]
     public static partial Task<string> DetectFacesAsync(int width, int height);
-
-    /// <summary>Spricht den Text, liefert WAV-Daten. Vorher muss <see cref="LoadSpeechAsync"/> aufgerufen worden sein.</summary>
-    [JSImport("speak", "tupfer")]
-    [return: JSMarshalAs<JSType.Array<JSType.Number>>]
-    public static partial byte[] Speak(string language, string text);
 }

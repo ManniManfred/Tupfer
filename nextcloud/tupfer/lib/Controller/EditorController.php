@@ -101,7 +101,8 @@ class EditorController extends Controller {
 
 	/**
 	 * Eigene Sicherheitsregeln (eine EmptyContentSecurityPolicy wird von Nextcloud nicht mit den
-	 * Standardregeln zusammengeführt): WebAssembly, meSpeak (eval), die natürliche Sprachausgabe
+	 * Standardregeln zusammengeführt): WebAssembly und eval (früher für meSpeak; ob Piper und
+	 * die .NET-Laufzeit ohne auskommen, ist nicht geprüft), die natürliche Sprachausgabe
 	 * (Piper von cdnjs, jsDelivr und Hugging Face) und die Einbettung in die Seite der App. Immich erreicht der
 	 * Designer über die eigene Weiterleitung (ImmichController), also über 'self'.
 	 */

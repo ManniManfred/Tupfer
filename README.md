@@ -291,9 +291,8 @@ Unterschiede zur Desktop-Version:
   flüsternd, wütend …), außerdem Englisch, Französisch, Spanisch, Italienisch und Niederländisch.
   Beim ersten Gebrauch werden Laufzeit und Lautschrift (etwa 30 MB) und jede Stimme (20–110 MB) von
   cdnjs, jsDelivr und Hugging Face geladen, danach kommen sie aus dem Browser-Cache. Die Texte
-  bleiben dabei im Browser. Ist das Laden nicht möglich, spricht
-  [meSpeak](https://www.masswerk.at/mespeak/) (eSpeak als JavaScript, klingt deutlich künstlicher).
-  Die Texte werden als WAV eingebettet. Die Desktop-Version hat dieselben Stimmen.
+  bleiben dabei im Browser. Ohne Internetverbindung gibt es im Browser keine Sprachausgabe (dann
+  Texte selbst aufnehmen oder Audiodateien verwenden). Die Texte werden als WAV eingebettet. Die Desktop-Version hat dieselben Stimmen.
 - **Personen erkennen** lädt beim ersten Gebrauch die Laufzeit onnxruntime-web von cdnjs (wie die
   Sprachausgabe); die Modelle kommen von der eigenen Seite.
 - **Aufnahmen** mit dem Mikrofon brauchen eine Seite über `https` (oder `localhost`); der Browser
@@ -378,7 +377,7 @@ reicht ihn nur durch. Ohne eingetragenen Server sagt der Designer, was zu tun is
 
 Die natürliche Sprachausgabe lädt ihre Stimmen wie im Browser von cdnjs, jsDelivr und Hugging Face.
 Die App erlaubt dafür diese Adressen in ihren Sicherheitsregeln (Content-Security-Policy). Ist der
-Server vom Internet abgeschnitten, spricht meSpeak.
+Server vom Internet abgeschnitten, gibt es keine Sprachausgabe.
 
 ## Typischer Ablauf
 
@@ -435,7 +434,7 @@ drucken* (Strg+P) druckt unter Windows direkt.
 Der Tupfer Designer steht unter der [MIT-Lizenz](LICENSE): Jeder darf ihn nutzen, verändern und
 weitergeben, auch kommerziell, solange der Lizenzhinweis erhalten bleibt.
 
-Ausnahmen und Fremdbestandteile (u. a. die Portierung von tttool, MIT; meSpeak, GPL 3; die
+Ausnahmen und Fremdbestandteile (u. a. die Portierung von tttool, MIT; die
 Lizenzen der Piper-Stimmen) stehen in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 „tiptoi“ ist eine eingetragene Marke der Ravensburger Verlag GmbH. Dieses Projekt steht in keiner

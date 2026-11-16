@@ -40,9 +40,9 @@ static class Program
         App.CreateDialogs = topLevel => new BrowserFileDialogs(topLevel);
         // Projekte (*.tupfer) liegen schon in einem eigenen Arbeitsverzeichnis: dort entpacken
         ProjectStore.ArchiveWorkDir = path => Path.GetDirectoryName(path)!;
-        TextToSpeech.LoadAsync = BrowserInterop.LoadSpeechAsync;
         TextToSpeech.NaturalSynthesizer = async (voice, text) => Convert.FromBase64String(await BrowserInterop.SpeakNaturalAsync(voice, text));
-        TextToSpeech.Synthesizer = BrowserInterop.Speak;
+        // Keine einfache Sprachausgabe im Browser: ohne natürliche Stimme (z. B. offline) gibt es keine
+        TextToSpeech.SimpleVoiceAvailable = false;
         PersonDetector.Segmenter = async rgb =>
         {
             BrowserInterop.SetModelInput(rgb);

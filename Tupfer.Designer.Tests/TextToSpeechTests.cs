@@ -51,6 +51,31 @@ public class TextToSpeechTests
     }
 
     [Fact]
+    public async Task OhneEinfacheStimme_FehlerStattRueckfall()
+    {
+        var dir = Directory.CreateTempSubdirectory("tupfer-tts").FullName;
+        try
+        {
+            // Wie im Browser: nur die natürliche Stimme
+            TextToSpeech.SimpleVoiceAvailable = false;
+            TextToSpeech.NaturalSynthesizer = (_, _) => throw new InvalidOperationException("nicht erreichbar");
+            var notices = new List<string>();
+            var tts = new TextToSpeech(dir, _ => { }, notices.Add);
+
+            await tts.PrepareAsync([("de", "Hallo")]);
+            Assert.Contains(notices, n => n.Contains("nicht erreichbar") && !n.Contains("einfache Stimme"));
+            var ex = Assert.Throws<InvalidOperationException>(() => tts.Speak("de", "Hallo"));
+            Assert.Contains("Internetverbindung", ex.Message);
+        }
+        finally
+        {
+            TextToSpeech.SimpleVoiceAvailable = true;
+            TextToSpeech.NaturalSynthesizer = null;
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public async Task NatuerlicheStimme_KommtAlsOggInDieGme()
     {
         var dir = Directory.CreateTempSubdirectory("tupfer-tts").FullName;
