@@ -1080,22 +1080,25 @@ public partial class MainWindowViewModel : ObservableObject
     /// Erkennt die Personen auf dem gewählten Bild, fragt nach ihren Namen und legt für jede eine
     /// OID-Fläche (Polygon) an, die einen eigenen Text abspielt (Skript und Text heißen wie die Person,
     /// z. B. „anni“; ohne Namen „person1“ … mit dem Text „Person 1“). Ist die Person durch etwas davor
-    /// geteilt, bekommt jeder Teil eine Fläche mit demselben Text. Bei Fotos aus Immich kommen Gesichter
-    /// (rechteckige Flächen) und Namen von dort; die Namen lassen sich in der Abfrage noch ändern.
+    /// geteilt, bekommt jeder Teil eine Fläche mit demselben Text. Bei Fotos aus Immich kommen die Namen
+    /// von dort (über die Gesichter in den Umrissen); sie lassen sich in der Abfrage noch ändern.
     /// </summary>
     [RelayCommand]
     Task DetectPersons() => Guard("der Personenerkennung", async () =>
     {
         if (Project.SelectedPage is not { SelectedElement: { IsImage: true } image } page)
             return;
-        // Fotos aus Immich: Gesichter und Namen von dort
+        // Fotos aus Immich: Namen (und Gesichter) von dort, die Umrisse wie sonst aus der eigenen Erkennung
         List<PersonDetector.Person> persons;
         List<string>? known = null;
-        bool fromImmich = false;
-        if (image.ImmichAsset is { } assetId && await ImmichPersonsAsync(image, assetId) is { } immich)
+        string source = "";
+        var faces = image.ImmichAsset is { } assetId ? await ImmichFacesAsync(image, assetId) : null;
+        if (faces != null && !CanDetectPersons)
         {
-            (persons, known) = immich;
-            fromImmich = true;
+            // Ohne eigene Erkennung: die Gesichter selbst als Flächen
+            persons = faces.Select(f => new PersonDetector.Person([f.Area.Outline], f.Face)).ToList();
+            known = faces.Select(f => f.Area.Name).ToList();
+            source = " (Gesichter aus Immich)";
         }
         else
         {
@@ -1103,6 +1106,12 @@ public partial class MainWindowViewModel : ObservableObject
                 return;
             Log($"Suche Personen auf „{image.FileName}“ …");
             persons = await PersonDetector.DetectAsync(image);
+            if (faces != null)
+            {
+                persons = CombinePersons(persons, faces, out var immichNames);
+                known = immichNames;
+                source = " (Namen aus Immich)";
+            }
         }
         if (persons.Count == 0)
         {
@@ -1115,7 +1124,6 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
         var assigned = AddPersonAreas(page, persons.Select(p => p.Outlines).ToList(), names);
-        var source = fromImmich ? " (Gesichter aus Immich)" : "";
         Notice(assigned.Count == 1
             ? $"1 Person erkannt{source}: OID-Fläche „{assigned[0].Label}“ angelegt. Text im Tab „Sprachausgabe“ ändern oder aufnehmen."
             : $"{assigned.Count} Personen erkannt{source}: OID-Flächen {string.Join(", ", assigned.Select(a => $"„{a.Label}“"))} angelegt. Texte im Tab „Sprachausgabe“ ändern oder aufnehmen.");

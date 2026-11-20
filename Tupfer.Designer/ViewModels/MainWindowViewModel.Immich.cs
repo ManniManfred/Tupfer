@@ -1,6 +1,7 @@
 using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Tupfer.Designer.Model;
 using Tupfer.Designer.Services;
 
 namespace Tupfer.Designer.ViewModels;
@@ -74,12 +75,12 @@ public partial class MainWindowViewModel
         : Path.Combine(BaseDir, "dateien");
 
     /// <summary>
-    /// Personen auf einem Foto aus Immich: die Gesichter mit ihren Namen von dort, umgerechnet auf das Bild.
-    /// null, wenn das nicht geht (Meldung ist schon ausgegeben); dann wird ggf. lokal erkannt.
+    /// Gesichter auf einem Foto aus Immich mit ihren Namen, umgerechnet auf das Bild, dazu je ein Kopf-Ausschnitt.
+    /// null, wenn das nicht geht (Meldung ist schon ausgegeben); dann wird ohne Namen erkannt.
     /// </summary>
-    async Task<(List<PersonDetector.Person> Persons, List<string> Names)?> ImmichPersonsAsync(ElementViewModel image, string assetId)
+    async Task<List<(ImmichFaceArea Area, Avalonia.Media.Imaging.Bitmap? Face)>?> ImmichFacesAsync(ElementViewModel image, string assetId)
     {
-        string fallback = CanDetectPersons ? " Es wird stattdessen auf dem Bild selbst gesucht." : "";
+        string fallback = CanDetectPersons ? " Die Personen werden ohne Namen aus Immich erkannt." : "";
         if (image.Image is not { } bitmap)
             throw new InvalidOperationException($"Das Bild „{image.FileName}“ fehlt.");
         List<ImmichFace> faces;
@@ -117,11 +118,49 @@ public partial class MainWindowViewModel
             return null;
         }
         var rotation = ImmichFaces.RotationFor(orientation);
-        var persons = areas.Select(a => new PersonDetector.Person([a.Outline], PersonDetector.FaceImage(bitmap, a.SourcePixels, rotation))).ToList();
         var named = areas.Count(a => a.Name.Length > 0);
         Log(named == areas.Count
             ? $"Immich kennt {areas.Count} Gesicht(er) mit Namen."
             : $"Immich kennt {areas.Count} Gesicht(er), {named} davon mit Namen.");
-        return (persons, areas.Select(a => a.Name).ToList());
+        return areas.Select(a => (a, PersonDetector.FaceImage(bitmap, a.SourcePixels, rotation))).ToList();
+    }
+
+    /// <summary>
+    /// Verbindet die erkannten Personen (Umrisse) mit den Gesichtern aus Immich: Eine Person bekommt den Namen
+    /// des Gesichts in ihrem Umriss (und dessen Kopf-Ausschnitt). Gesichter ohne erkannte Person werden als
+    /// rechteckige Fläche angelegt, damit niemand mit Namen fehlt. Von links nach rechts sortiert.
+    /// </summary>
+    public List<PersonDetector.Person> CombinePersons(List<PersonDetector.Person> persons,
+        List<(ImmichFaceArea Area, Avalonia.Media.Imaging.Bitmap? Face)> faces, out List<string> names)
+    {
+        var match = ImmichFaces.MatchFaces(persons.Select(p => p.Outlines).ToList(), faces.Select(f => f.Area).ToList());
+        var result = new List<(double Order, PersonDetector.Person Person, string Name)>();
+        static double CenterX(List<List<AreaPoint>> outlines)
+        {
+            var xs = outlines.SelectMany(o => o).Select(p => p.X).ToList();
+            return xs.Count == 0 ? 0 : (xs.Min() + xs.Max()) / 2;
+        }
+        for (int p = 0; p < persons.Count; p++)
+        {
+            int f = Array.IndexOf(match, p);
+            result.Add((CenterX(persons[p].Outlines),
+                f >= 0 ? persons[p] with { Face = faces[f].Face ?? persons[p].Face } : persons[p],
+                f >= 0 ? faces[f].Area.Name : ""));
+        }
+        int unmatched = 0;
+        for (int f = 0; f < faces.Count; f++)
+            if (match[f] < 0)
+            {
+                unmatched++;
+                List<List<AreaPoint>> outline = [faces[f].Area.Outline];
+                result.Add((CenterX(outline), new PersonDetector.Person(outline, faces[f].Face), faces[f].Area.Name));
+            }
+        if (unmatched > 0)
+            Log(unmatched == 1
+                ? "Zu 1 Gesicht aus Immich wurde kein Umriss gefunden; es bekommt eine rechteckige Fläche."
+                : $"Zu {unmatched} Gesichtern aus Immich wurde kein Umriss gefunden; sie bekommen rechteckige Flächen.");
+        var sorted = result.OrderBy(r => r.Order).ToList();
+        names = sorted.Select(r => r.Name).ToList();
+        return sorted.Select(r => r.Person).ToList();
     }
 }

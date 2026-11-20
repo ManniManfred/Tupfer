@@ -186,14 +186,15 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   *Zugang …* ändert sie. Verständliche Meldungen gibt es, wenn der Server nicht erreichbar ist, der Key
   abgelehnt wird oder ihm Rechte fehlen.
 - **Personen erkennen bei Fotos aus Immich:** Immich kennt die Gesichter auf seinen Fotos und meist auch
-  die Namen. Bei einem Foto aus Immich nimmt *Personen erkennen* deshalb Lage und Namen der Gesichter
-  von dort, statt selbst zu suchen: Jedes Gesicht wird eine rechteckige OID-Fläche, und die Abfrage der
-  Namen erscheint mit den Namen aus Immich vorausgefüllt (Gesichter ohne Namen bleiben leer → „Person 1“),
-  sodass man nur noch korrigiert. Die Rahmen von Immich gelten für das richtig gedrehte Bild in Immichs
-  Größe und werden auf das eingefügte Bild umgerechnet – mit Auflösung, EXIF-Drehung, Zuschnitt,
-  Skalierung und Drehung auf der Seite; Gesichter außerhalb des Zuschnitts entfallen. Kennt Immich auf
-  dem Foto keine Gesichter oder ist der Server nicht erreichbar, sagt der Designer das und sucht
-  stattdessen selbst auf dem Bild. Verwendete Endpunkte (geprüft gegen die API-Beschreibung von
+  die Namen. Bei einem Foto aus Immich erkennt *Personen erkennen* die Personen wie sonst mit ihrem
+  ganzen Umriss als OID-Fläche und holt die Namen von Immich: Jede Person bekommt den Namen des Gesichts,
+  das in ihrem Umriss liegt, und die Abfrage der Namen erscheint damit vorausgefüllt (Gesichter ohne
+  Namen bleiben leer → „Person 1“), sodass man nur noch korrigiert. Findet die eigene Erkennung zu einem
+  Gesicht keine Person, bekommt es eine rechteckige Fläche um das Gesicht. Die Rahmen von Immich gelten
+  für das richtig gedrehte Bild in Immichs Größe und werden auf das eingefügte Bild umgerechnet – mit
+  Auflösung, EXIF-Drehung, Zuschnitt, Skalierung und Drehung auf der Seite; Gesichter außerhalb des
+  Zuschnitts entfallen. Kennt Immich auf dem Foto keine Gesichter oder ist der Server nicht erreichbar,
+  sagt der Designer das und erkennt die Personen ohne Namen. Verwendete Endpunkte (geprüft gegen die API-Beschreibung von
   Immich 3.4, sie gehen auch mit älteren Versionen): `GET /api/users/me`, `GET /api/albums`,
   `GET /api/people`, `POST /api/search/metadata` (mit `albumIds`/`personIds`), `POST /api/search/smart`,
   `GET /api/assets/{id}/thumbnail`, `GET /api/assets/{id}/original`, `GET /api/faces?id={id}` und

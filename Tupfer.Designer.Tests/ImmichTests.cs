@@ -524,6 +524,70 @@ public class ImmichTests
         Assert.Equal("Paul", vm.Project.Speak.Single(s => s.Name == "paul").Text);
     }
 
+    static List<List<AreaPoint>> Body(double x0, double y0, double x1, double y1) =>
+        [[new(x0, y0), new(x1, y0), new(x1, y1), new(x0, y1)]];
+
+    static ImmichFaceArea FaceAt(double x0, double y0, double x1, double y1, string name) =>
+        new(Body(x0, y0, x1, y1)[0], name, default);
+
+    [Fact]
+    public void GesichterWerdenDenUmrissenZugeordnet()
+    {
+        // Drei Personen nebeneinander; die mittlere hat ein Kind auf dem Arm (eigener Umriss oben in ihrem Rahmen)
+        List<List<List<AreaPoint>>> persons =
+        [
+            Body(0, 10, 20, 100),
+            Body(30, 10, 50, 100),
+            Body(42, 40, 50, 60),
+            Body(60, 10, 80, 100),
+        ];
+        var faces = new List<ImmichFaceArea>
+        {
+            FaceAt(65, 12, 75, 22, "Paul"),
+            FaceAt(5, 12, 15, 22, "Änni"),
+            FaceAt(35, 12, 45, 22, "Mama"),
+            FaceAt(43, 42, 49, 48, "Baby"),
+            // Knapp neben dem Umriss (Haare): gehört trotzdem zu jemandem, hier ist aber niemand mehr frei
+            FaceAt(81, 12, 89, 22, "Gast"),
+            // Weit weg von allen: keine Person
+            FaceAt(150, 12, 160, 22, "Fremd"),
+        };
+        Assert.Equal([3, 0, 1, 2, -1, -1], ImmichFaces.MatchFaces(persons, faces));
+    }
+
+    [Fact]
+    public void GesichtKnappAusserhalbDesUmrisses()
+    {
+        var match = ImmichFaces.MatchFaces([Body(0, 20, 20, 100)], [FaceAt(5, 10, 15, 19, "Anni")]);
+        Assert.Equal([0], match);
+    }
+
+    [Fact]
+    public void PersonenBehaltenIhrenUmrissUndBekommenDenNamen()
+    {
+        var vm = new MainWindowViewModel();
+        var persons = new List<PersonDetector.Person>
+        {
+            new(Body(0, 10, 20, 100), null),
+            new(Body(60, 10, 80, 100), null),
+            new(Body(120, 10, 140, 100), null),
+        };
+        var faces = new List<(ImmichFaceArea, Avalonia.Media.Imaging.Bitmap?)>
+        {
+            (FaceAt(65, 12, 75, 22, "Paul"), null),
+            (FaceAt(5, 12, 15, 22, "Änni"), null),
+            // Von der eigenen Erkennung übersehen: rechteckige Fläche um das Gesicht, zwischen den anderen einsortiert
+            (FaceAt(95, 12, 105, 22, "Opa"), null),
+        };
+        var combined = vm.CombinePersons(persons, faces, out var names);
+        Assert.Equal(["Änni", "Paul", "Opa", ""], names);
+        Assert.Same(persons[0].Outlines, combined[0].Outlines);
+        Assert.Same(persons[1].Outlines, combined[1].Outlines);
+        AssertRect(combined[2].Outlines.Single(), 95, 12, 105, 22);
+        Assert.Same(persons[2].Outlines, combined[3].Outlines);
+        Assert.Contains("kein Umriss", vm.LogText);
+    }
+
     [Fact]
     public void KeyKommtNichtInsProjekt()
     {

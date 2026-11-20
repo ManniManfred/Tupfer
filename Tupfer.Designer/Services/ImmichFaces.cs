@@ -142,4 +142,49 @@ public static class ImmichFaces
         }
         return result.OrderBy(r => r.Order).Select(r => r.Area).ToList();
     }
+
+    /// <summary>
+    /// Ordnet die Gesichter aus Immich den lokal erkannten Personen zu (je Person höchstens ein Gesicht):
+    /// bevorzugt der Person, in deren Umriss die Mitte des Gesichts liegt und deren Oberkante ihr am nächsten
+    /// ist (der Kopf ist oben), sonst einer Person, deren Rahmen das Gesicht knapp verfehlt. Liefert je Gesicht
+    /// den Index der Person oder -1.
+    /// </summary>
+    public static int[] MatchFaces(IReadOnlyList<List<List<AreaPoint>>> persons, IReadOnlyList<ImmichFaceArea> faces)
+    {
+        var candidates = new List<(double Cost, int Face, int Person)>();
+        for (int f = 0; f < faces.Count; f++)
+        {
+            var box = AreaGeometry.Bounds(faces[f].Outline.Select(p => (p.X, p.Y)).ToList());
+            double cx = box.X + box.Width / 2, cy = box.Y + box.Height / 2, size = Math.Max(box.Width, box.Height);
+            for (int p = 0; p < persons.Count; p++)
+            {
+                var points = persons[p].SelectMany(o => o).Select(q => (q.X, q.Y)).ToList();
+                if (points.Count == 0)
+                    continue;
+                var bounds = AreaGeometry.Bounds(points);
+                double top = Math.Abs(cy - bounds.Y);
+                if (persons[p].Any(o => AreaGeometry.Contains(o.Select(q => (q.X, q.Y)).ToList(), cx, cy)))
+                {
+                    candidates.Add((top, f, p));
+                    continue;
+                }
+                // Knapp daneben (z. B. Haare oder Gesicht am Rand der Maske): Abstand zum Rahmen der Person
+                double dx = Math.Max(0, Math.Max(bounds.X - cx, cx - (bounds.X + bounds.Width)));
+                double dy = Math.Max(0, Math.Max(bounds.Y - cy, cy - (bounds.Y + bounds.Height)));
+                double distance = Math.Sqrt(dx * dx + dy * dy);
+                if (distance <= size)
+                    candidates.Add((1e6 + distance, f, p));
+            }
+        }
+        var result = Enumerable.Repeat(-1, faces.Count).ToArray();
+        var taken = new HashSet<int>();
+        foreach (var (_, f, p) in candidates.OrderBy(c => c.Cost))
+        {
+            if (result[f] >= 0 || taken.Contains(p))
+                continue;
+            result[f] = p;
+            taken.Add(p);
+        }
+        return result;
+    }
 }
