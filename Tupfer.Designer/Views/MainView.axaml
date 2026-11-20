@@ -235,6 +235,9 @@
             <MenuItem Header="_Farbfläche einfügen" Command="{Binding InsertShapeCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconColorShape}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
+            <Separator />
+            <MenuItem Header="_Unbenutzte Skripte und Texte entfernen …" Command="{Binding RemoveUnusedCommand}"
+                      ToolTip.Tip="Skripte und Texte, die keine OID-Fläche und kein anderes Skript mehr braucht (z. B. nach mehrmaligem „Personen erkennen“)" />
           </MenuItem>
           <MenuItem Header="_Erstellen">
             <MenuItem Header="_GME-Datei bauen" InputGesture="F5" Command="{Binding BuildGmeCommand}">
@@ -1410,6 +1413,11 @@
             <Button Content="Abbrechen" IsCancel="True" MinWidth="90" HorizontalContentAlignment="Center"
                     Command="{Binding CancelPersonNamesCommand}" />
           </StackPanel>
+          <CheckBox DockPanel.Dock="Bottom" Margin="0,12,0,0" IsChecked="{Binding ReplacePersonAreas}"
+                    IsVisible="{Binding HasExistingPersonAreas}"
+                    ToolTip.Tip="Die alten Flächen werden gelöscht. Gleiche Namen behalten Text, Aufnahme und Code; nicht mehr benutzte Skripte und Texte werden entfernt.">
+            <TextBlock Text="{Binding ExistingPersonAreasText}" TextWrapping="Wrap" />
+          </CheckBox>
           <ScrollViewer>
             <ItemsControl x:Name="PersonNameList" ItemsSource="{Binding PersonNameEntries}">
               <ItemsControl.ItemTemplate>

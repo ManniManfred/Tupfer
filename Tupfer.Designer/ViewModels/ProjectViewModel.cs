@@ -184,6 +184,52 @@ public partial class ProjectViewModel : ObservableObject
         RefreshAreas();
     }
 
+    /// <summary>
+    /// Skripte und Texte, die nichts mehr benutzt (nur unter <paramref name="scripts"/> bzw. <paramref name="speak"/>,
+    /// null = alle). Ein Skript ist benutzt, wenn eine OID-Fläche es abspielt oder sein Name in einem anderen
+    /// benutzten Skript, in Init, Begrüßung oder Zusatz-YAML vorkommt; ein Text, wenn sein Name in einem
+    /// benutzten Skript, in Init, Begrüßung oder Zusatz-YAML vorkommt. Im Zweifel gilt etwas als benutzt.
+    /// </summary>
+    public (List<ScriptViewModel> Scripts, List<SpeakViewModel> Speak) FindUnused(
+        IEnumerable<ScriptViewModel>? scripts = null, IEnumerable<SpeakViewModel>? speak = null)
+    {
+        var areaScripts = Pages.SelectMany(p => p.Areas).Where(a => a.IsScript).Select(a => a.Script ?? "").ToHashSet();
+        string fixedText = string.Join("\n", Init, Welcome, ExtraYaml);
+        static bool Mentions(string text, string name) =>
+            name.Length > 0 && Regex.IsMatch(text, $@"(?<![\w$.]){Regex.Escape(name)}(?![\w])");
+
+        // Erst die Skripte: Ein Skript, das nur von unbenutzten Skripten aufgerufen wird, ist selbst unbenutzt
+        var candidates = (scripts ?? Scripts).Where(Scripts.Contains).Distinct().ToList();
+        var unused = candidates.Where(s => !areaScripts.Contains(s.Name) && !Mentions(fixedText, s.Name)).ToHashSet();
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+            foreach (var script in unused.ToList())
+                if (Scripts.Any(other => other != script && !unused.Contains(other) && Mentions(other.Text, script.Name)))
+                {
+                    unused.Remove(script);
+                    changed = true;
+                }
+        }
+        var remaining = string.Join("\n", Scripts.Where(s => !unused.Contains(s)).Select(s => s.Text).Append(fixedText));
+        var unusedSpeak = (speak ?? Speak).Where(Speak.Contains).Distinct().Where(sp => !Mentions(remaining, sp.Name)).ToList();
+        return (Scripts.Where(unused.Contains).ToList(), unusedSpeak);
+    }
+
+    /// <summary>Entfernt die Skripte und Texte (z. B. aus <see cref="FindUnused"/>); Aufnahmen bleiben als Datei liegen.</summary>
+    public void Remove(IEnumerable<ScriptViewModel> scripts, IEnumerable<SpeakViewModel> speak)
+    {
+        foreach (var script in scripts.ToList())
+            RemoveScript(script);
+        foreach (var entry in speak.ToList())
+            Speak.Remove(entry);
+        if (SelectedScript != null && !Scripts.Contains(SelectedScript))
+            SelectedScript = Scripts.FirstOrDefault();
+        if (SelectedSpeak != null && !Speak.Contains(SelectedSpeak))
+            SelectedSpeak = Speak.FirstOrDefault();
+    }
+
     /// <summary>Zeile eines Skripts, das nur einen Text abspielt.</summary>
     static string PlayLine(string speakName) => $"P({speakName})";
 

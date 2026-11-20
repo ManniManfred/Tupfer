@@ -1158,12 +1158,19 @@ public partial class MainWindowViewModel : ObservableObject
             Notice("Auf dem Bild wurden keine Personen gefunden.");
             return;
         }
+        // Schon einmal erkannt? Dann im Namensdialog anbieten, die alten Flächen zu ersetzen
+        var existing = PersonAreasOn(page, image);
+        ExistingPersonAreasText = existing.Count == 0 ? "" : ExistingAreasText(existing);
+        ReplacePersonAreas = existing.Count > 0;
         if (await AskPersonNamesAsync(persons, known) is not { } names)
         {
             Log("Personenerkennung abgebrochen.");
             return;
         }
-        var assigned = AddPersonAreas(page, persons.Select(p => p.Outlines).ToList(), names);
+        var replace = ReplacePersonAreas ? existing : [];
+        var assigned = AddPersonAreas(page, persons.Select(p => p.Outlines).ToList(), names, replace);
+        if (replace.Count > 0)
+            Log($"{replace.Count} vorhandene Fläche(n) auf dem Bild ersetzt.");
         Notice(assigned.Count == 1
             ? $"1 Person erkannt{source}: OID-Fläche „{assigned[0].Label}“ angelegt. Text im Tab „Sprachausgabe“ ändern oder aufnehmen."
             : $"{assigned.Count} Personen erkannt{source}: OID-Flächen {string.Join(", ", assigned.Select(a => $"„{a.Label}“"))} angelegt. Texte im Tab „Sprachausgabe“ ändern oder aufnehmen.");
@@ -1174,18 +1181,30 @@ public partial class MainWindowViewModel : ObservableObject
     /// Flächen bekommen den Namen aus <paramref name="names"/> (leer: Platzhalter, siehe <see cref="PersonNames.Assign"/>).
     /// Die neuen Flächen sind danach gewählt. Liefert die vergebenen Namen.
     /// </summary>
-    public List<PersonName> AddPersonAreas(PageViewModel page, IReadOnlyList<List<List<AreaPoint>>> persons, IReadOnlyList<string?> names)
+    public List<PersonName> AddPersonAreas(PageViewModel page, IReadOnlyList<List<List<AreaPoint>>> persons, IReadOnlyList<string?> names,
+        IReadOnlyList<AreaViewModel>? replace = null)
     {
+        // Beim Ersetzen behalten Personen mit demselben Namen ihren Text (samt Aufnahme), ihr Skript und ihren Code
+        replace ??= [];
+        var oldSpeak = replace.Select(a => a.SpeakEntry).OfType<SpeakViewModel>().Distinct().ToList();
+        var oldScripts = replace.Select(a => Project.Scripts.FirstOrDefault(s => s.Name == a.Script)).OfType<ScriptViewModel>().Distinct().ToList();
+        var reusable = oldSpeak.Select(s => s.Name).ToHashSet();
         var assigned = PersonNames.Assign(
             persons.Select((_, i) => i < names.Count ? names[i] : null).ToList(),
-            name => Project.Scripts.Any(s => s.Name == name) || Project.Speak.Any(s => s.Name == name));
+            name => !reusable.Contains(name) && (Project.Scripts.Any(s => s.Name == name) || Project.Speak.Any(s => s.Name == name)));
         var areas = new List<AreaViewModel>();
         Project.History.Change(() =>
         {
+            foreach (var area in replace)
+                page.Areas.Remove(area);
             for (int i = 0; i < persons.Count; i++)
             {
-                var speak = Project.AddSpeak(assigned[i].Name);
-                speak.Text = assigned[i].Label;
+                var speak = oldSpeak.FirstOrDefault(s => s.Name == assigned[i].Name);
+                if (speak == null)
+                {
+                    speak = Project.AddSpeak(assigned[i].Name);
+                    speak.Text = assigned[i].Label;
+                }
                 foreach (var outline in persons[i])
                 {
                     var area = new AreaViewModel(Project) { Label = assigned[i].Label };
@@ -1196,9 +1215,86 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
         });
+        if (replace.Count > 0)
+        {
+            // Was die alten Flächen gebraucht haben und jetzt niemand mehr: weg damit (Aufnahmen bleiben)
+            var (scripts, speak) = Project.FindUnused(oldScripts, oldSpeak.Where(s => !s.HasRecording));
+            Project.Remove(scripts, speak);
+        }
         page.Select(areas);
         return assigned;
     }
+
+    /// <summary>
+    /// OID-Flächen, die auf dem Bild einen Text abspielen (wie die von „Personen erkennen“): ihre Mitte liegt
+    /// im Bild, und ihr Skript besteht nur aus „P(name)“.
+    /// </summary>
+    public static List<AreaViewModel> PersonAreasOn(PageViewModel page, ElementViewModel image)
+    {
+        var entry = image.ToEntry(null);
+        Avalonia.Point[] corners = [new(0, 0), new(image.Width, 0), new(image.Width, image.Height), new(0, image.Height)];
+        var frame = corners.Select(c => ElementViewModel.ToPage(entry, c)).Select(p => (p.X, p.Y)).ToList();
+        return page.Areas.Where(a => a.SpeakEntry != null).Where(a =>
+        {
+            var outline = a.Outline();
+            if (outline.Count == 0)
+                return false;
+            double cx = (outline.Min(p => p.X) + outline.Max(p => p.X)) / 2, cy = (outline.Min(p => p.Y) + outline.Max(p => p.Y)) / 2;
+            return AreaGeometry.Contains(frame, cx, cy);
+        }).ToList();
+    }
+
+    static string ExistingAreasText(List<AreaViewModel> areas)
+    {
+        var labels = areas.Select(a => string.IsNullOrWhiteSpace(a.Label) ? a.Script ?? "" : a.Label.Trim()).Distinct().ToList();
+        var list = string.Join(", ", labels.Take(8)) + (labels.Count > 8 ? " …" : "");
+        return areas.Count == 1
+            ? $"Vorhandene Fläche auf dem Bild ersetzen ({list})"
+            : $"Vorhandene {areas.Count} Flächen auf dem Bild ersetzen ({list})";
+    }
+
+    /// <summary>Im Namensdialog: die vorhandenen Flächen auf dem Bild ersetzen (sonst kommen die neuen dazu).</summary>
+    [ObservableProperty] bool _replacePersonAreas;
+
+    /// <summary>Beschriftung des Häkchens; leer, wenn es auf dem Bild noch keine Flächen gibt.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasExistingPersonAreas))]
+    string _existingPersonAreasText = "";
+
+    public bool HasExistingPersonAreas => ExistingPersonAreasText.Length > 0;
+
+    /// <summary>
+    /// Entfernt nach Rückfrage die Skripte und Texte, die keine OID-Fläche und kein anderes Skript mehr
+    /// braucht (z. B. nach mehrmaligem „Personen erkennen“ oder gelöschten Flächen).
+    /// </summary>
+    [RelayCommand]
+    Task RemoveUnused() => Guard("Aufräumen", async () =>
+    {
+        var (scripts, speak) = Project.FindUnused();
+        if (scripts.Count == 0 && speak.Count == 0)
+        {
+            Notice("Alle Skripte und Texte werden benutzt – es gibt nichts aufzuräumen.");
+            return;
+        }
+        static string List(IEnumerable<string> names)
+        {
+            var all = names.ToList();
+            return string.Join(", ", all.Take(25)) + (all.Count > 25 ? $" … (insgesamt {all.Count})" : "");
+        }
+        var parts = new List<string>();
+        if (scripts.Count > 0)
+            parts.Add($"{scripts.Count} Skript(e): {List(scripts.Select(s => s.Name))}");
+        if (speak.Count > 0)
+            parts.Add($"{speak.Count} Text(e): {List(speak.Select(s => s.Name))}");
+        int recordings = speak.Count(s => s.HasRecording);
+        var message = "Nicht mehr benutzt werden " + string.Join(" und ", parts) + "."
+            + (recordings > 0 ? $" {recordings} davon haben eine eigene Aufnahme, die dann nicht mehr ins Projekt kommt." : "")
+            + " Entfernen? (Lässt sich nicht rückgängig machen.)";
+        if (Dialogs != null && !await Dialogs.ConfirmAsync(message))
+            return;
+        Project.Remove(scripts, speak);
+        Notice($"Aufgeräumt: {scripts.Count} Skript(e) und {speak.Count} Text(e) entfernt.");
+    });
 
     /// <summary>Eingabe der Namen nach „Personen erkennen“ (als Ebene über der Ansicht, auch im Browser).</summary>
     public ObservableCollection<PersonNameEntry> PersonNameEntries { get; } = [];

@@ -172,6 +172,13 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   großen Gruppen bis etwa eine halbe Minute. Die Ecken lassen sich wie bei jedem Polygon nachbessern. Ist das Bild auf der Seite gedreht (z. B. ein Handyfoto, das laut EXIF auf
   dem Kopf gespeichert ist), wird es für die Erkennung aufgerichtet – auf dem Kopf stehende Personen
   findet sie sonst schlecht.
+  Liegen auf dem Bild schon Flächen (z. B. aus einem früheren Durchgang), bietet die Namensabfrage an,
+  sie zu ersetzen: Die alten Flächen verschwinden, Personen mit demselben Namen behalten Text, Aufnahme,
+  Skript und Code, und nicht mehr benutzte Skripte und Texte werden entfernt (Texte mit Aufnahme bleiben).
+  Ohne Haken kommen die neuen Flächen dazu (`anni2` …).
+- **Aufräumen:** *Bearbeiten → Unbenutzte Skripte und Texte entfernen …* löscht nach Rückfrage Skripte,
+  die keine Fläche, kein anderes benutztes Skript und weder Init noch Begrüßung oder Zusatz-YAML aufrufen,
+  und Texte, die nirgends mehr abgespielt werden. Das lässt sich nicht rückgängig machen.
 - **Fotos aus Immich:** *Bearbeiten → Bild aus Immich …* (oder der Knopf *Immich*) holt Fotos vom
   eigenen [Immich](https://immich.app)-Server. Beim ersten Mal fragt der Designer nach der Adresse
   (z. B. `https://fotos.example.org`, mit oder ohne `/api`) und einem API-Key (in Immich unter
