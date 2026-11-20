@@ -32,8 +32,6 @@
       <DockPanel>
         <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Right">
           <Button Content="Abbrechen" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
-          <Button Content="Schließen" IsCancel="True" MinWidth="90" HorizontalContentAlignment="Center"
-                  Command="{Binding CloseCommand}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressPercent}" Width="160" IsVisible="{Binding HasProgress}" />

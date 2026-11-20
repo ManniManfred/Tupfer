@@ -60,6 +60,12 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         // Rückfragen und Ordnerdialog gehören zu diesem Fenster, nicht zum Hauptfenster dahinter
         manager.Dialogs = new StorageFileDialogs(window);
         window.Closed += (_, _) => closed();
+        // Esc schließt wie bei den übrigen Dialogen
+        window.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Escape)
+                window.Close();
+        };
         window.Show(owner);
         return new ToolWindow(window);
     }

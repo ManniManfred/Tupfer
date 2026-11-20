@@ -1296,7 +1296,12 @@
       <Border Classes="card" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="16" Padding="20"
               MaxWidth="900" MaxHeight="760">
         <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Text="Stift-Manager" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+          <!-- Das Fenster am Desktop schließt über seinen Rahmen, die Ebene braucht einen eigenen Knopf -->
+          <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <Button DockPanel.Dock="Right" Content="Schließen" IsCancel="True" MinWidth="90" HorizontalContentAlignment="Center"
+                    Command="{Binding PenManager.CloseCommand, FallbackValue={x:Null}}" />
+            <TextBlock Text="Stift-Manager" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
           <views:PenManagerView DataContext="{Binding PenManager}" />
         </DockPanel>
       </Border>
