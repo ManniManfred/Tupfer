@@ -126,7 +126,7 @@ public static class PersonDetector
         var size = bitmap.Size;
         var source = new Rect(image.CropX * size.Width, image.CropY * size.Height, image.CropWidth * size.Width, image.CropHeight * size.Height);
         double viewWidth = Math.Max(1, source.Width), viewHeight = viewWidth * image.Height / image.Width;
-        byte[] Render(Rect region, int width, int height)
+        byte[] RenderStored(Rect region, int width, int height)
         {
             var clip = region.Intersect(new Rect(0, 0, viewWidth, viewHeight));
             if (clip.Width <= 0 || clip.Height <= 0)
@@ -138,14 +138,77 @@ public static class PersonDetector
             return ImageConverter.RenderRegion(bitmap, from, destination, width, height);
         }
 
-        var persons = await DetectAsync(Render, viewWidth, viewHeight);
+        // Gesucht wird auf dem Bild so, wie es auf der Seite steht: Ein gedrehtes Element (z. B. ein laut
+        // EXIF auf dem Kopf gespeichertes Handyfoto) wird in Vierteldrehungen aufgerichtet, sonst stehen
+        // die Personen für die Modelle Kopf und werden nur teilweise oder gar nicht gefunden.
+        int quarter = QuarterTurns(image.Rotation);
+        var view = new ViewRotation(quarter, viewWidth, viewHeight);
+        byte[] Render(Rect region, int width, int height)
+        {
+            if (quarter == 0)
+                return RenderStored(region, width, height);
+            bool swap = quarter % 2 == 1;
+            int storedWidth = swap ? height : width, storedHeight = swap ? width : height;
+            return RotateRgb(RenderStored(view.ToStored(region), storedWidth, storedHeight), storedWidth, storedHeight, quarter);
+        }
+
+        var persons = await DetectAsync(Render, view.Width, view.Height);
         var entry = image.ToEntry(null);
         return persons.Select(person => new Person(person.Select(outline => outline.Select(p =>
         {
+            var stored = view.ToStored(new Point(p.X, p.Y));
             var q = ElementViewModel.ToPage(entry, new Point(
-                Math.Clamp(p.X / viewWidth, 0, 1) * image.Width, Math.Clamp(p.Y / viewHeight, 0, 1) * image.Height));
+                Math.Clamp(stored.X / viewWidth, 0, 1) * image.Width, Math.Clamp(stored.Y / viewHeight, 0, 1) * image.Height));
             return new AreaPoint(Math.Round(q.X, 2), Math.Round(q.Y, 2));
         }).ToList()).ToList(), FaceImage(person, Render))).ToList();
+    }
+
+    /// <summary>Drehung eines Elements in Grad → nächstgelegene Zahl von Vierteldrehungen im Uhrzeigersinn (0 … 3).</summary>
+    public static int QuarterTurns(double rotation) => (int)(((long)Math.Round(rotation / 90) % 4 + 4) % 4);
+
+    /// <summary>
+    /// Das gespeicherte Bild (Breite × Höhe), um <see cref="Quarter"/> Vierteldrehungen im Uhrzeigersinn
+    /// gedreht, wie es auf der Seite erscheint; rechnet Punkte und Bereiche zurück ins gespeicherte Bild.
+    /// </summary>
+    public readonly record struct ViewRotation(int Quarter, double StoredWidth, double StoredHeight)
+    {
+        public double Width => Quarter % 2 == 1 ? StoredHeight : StoredWidth;
+        public double Height => Quarter % 2 == 1 ? StoredWidth : StoredHeight;
+
+        public Point ToStored(Point p) => Quarter switch
+        {
+            1 => new Point(p.Y, StoredHeight - p.X),
+            2 => new Point(StoredWidth - p.X, StoredHeight - p.Y),
+            3 => new Point(StoredWidth - p.Y, p.X),
+            _ => p,
+        };
+
+        public Rect ToStored(Rect r) => new Rect(ToStored(r.TopLeft), ToStored(r.BottomRight)).Normalize();
+    }
+
+    /// <summary>
+    /// Dreht RGB-Daten (Breite × Höhe, Zeile für Zeile) um <paramref name="quarter"/> Vierteldrehungen im
+    /// Uhrzeigersinn; bei einer ungeraden Zahl sind Breite und Höhe danach vertauscht.
+    /// </summary>
+    public static byte[] RotateRgb(byte[] rgb, int width, int height, int quarter)
+    {
+        quarter = (quarter % 4 + 4) % 4;
+        if (quarter == 0)
+            return rgb;
+        int outWidth = quarter % 2 == 1 ? height : width, outHeight = quarter % 2 == 1 ? width : height;
+        var result = new byte[rgb.Length];
+        for (int y = 0; y < outHeight; y++)
+            for (int x = 0; x < outWidth; x++)
+            {
+                var (sx, sy) = quarter switch
+                {
+                    1 => (y, height - 1 - x),
+                    2 => (width - 1 - x, height - 1 - y),
+                    _ => (width - 1 - y, x),
+                };
+                Buffer.BlockCopy(rgb, (sy * width + sx) * 3, result, (y * outWidth + x) * 3, 3);
+            }
+        return result;
     }
 
     /// <summary>

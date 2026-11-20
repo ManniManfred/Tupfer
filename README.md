@@ -169,7 +169,9 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   (z. B. ein Schild vor dem Bauch), bekommt jeder sichtbare Teil eine Fläche mit demselben Text. Die
   Erkennung läuft auf dem eigenen Rechner bzw. im Browser (Modelle zusammen 39 MB, werden
   mitgeliefert); das Foto verlässt ihn nicht. Sie dauert am Desktop wenige Sekunden, im Browser bei
-  großen Gruppen bis etwa eine halbe Minute. Die Ecken lassen sich wie bei jedem Polygon nachbessern.
+  großen Gruppen bis etwa eine halbe Minute. Die Ecken lassen sich wie bei jedem Polygon nachbessern. Ist das Bild auf der Seite gedreht (z. B. ein Handyfoto, das laut EXIF auf
+  dem Kopf gespeichert ist), wird es für die Erkennung aufgerichtet – auf dem Kopf stehende Personen
+  findet sie sonst schlecht.
 - **Fotos aus Immich:** *Bearbeiten → Bild aus Immich …* (oder der Knopf *Immich*) holt Fotos vom
   eigenen [Immich](https://immich.app)-Server. Beim ersten Mal fragt der Designer nach der Adresse
   (z. B. `https://fotos.example.org`, mit oder ohne `/api`) und einem API-Key (in Immich unter

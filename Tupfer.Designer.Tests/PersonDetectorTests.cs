@@ -132,4 +132,110 @@ public class PersonDetectorTests
             PersonDetector.FaceDetector = detector;
         }
     }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(90, 1)]
+    [InlineData(180, 2)]
+    [InlineData(-180, 2)]
+    [InlineData(-90, 3)]
+    [InlineData(270, 3)]
+    [InlineData(360, 0)]
+    [InlineData(93, 1)]
+    [InlineData(10, 0)]
+    public void DrehungWirdAufVierteldrehungenGerundet(double rotation, int quarter) =>
+        Assert.Equal(quarter, PersonDetector.QuarterTurns(rotation));
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void GedrehtesBildUndRueckrechnungPassenZusammen(int quarter)
+    {
+        // 3 × 2 Pixel mit unterschiedlichen Werten; jedes Pixel des gedrehten Bilds muss aus dem Pixel
+        // des gespeicherten Bilds stammen, auf das ViewRotation seine Mitte zurückrechnet
+        const int width = 3, height = 2;
+        var rgb = new byte[width * height * 3];
+        for (int i = 0; i < width * height; i++)
+            rgb[i * 3] = (byte)(10 + i);
+        var rotated = PersonDetector.RotateRgb(rgb, width, height, quarter);
+        var view = new PersonDetector.ViewRotation(quarter, width, height);
+        Assert.Equal(quarter % 2 == 1 ? height : width, view.Width);
+        for (int y = 0; y < (int)view.Height; y++)
+            for (int x = 0; x < (int)view.Width; x++)
+            {
+                var stored = view.ToStored(new Point(x + 0.5, y + 0.5));
+                int sx = (int)stored.X, sy = (int)stored.Y;
+                Assert.Equal(rgb[(sy * width + sx) * 3], rotated[(y * (int)view.Width + x) * 3]);
+            }
+        // Ein Bereich der Ansicht wird zum passenden Bereich des gespeicherten Bilds
+        var all = view.ToStored(new Rect(0, 0, view.Width, view.Height));
+        Assert.Equal(new Rect(0, 0, width, height), all);
+    }
+
+    [Fact]
+    public void AufDemKopfStehendesFotoWirdAufgerichtetGesucht()
+    {
+        // Wie ein Handyfoto, das laut EXIF auf dem Kopf gespeichert ist: Das Element ist um 180° gedreht.
+        // Die Segmentierung bekommt das Bild aufrecht (oben hell, unten dunkel), und die gefundene Person
+        // (obere Hälfte der Ansicht) landet auf der Seite oben, also in der unteren Hälfte des gespeicherten Bilds.
+        var dir = Path.Combine(Path.GetTempPath(), "tupfer-gedreht-" + Guid.NewGuid());
+        Directory.CreateDirectory(dir);
+        var segmenter = PersonDetector.Segmenter;
+        var detector = PersonDetector.FaceDetector;
+        try
+        {
+            var file = Path.Combine(dir, "kopf.svg");
+            // Gespeichert: oben schwarz, unten weiß
+            File.WriteAllText(file, """
+                <svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+                  <rect x="0" y="0" width="400" height="100" fill="#000000"/>
+                  <rect x="0" y="100" width="400" height="100" fill="#ffffff"/>
+                </svg>
+                """);
+            var topBrightness = new List<int>();
+            int n = PersonDetector.MaskSize;
+            PersonDetector.FaceDetector = null;
+            PersonDetector.Segmenter = rgb =>
+            {
+                int size = PersonDetector.Size;
+                topBrightness.Add(rgb[(size / 8 * size + size / 2) * 3]);
+                var scores = new float[PersonDetector.Candidates];
+                var masks = new byte[PersonDetector.Candidates * n * n];
+                scores[0] = 0.9f;
+                // Person in der oberen Hälfte der Eingabe (die Eingabe ist quadratisch, das Bild 2:1)
+                for (int y = 0; y < n; y++)
+                    for (int x = 0; x < n; x++)
+                        masks[y * n + x] = (byte)(y >= n * 3 / 10 && y < n * 4 / 10 && x > n / 3 && x < n * 2 / 3 ? 200 : 60);
+                return Task.FromResult((scores, masks));
+            };
+            var (outlines, brightness) = HeadlessSkia.Run(() =>
+            {
+                var project = new Tupfer.Designer.ViewModels.ProjectViewModel(_ => { });
+                var page = new Tupfer.Designer.ViewModels.PageViewModel(project) { Name = "Seite", WidthMm = 210, HeightMm = 297 };
+                project.Pages.Add(page);
+                var e = new Tupfer.Designer.ViewModels.ElementViewModel(project, ElementKind.Image)
+                    { ImagePath = file, X = 10, Y = 10, Width = 100, Height = 50, Rotation = 180 };
+                page.Elements.Add(e);
+                var t = PersonDetector.DetectAsync(e);
+                while (!t.IsCompleted)
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    Thread.Sleep(2);
+                }
+                return (t.Result.SelectMany(p => p.Outlines).ToList(), topBrightness.ToList());
+            });
+            Assert.True(brightness[0] > 200, $"oben in der Eingabe hell erwartet, war {brightness[0]}");
+            var outline = Assert.Single(outlines);
+            // Seite: Element 10 … 60 mm hoch; die Person liegt in dessen oberer Hälfte
+            Assert.InRange(outline.Average(p => p.Y), 10, 35);
+        }
+        finally
+        {
+            PersonDetector.Segmenter = segmenter;
+            PersonDetector.FaceDetector = detector;
+            Directory.Delete(dir, true);
+        }
+    }
 }
