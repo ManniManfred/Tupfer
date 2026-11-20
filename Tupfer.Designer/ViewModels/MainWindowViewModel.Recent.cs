@@ -38,8 +38,13 @@ public partial class MainWindowViewModel
 
     public bool HasRecentProjects => RecentProjects.Count > 0;
 
-    /// <summary>Startbildschirm statt des Projekts (Desktop ohne geöffnete Datei).</summary>
-    [ObservableProperty] bool _showStartScreen;
+    /// <summary>Liste „Zuletzt geöffnet“ auf dem Startbildschirm (nur Desktop).</summary>
+    public bool HasRecentList => _recent != null;
+
+    /// <summary>Startbildschirm statt des Projekts (Desktop ohne geöffnete Datei, überall nach „Schließen“).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CloseProjectCommand))]
+    bool _showStartScreen;
 
     // Jedes geladene oder neue Projekt beendet den Startbildschirm
     partial void OnProjectChanged(ProjectViewModel value)

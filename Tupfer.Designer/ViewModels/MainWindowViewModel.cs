@@ -309,6 +309,28 @@ public partial class MainWindowViewModel : ObservableObject
             Log("Neues Projekt angelegt.");
     });
 
+    /// <summary>
+    /// Schließt das Projekt (bei ungespeicherten Änderungen mit Rückfrage) und zeigt den Startbildschirm.
+    /// Dahinter liegt ein leeres Projekt ohne Datei, damit nichts mehr in die alte Datei geschrieben wird.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanCloseProject))]
+    Task CloseProject() => Guard("Schließen", async () =>
+    {
+        if (!await ConfirmDiscardAsync())
+            return;
+        var name = FileName;
+        TestMode = false;
+        Project = CreateDefaultProject(Log);
+        _archiveDir = null;
+        FilePath = null;
+        Dialogs?.ProjectCreated();
+        MarkSaved();
+        ShowStartScreen = true;
+        Log($"Projekt „{name}“ geschlossen.");
+    });
+
+    bool CanCloseProject() => !ShowStartScreen;
+
     /// <summary>Bereitet das Projekt auf Bauen, Export und Test vor.</summary>
     void PrepareProject()
     {

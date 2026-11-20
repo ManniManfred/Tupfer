@@ -11,6 +11,7 @@
     <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveProjectCommand}" />
     <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenProjectCommand}" />
     <KeyBinding Gesture="Ctrl+N" Command="{Binding NewProjectCommand}" />
+    <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseProjectCommand}" />
     <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintPagesCommand}" />
     <KeyBinding Gesture="F5" Command="{Binding BuildGmeCommand}" />
     <KeyBinding Gesture="Shift+F5" Command="{Binding SaveToPenCommand}" />
@@ -133,6 +134,8 @@
               <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="Speichern _unter …" Command="{Binding SaveProjectAsCommand}" />
+            <MenuItem x:Name="CloseItem" Header="S_chließen" InputGesture="Ctrl+W" Command="{Binding CloseProjectCommand}"
+                      ToolTip.Tip="Projekt schließen (bei ungespeicherten Änderungen mit Rückfrage) und zum Startbildschirm" />
             <Separator IsVisible="{x:Static vm:MainWindowViewModel.HasExamples}" />
             <MenuItem Header="_Beispiele" IsVisible="{x:Static vm:MainWindowViewModel.HasExamples}"
                       ItemsSource="{x:Static vm:MainWindowViewModel.Examples}">
@@ -1247,24 +1250,27 @@
             </Button>
             <Button Margin="0,0,8,8" Command="{Binding ImportYamlCommand}" Content="tttool-YAML importieren …" />
           </WrapPanel>
-          <TextBlock Classes="label" Text="Zuletzt geöffnet" />
-          <TextBlock Classes="hint" Text="Noch keine Projekte geöffnet." IsVisible="{Binding !HasRecentProjects}" />
-          <ItemsControl ItemsSource="{Binding RecentProjects}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:RecentProject">
-                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,0,0,4"
-                        Background="Transparent" ToolTip.Tip="{Binding FilePath}"
-                        Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).OpenRecentCommand}"
-                        CommandParameter="{Binding}">
-                  <StackPanel>
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Folder}" FontSize="11" Foreground="{DynamicResource TextSecondary}"
-                               TextTrimming="CharacterEllipsis" />
-                  </StackPanel>
-                </Button>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          <!-- Nur am Desktop: Liste der zuletzt geöffneten Dateien -->
+          <StackPanel Spacing="12" IsVisible="{Binding HasRecentList}">
+            <TextBlock Classes="label" Text="Zuletzt geöffnet" />
+            <TextBlock Classes="hint" Text="Noch keine Projekte geöffnet." IsVisible="{Binding !HasRecentProjects}" />
+            <ItemsControl ItemsSource="{Binding RecentProjects}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:RecentProject">
+                  <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                          Background="Transparent" ToolTip.Tip="{Binding FilePath}"
+                          Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).OpenRecentCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Folder}" FontSize="11" Foreground="{DynamicResource TextSecondary}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
         </StackPanel>
       </Border>
     </ScrollViewer>

@@ -84,6 +84,9 @@ public partial class MainView : UserControl
         ShowProperties.Click += (_, _) => ShowPagesPanel(PropertiesPanel);
         // Nur auf dem Desktop sichtbar: schließt das Hauptfenster
         QuitItem.Click += (_, _) => (TopLevel.GetTopLevel(this) as Window)?.Close();
+        // Im Browser schließt Strg+W den Tab (lässt sich dort nicht abfangen): Kürzel nur am Desktop anzeigen
+        if (!MainWindowViewModel.IsDesktop)
+            CloseItem.InputGesture = null;
         // Felder, die erst beim Verlassen übernehmen (Klasse „commit“): Eingabetaste übernimmt sofort
         AddHandler(KeyDownEvent, (_, e) =>
         {

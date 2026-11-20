@@ -424,6 +424,9 @@ weitergeben. Zum Bearbeiten entpackt der Designer sie in ein Arbeitsverzeichnis 
 die GME-Datei entsteht neben der Projektdatei. Ältere Projekte (`*.tupfer.json`, Pfade relativ zur
 Projektdatei) lassen sich weiter öffnen und werden beim Speichern als `*.tupfer` daneben abgelegt.
 Hintergrundbilder älterer Projekte werden beim Öffnen zu einem seitenfüllenden Bild.
+*Datei → Schließen* (am Desktop auch Strg+W) schließt das Projekt – bei ungespeicherten Änderungen
+mit Rückfrage – und zeigt den Startbildschirm mit *Neues Projekt*, *Projekt öffnen* und am Desktop
+den zuletzt geöffneten Dateien.
 
 ## Drucker testen
 

@@ -123,4 +123,73 @@ public class ProjectFileModeTests : IDisposable
         await vm.StartAsync(null, restore: true);
         Assert.False(vm.ShowStartScreen);
     }
+
+    /// <summary>Wie <see cref="SaveDialogs"/>, beantwortet die Rückfrage aber mit <paramref name="confirm"/>.</summary>
+    class ConfirmDialogs(string? target, bool confirm) : IFileDialogs
+    {
+        public int Asked { get; private set; }
+        public Task<string?> OpenAsync(string title, string filterName, params string[] patterns) => Task.FromResult<string?>(null);
+        public Task<string?> SaveAsync(string title, string suggestedName, string filterName, string extension) => Task.FromResult(target);
+        public Task<string> PrintAsync(string pdfPath) => Task.FromResult("");
+        public Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create) => Task.FromResult<string?>(null);
+        public Task<bool> ConfirmAsync(string message)
+        {
+            Asked++;
+            return Task.FromResult(confirm);
+        }
+    }
+
+    [Fact]
+    public async Task SchließenZeigtDenStartbildschirm()
+    {
+        var target = Path.Combine(_root, "buch.tupfer");
+        var dialogs = new ConfirmDialogs(target, confirm: false);
+        var vm = new MainWindowViewModel { RequireProjectFile = true, Recent = new RecentFiles(RecentPath), Dialogs = dialogs };
+        await vm.NewProjectCommand.ExecuteAsync(null);
+        Assert.True(vm.CloseProjectCommand.CanExecute(null));
+
+        await vm.CloseProjectCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, dialogs.Asked);
+        Assert.True(vm.ShowStartScreen);
+        Assert.Null(vm.FilePath);
+        Assert.False(vm.IsModified);
+        Assert.False(vm.CloseProjectCommand.CanExecute(null));
+        // Die Datei bleibt in der Liste und lässt sich wieder öffnen
+        await vm.OpenRecentCommand.ExecuteAsync(Assert.Single(vm.RecentProjects));
+        Assert.Equal(target, vm.FilePath);
+        Assert.False(vm.ShowStartScreen);
+        Assert.True(vm.CloseProjectCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task SchließenFragtBeiUngespeichertenÄnderungen()
+    {
+        var target = Path.Combine(_root, "buch.tupfer");
+        var dialogs = new ConfirmDialogs(target, confirm: false);
+        var vm = new MainWindowViewModel { RequireProjectFile = true, Recent = new RecentFiles(RecentPath), Dialogs = dialogs };
+        await vm.NewProjectCommand.ExecuteAsync(null);
+        vm.Project.Comment = "geändert";
+
+        await vm.CloseProjectCommand.ExecuteAsync(null);
+
+        // Abgelehnt: Projekt bleibt offen
+        Assert.Equal(1, dialogs.Asked);
+        Assert.False(vm.ShowStartScreen);
+        Assert.Equal(target, vm.FilePath);
+        Assert.Equal("geändert", vm.Project.Comment);
+    }
+
+    [Fact]
+    public async Task SchließenImBrowserOhneListe()
+    {
+        var vm = new MainWindowViewModel { Dialogs = new SaveDialogs(null) };
+        await vm.StartAsync(null, restore: true);
+        Assert.False(vm.HasRecentList);
+
+        await vm.CloseProjectCommand.ExecuteAsync(null);
+
+        Assert.True(vm.ShowStartScreen);
+        Assert.Null(vm.FilePath);
+    }
 }
