@@ -320,6 +320,17 @@
             <PathIcon Data="{StaticResource IconPdf}" />
           </Button>
           </StackPanel>
+          <!-- Darstellung hell/dunkel, wie Datei → Darstellung -->
+          <Button x:Name="ThemeButton" Classes="tool" ToolTip.Tip="Darstellung: wie System, hell oder dunkel" Margin="6,0,0,0">
+            <PathIcon Data="{StaticResource IconThemeLightDark}" />
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedRight">
+                <MenuItem Header="Wie System" ToggleType="Radio" GroupName="ThemeHeader" IsChecked="{Binding ThemeSystem, Mode=TwoWay}" />
+                <MenuItem Header="Hell" ToggleType="Radio" GroupName="ThemeHeader" IsChecked="{Binding ThemeLight, Mode=TwoWay}" />
+                <MenuItem Header="Dunkel" ToggleType="Radio" GroupName="ThemeHeader" IsChecked="{Binding ThemeDark, Mode=TwoWay}" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
           <Button Classes="tool" Command="{Binding SaveToPenCommand}" ToolTip.Tip="GME bauen und auf den Stift speichern (Umschalt+F5)"
                   IsVisible="{x:Static vm:MainWindowViewModel.CanSaveToPen}" Margin="6,0,0,0">
             <PathIcon Data="{StaticResource IconPen}" />

@@ -289,8 +289,8 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
     Chrome und Edge lässt sich das Laufwerk des Stifts mit *Ordner wählen …* freigeben, dann gehen
     Auflisten und Löschen (ohne Angabe des freien Speichers). In anderen Browsern ist der Stift-Teil
     ausgeblendet.
-- **Darstellung hell oder dunkel:** Unter *Datei → Darstellung* „Wie System“ (Standard), „Hell“ oder
-  „Dunkel“. „Wie System“ folgt dem Betriebssystem, im Browser der Einstellung `prefers-color-scheme`.
+- **Darstellung hell oder dunkel:** Über das Sonne/Mond-Symbol in der Kopfzeile oder unter
+  *Datei → Darstellung* „Wie System“ (Standard), „Hell“ oder „Dunkel“. „Wie System“ folgt dem Betriebssystem, im Browser der Einstellung `prefers-color-scheme`.
   Die Wahl wirkt sofort und wird mit den übrigen Einstellungen gespeichert (am Desktop in
   `einstellungen.json` im Benutzerprofil, im Browser im Speicher der Seite). Nur die Oberfläche wird
   dunkel – die Seiten bleiben weiß wie auf dem Papier, damit man sieht, was gedruckt wird.
