@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -36,6 +37,37 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
             FileTypeChoices = new[] { new FilePickerFileType(filterName) { Patterns = new[] { "*" + extension } } },
         });
         return file?.TryGetLocalPath();
+    }
+
+    /// <summary>Stift-Manager als eigenes, nicht modales Fenster über dem Hauptfenster.</summary>
+    public IToolWindow? ShowPenManager(PenManagerViewModel manager, Action closed)
+    {
+        if (topLevel is not Window owner)
+            return null;
+        var window = new Window
+        {
+            Title = "Stift-Manager – Tupfer Designer",
+            Width = 900,
+            Height = 720,
+            MinWidth = 560,
+            MinHeight = 400,
+            Icon = owner.Icon,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new PenManagerView { DataContext = manager, Margin = new Thickness(16) },
+        };
+        // Hintergrund wie die Karten im Hauptfenster, folgt Hell/Dunkel
+        window.Bind(TemplatedControl.BackgroundProperty, window.GetResourceObservable("CardBackground"));
+        // Rückfragen und Ordnerdialog gehören zu diesem Fenster, nicht zum Hauptfenster dahinter
+        manager.Dialogs = new StorageFileDialogs(window);
+        window.Closed += (_, _) => closed();
+        window.Show(owner);
+        return new ToolWindow(window);
+    }
+
+    sealed class ToolWindow(Window window) : IToolWindow
+    {
+        public void Activate() => window.Activate();
+        public void Close() => window.Close();
     }
 
     public void OpenUrl(string url) => _ = topLevel.Launcher.LaunchUriAsync(new Uri(url));

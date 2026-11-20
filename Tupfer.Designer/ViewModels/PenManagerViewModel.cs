@@ -83,14 +83,16 @@ public partial class CatalogItem(CatalogEntry entry) : ObservableObject
 /// </summary>
 public partial class PenManagerViewModel : ObservableObject
 {
-    readonly IFileDialogs? _dialogs;
     readonly Action _close;
     readonly Action<string> _log;
     readonly uint? _projectProductId;
 
+    /// <summary>Rückfragen und Ordnerdialog; im eigenen Fenster die Dialoge dieses Fensters.</summary>
+    public IFileDialogs? Dialogs { get; set; }
+
     public PenManagerViewModel(IFileDialogs? dialogs, Action close, Action<string> log, uint? projectProductId = null)
     {
-        _dialogs = dialogs;
+        Dialogs = dialogs;
         _close = close;
         _log = log;
         _projectProductId = projectProductId;
@@ -237,7 +239,7 @@ public partial class PenManagerViewModel : ObservableObject
         IPenDrive? drive = null;
         if (PenDrives.PickFolder != null)
             drive = await PenDrives.PickFolder();
-        else if (_dialogs != null && await _dialogs.PickFolderAsync("Laufwerk bzw. Ordner des Stifts wählen") is { } path)
+        else if (Dialogs != null && await Dialogs.PickFolderAsync("Laufwerk bzw. Ordner des Stifts wählen") is { } path)
             drive = new FolderPenDrive(path);
         if (drive == null)
             return;
@@ -433,7 +435,7 @@ public partial class PenManagerViewModel : ObservableObject
             return;
         var question = $"„{item.Title}“ ({item.Product.RelativePath}, {PenManager.FormatSize(item.Product.Size)}) vom Stift löschen?" +
                        (item.IsOfficial ? " Ravensburger-Produkte lassen sich später wieder installieren." : " Eigene Projekte lassen sich nur neu erstellen.");
-        if (_dialogs != null && !await _dialogs.ConfirmAsync(question))
+        if (Dialogs != null && !await Dialogs.ConfirmAsync(question))
             return;
         await Run(async _ =>
         {
@@ -446,7 +448,7 @@ public partial class PenManagerViewModel : ObservableObject
 
     /// <summary>Öffnet die Ravensburger-Seite mit allen Audiodateien (im Browser der Weg, sie von Hand zu laden).</summary>
     [RelayCommand]
-    void OpenRavensburgerPage() => _dialogs?.OpenUrl(RavensburgerCatalog.IndexUrl);
+    void OpenRavensburgerPage() => Dialogs?.OpenUrl(RavensburgerCatalog.IndexUrl);
 
     /// <summary>Bricht den laufenden Download bzw. Katalogabruf ab.</summary>
     [RelayCommand]

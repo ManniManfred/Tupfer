@@ -35,6 +35,12 @@ public interface IFileDialogs
     /// <summary>Öffnet die Adresse im Webbrowser (im Browser in einem neuen Tab).</summary>
     void OpenUrl(string url) { }
 
+    /// <summary>
+    /// Zeigt den Stift-Manager in einem eigenen Fenster (Desktop); <paramref name="closed"/> wird gerufen, wenn es
+    /// geschlossen ist. null = geht hier nicht (Browser), dann erscheint er als Ebene über der Ansicht.
+    /// </summary>
+    IToolWindow? ShowPenManager(PenManagerViewModel manager, Action closed) => null;
+
     /// <summary>Rückfrage mit Ja/Nein (z. B. ungespeicherte Änderungen verwerfen); true = Ja.</summary>
     Task<bool> ConfirmAsync(string message) => Task.FromResult(true);
 
@@ -58,6 +64,13 @@ public interface IFileDialogs
     /// Liefert den Zielnamen, oder null bei Abbruch oder Fehler.
     /// </summary>
     Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create);
+}
+
+/// <summary>Ein eigenes, nicht modales Fenster (z. B. der Stift-Manager).</summary>
+public interface IToolWindow
+{
+    void Activate();
+    void Close();
 }
 
 public partial class MainWindowViewModel : ObservableObject
@@ -921,7 +934,7 @@ public partial class MainWindowViewModel : ObservableObject
         Log($"OID-Tabelle geschrieben: {path}");
     });
 
-    /// <summary>Offener Stift-Manager; null = keiner.</summary>
+    /// <summary>Offener Stift-Manager als Ebene (Browser); null = keiner.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsManagingPen))]
     PenManagerViewModel? _penManager;
@@ -935,10 +948,33 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     Task ShowPenManager() => Guard("Stift-Manager", async () =>
     {
-        var manager = new PenManagerViewModel(Dialogs, () => PenManager = null, Log, Project.ProductId);
-        PenManager = manager;
+        // Schon offen: nur nach vorne holen
+        if (_penWindow != null)
+        {
+            _penWindow.Activate();
+            return;
+        }
+        PenManagerViewModel? manager = null;
+        manager = new PenManagerViewModel(Dialogs, () =>
+        {
+            if (_penWindow != null)
+                _penWindow.Close();
+            else
+                PenManager = null;
+        }, Log, Project.ProductId);
+        // Desktop: eigenes Fenster; Schließen über das Fenster bricht laufende Downloads ab
+        _penWindow = Dialogs?.ShowPenManager(manager, () =>
+        {
+            manager.CancelCommand.Execute(null);
+            _penWindow = null;
+        });
+        if (_penWindow == null)
+            PenManager = manager;
         await manager.StartAsync();
     });
+
+    /// <summary>Fenster des Stift-Managers (Desktop), solange es offen ist.</summary>
+    IToolWindow? _penWindow;
 
     /// <summary>Windows: Der Designer druckt selbst (siehe <see cref="DirectPrinting"/>).</summary>
     public static bool CanPrintDirectly => DirectPrinting.Printer != null;

@@ -265,7 +265,8 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
     Browser öffnet sich ein Speichern-Dialog, in dem man das Laufwerk des Stifts wählt – nur in
     Chrome und Edge am PC. Auf dem Handy: GME herunterladen und mit der App *Dateien* auf den Stift
     kopieren (Stift per OTG-Adapter anschließen).
-- **Stift-Manager (*Erstellen → Stift-Manager …*):**
+- **Stift-Manager (*Erstellen → Stift-Manager …*):** am Desktop ein eigenes Fenster neben dem Designer
+  (erneutes Aufrufen holt es nach vorne), im Browser eine Ebene über der Ansicht.
   - *Auf dem Stift:* alle GME-Dateien (auch in Unterordnern) mit Produkt-ID aus dem GME-Kopf, Titel,
     Größe und Datum; eigene Projekte und Ravensburger-Produkte (Kommentar „CHOMPTECH …“) sind
     gekennzeichnet. Dazu der freie Speicher, Warnungen bei doppelten Produkt-IDs (auch mit dem
