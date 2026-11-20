@@ -162,6 +162,10 @@ class BrowserFileDialogs(TopLevel topLevel) : IFileDialogs
     {
         ".pdf" => "application/pdf",
         ".png" => "image/png",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".webp" => "image/webp",
+        ".gif" => "image/gif",
+        ".bmp" => "image/bmp",
         ".svg" => "image/svg+xml",
         ".yaml" or ".yml" => "application/yaml",
         ".json" => "application/json",

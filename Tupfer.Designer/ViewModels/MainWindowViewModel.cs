@@ -690,6 +690,46 @@ public partial class MainWindowViewModel : ObservableObject
             Notice("Hinweis: " + warning);
     });
 
+    /// <summary>
+    /// Speichert die Datei des gewählten Bildes (unverändert, ohne Zuschnitt und Drehung) auf die Festplatte,
+    /// z. B. ein Foto aus Immich oder ein Bild aus einem geöffneten *.tupfer. Im Browser wird sie heruntergeladen.
+    /// </summary>
+    [RelayCommand]
+    Task SaveImage() => Guard("Bild speichern", async () =>
+    {
+        if (Project.SelectedPage?.SelectedElement is not { IsImage: true } image)
+            return;
+        var source = image.ImagePath;
+        if (string.IsNullOrEmpty(source) || !File.Exists(source))
+            throw new FileNotFoundException($"Die Datei zum Bild „{image.FileName}“ fehlt.");
+        var extension = Path.GetExtension(source);
+        var filter = extension.Equals(".svg", StringComparison.OrdinalIgnoreCase) ? "SVG-Grafik" : "Bild";
+        var path = await Dialogs!.SaveAsync("Bild speichern unter", Path.GetFileName(source), filter, extension);
+        if (path == null) return;
+        bool same = string.Equals(Path.GetFullPath(path), Path.GetFullPath(source),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        // Ist das Ziel die Bilddatei selbst (im Browser liegt sie oft dort), bleibt sie erhalten,
+        // auch wenn die Datei nach dem Herunterladen bzw. Hochladen weggeräumt wird
+        string? keep = null;
+        if (same)
+        {
+            keep = WorkFiles.UniquePath(Path.GetDirectoryName(source)!, Path.GetFileName(source) + ".bak");
+            File.Copy(source, keep);
+        }
+        else
+            File.Copy(source, path, overwrite: true);
+        try
+        {
+            await Dialogs.SavedAsync(path);
+        }
+        finally
+        {
+            if (keep != null)
+                File.Move(keep, source, overwrite: true);
+        }
+        Log($"Bild gespeichert: {Dialogs.DisplayPath(path)}");
+    });
+
     [RelayCommand]
     Task ExportPdf() => Guard("PDF-Export", async () =>
     {

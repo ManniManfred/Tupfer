@@ -152,6 +152,10 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   einem Sondercode (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet. Soll eine Fläche nur etwas
   sagen, wählt man als Ziel *Sprachausgabe* und dann einen Text oder legt mit **+** gleich einen
   neuen an und tippt ihn dort ein (mit Knopf zum Anhören); das Skript `P(name)` legt der Designer selbst an.
+- **Bild speichern:** Bild wählen und *Bild speichern …* klicken – die Datei des Bildes landet
+  unverändert (ohne Zuschnitt und Drehung, in voller Auflösung) auf der Festplatte, z. B. ein Foto aus
+  Immich oder ein Bild aus einem geöffneten `*.tupfer`. Im Browser wird sie heruntergeladen, in
+  Nextcloud neben das Projekt gelegt.
 - **Personen erkennen:** Bild wählen und *Personen erkennen* klicken – für jede Person auf dem Foto
   entsteht eine OID-Fläche als Polygon entlang ihres Umrisses, mit eigenem Text, den man danach ändert
   oder aufnimmt. Nach dem Erkennen fragt der Designer mit einem Ausschnitt des Kopfs nach dem Namen

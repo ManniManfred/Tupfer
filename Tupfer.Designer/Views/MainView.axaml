@@ -702,6 +702,11 @@
                           ToolTip.Tip="Personen auf dem Bild erkennen und für jede eine OID-Fläche mit eigenem Text anlegen (bei Fotos aus Immich mit den Gesichtern und Namen von dort)">
                     <StackPanel><PathIcon Data="{StaticResource IconPerson}" /><TextBlock Text="Personen erkennen" /></StackPanel>
                   </Button>
+                  <Button Command="{Binding SaveImageCommand}"
+                          IsVisible="{Binding Project.SelectedPage.SelectedElement.IsImage, FallbackValue=False}"
+                          ToolTip.Tip="Die Datei des Bildes unverändert (ohne Zuschnitt und Drehung) auf der Festplatte speichern">
+                    <StackPanel><PathIcon Data="{StaticResource IconSave}" /><TextBlock Text="Bild speichern …" /></StackPanel>
+                  </Button>
                   <Button Content="Auf Seite einpassen" Command="{Binding FitElementToPageCommand}" />
                   <Button Command="{Binding DuplicateElementCommand}">
                     <StackPanel><PathIcon Data="{StaticResource IconCopy}" /><TextBlock Text="Duplizieren" /></StackPanel>
