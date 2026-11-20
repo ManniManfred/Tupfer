@@ -325,6 +325,8 @@ class NextcloudFileDialogs(BrowserFileDialogs browser) : IFileDialogs
 
     public Task<bool> ConfirmAsync(string message) => browser.ConfirmAsync(message);
 
+    public void OpenUrl(string url) => BrowserInterop.OpenUrl(url);
+
     public Task<string> PrintAsync(string pdfPath) => browser.PrintAsync(pdfPath);
 
     public Task<string?> SaveToPenAsync(string fileName, Func<Task<string?>> create) => browser.SaveToPenAsync(fileName, create);

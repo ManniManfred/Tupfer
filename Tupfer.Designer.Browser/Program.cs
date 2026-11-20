@@ -60,6 +60,8 @@ static class Program
         Settings.Store = new BrowserSettingsStore();
         BrowserInterop.SetTitle(MainWindowViewModel.AppName);
         MainWindowViewModel.CanSaveToPen = BrowserInterop.CanPickSaveFile();
+        if (BrowserInterop.CanPickFolder())
+            PenDrives.PickFolder = BrowserPenDrive.PickAsync;
 
         // main.js übergibt die Adresse der Seite
         var pageUri = new Uri(args[0]);

@@ -38,6 +38,14 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         return file?.TryGetLocalPath();
     }
 
+    public void OpenUrl(string url) => _ = topLevel.Launcher.LaunchUriAsync(new Uri(url));
+
+    public async Task<string?> PickFolderAsync(string title)
+    {
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = title, AllowMultiple = false });
+        return folders.FirstOrDefault()?.TryGetLocalPath();
+    }
+
     /// <summary>Wartet, bis das Hauptfenster zu sehen ist (beim Start, z. B. Projekt per Doppelklick).</summary>
     static async Task WhenVisible(Window owner)
     {

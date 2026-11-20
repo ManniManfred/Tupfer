@@ -41,7 +41,10 @@ public static class PenContents
             .ToList();
     }
 
-    /// <summary>Liest Produkt-ID (0x14), Kommentar (Länge bei 0x20) und Datum (JJJJMMTT danach) aus dem Kopf.</summary>
+    /// <summary>So viele Bytes am Anfang einer GME-Datei genügen für <see cref="ParseHeader"/>.</summary>
+    public const int HeaderLength = 0x80;
+
+    /// <summary>Liest Produkt-ID, Kommentar und Datum aus dem Kopf der Datei (siehe <see cref="ParseHeader"/>).</summary>
     public static PenProduct ReadHeader(string path, string relativePath)
     {
         long size = 0;
@@ -49,24 +52,33 @@ public static class PenContents
         {
             using var stream = File.OpenRead(path);
             size = stream.Length;
-            var head = new byte[0x80];
+            var head = new byte[HeaderLength];
             int read = stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);
-            if (read < 0x30 || BitConverter.ToUInt32(head, 0x08) != 0x238B)
-                return new PenProduct(relativePath, null, "", null, size, "keine gültige GME-Datei");
-            uint product = BitConverter.ToUInt32(head, 0x14);
-            int length = Math.Min(head[0x20], read - 0x21);
-            var comment = Encoding.Latin1.GetString(head, 0x21, length);
-            DateTime? date = null;
-            if (0x21 + length + 8 <= read
-                && DateTime.TryParseExact(Encoding.ASCII.GetString(head, 0x21 + length, 8), "yyyyMMdd",
-                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
-                date = d;
-            return new PenProduct(relativePath, product, comment, date, size);
+            return ParseHeader(head.AsSpan(0, read), relativePath, size);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return new PenProduct(relativePath, null, "", null, size, e.Message);
         }
+    }
+
+    /// <summary>
+    /// Wertet die ersten Bytes einer GME-Datei aus: Kennung 0x238B (0x08), Produkt-ID (0x14),
+    /// Kommentar (Länge bei 0x20) und Datum (JJJJMMTT direkt danach). Auch für Kopf-Abfragen per HTTP.
+    /// </summary>
+    public static PenProduct ParseHeader(ReadOnlySpan<byte> head, string relativePath, long size)
+    {
+        if (head.Length < 0x30 || BitConverter.ToUInt32(head[0x08..]) != 0x238B)
+            return new PenProduct(relativePath, null, "", null, size, "keine gültige GME-Datei");
+        uint product = BitConverter.ToUInt32(head[0x14..]);
+        int length = Math.Min(head[0x20], head.Length - 0x21);
+        var comment = Encoding.Latin1.GetString(head.Slice(0x21, length));
+        DateTime? date = null;
+        if (0x21 + length + 8 <= head.Length
+            && DateTime.TryParseExact(Encoding.ASCII.GetString(head.Slice(0x21 + length, 8)), "yyyyMMdd",
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            date = d;
+        return new PenProduct(relativePath, product, comment, date, size);
     }
 
     /// <summary>

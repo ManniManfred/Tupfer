@@ -87,6 +87,80 @@ export async function writePickedFile() {
     return file.name;
 }
 
+// ---------- Stift-Manager: Laufwerk des Stifts als Ordner (File System Access API, Chrome und Edge) ----------
+
+const penFolders = [];
+let penPending = null;
+
+/** true, wenn der Browser Ordner freigeben kann. */
+export function canPickFolder() {
+    return typeof window.showDirectoryPicker === 'function';
+}
+
+/** Lässt das Laufwerk des Stifts wählen; liefert „Nummer|Name“ oder '' bei Abbruch. */
+export async function pickPenFolder() {
+    try {
+        const folder = await window.showDirectoryPicker({ id: 'tiptoi', mode: 'readwrite' });
+        penFolders.push(folder);
+        return (penFolders.length - 1) + '|' + folder.name;
+    } catch (e) {
+        if (e.name === 'AbortError')
+            return '';
+        throw e;
+    }
+}
+
+async function* penFiles(folder, prefix) {
+    for await (const [name, handle] of folder.entries()) {
+        if (handle.kind === 'directory')
+            yield* penFiles(handle, prefix + name + '/');
+        else
+            yield [prefix + name, handle];
+    }
+}
+
+/** Alle GME-Dateien im gewählten Ordner als JSON: Pfad, Größe und die ersten 128 Bytes (Base64). */
+export async function penList(id) {
+    const files = [];
+    for await (const [path, handle] of penFiles(penFolders[id], '')) {
+        if (!path.toLowerCase().endsWith('.gme'))
+            continue;
+        const file = await handle.getFile();
+        const head = new Uint8Array(await file.slice(0, 128).arrayBuffer());
+        files.push({ path, size: file.size, head: btoa(toBinary(head)) });
+    }
+    return JSON.stringify(files);
+}
+
+async function penParent(id, path) {
+    const parts = path.split('/');
+    let folder = penFolders[id];
+    for (const part of parts.slice(0, -1))
+        folder = await folder.getDirectoryHandle(part);
+    return [folder, parts[parts.length - 1]];
+}
+
+/** Löscht die Datei (Pfad relativ zum Ordner, mit „/“). */
+export async function penDelete(id, path) {
+    const [folder, name] = await penParent(id, path);
+    await folder.removeEntry(name);
+}
+
+/** Merkt sich die Daten für penWrite. */
+export function penSetPending(data) {
+    penPending = data.slice();
+}
+
+/** Schreibt die gemerkten Daten als Datei auf die oberste Ebene des Ordners. */
+export async function penWrite(id, name) {
+    const data = penPending;
+    penPending = null;
+    const handle = await penFolders[id].getFileHandle(name, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(data);
+    await writable.close();
+}
+
 // ---------- Automatisch gesicherter Bearbeitungsstand (IndexedDB) ----------
 
 let database = null;

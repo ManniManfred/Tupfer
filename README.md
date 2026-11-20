@@ -265,6 +265,29 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
     Browser öffnet sich ein Speichern-Dialog, in dem man das Laufwerk des Stifts wählt – nur in
     Chrome und Edge am PC. Auf dem Handy: GME herunterladen und mit der App *Dateien* auf den Stift
     kopieren (Stift per OTG-Adapter anschließen).
+- **Stift-Manager (*Erstellen → Stift-Manager …*):**
+  - *Auf dem Stift:* alle GME-Dateien (auch in Unterordnern) mit Produkt-ID aus dem GME-Kopf, Titel,
+    Größe und Datum; eigene Projekte und Ravensburger-Produkte (Kommentar „CHOMPTECH …“) sind
+    gekennzeichnet. Dazu der freie Speicher, Warnungen bei doppelten Produkt-IDs (auch mit dem
+    geöffneten Projekt) und *Löschen* mit Rückfrage. Der Stift wird als Laufwerk „tiptoi“ gefunden,
+    sonst mit *Ordner wählen …*.
+  - *Ravensburger-Katalog:* die offiziellen Produkte mit Titel, Bild, Artikel- und Produkt-ID, Größe
+    und Stand. *Installieren* lädt die GME von Ravensburger und legt sie auf den Stift (erst in eine
+    temporäre Datei, vorher wird der freie Speicher geprüft). Ist die Datei auf dem Stift älter oder
+    anders groß als die aktuelle, heißt es *Update verfügbar* bzw. *Aktualisieren*.
+  - Quelle des Katalogs sind die öffentlichen Service-Seiten
+    [tiptoi® Audiodateien](https://service.ravensburger.de/tiptoi%C2%AE/tiptoi%C2%AE_Audiodateien),
+    auf denen Ravensburger jede GME zum freien Download anbietet. Produkt-ID, Datum und Größe kommen
+    aus einer HTTP-Range-Anfrage über die ersten 128 Bytes jeder Datei. Der Abruf dauert etwa eine
+    Minute; der Katalog wird zwischengespeichert (`ravensburger-katalog.json` neben den
+    Einstellungen) und nach einer Woche neu geladen. Die Schnittstelle des tiptoi Managers
+    (`ttapiv2.ravensburger.com`) wird nicht genutzt, weil sie ohne die dort eingebauten Zugangsdaten
+    nur einen leeren Katalog liefert.
+  - *Web-Version:* Die Ravensburger-Server erlauben keine Zugriffe von Web-Seiten (CORS), daher gibt
+    es Katalog und Download nur am Desktop; im Browser führt ein Knopf zur Ravensburger-Seite. In
+    Chrome und Edge lässt sich das Laufwerk des Stifts mit *Ordner wählen …* freigeben, dann gehen
+    Auflisten und Löschen (ohne Angabe des freien Speichers). In anderen Browsern ist der Stift-Teil
+    ausgeblendet.
 - **Darstellung hell oder dunkel:** Unter *Datei → Darstellung* „Wie System“ (Standard), „Hell“ oder
   „Dunkel“. „Wie System“ folgt dem Betriebssystem, im Browser der Einstellung `prefers-color-scheme`.
   Die Wahl wirkt sofort und wird mit den übrigen Einstellungen gespeichert (am Desktop in

@@ -32,6 +32,28 @@ static partial class BrowserInterop
     [JSImport("writePickedFile", "tupfer")]
     public static partial Task<string> WritePickedFileAsync();
 
+    /// <summary>true, wenn der Browser Ordner freigeben kann (File System Access API, Chrome und Edge).</summary>
+    [JSImport("canPickFolder", "tupfer")]
+    public static partial bool CanPickFolder();
+
+    /// <summary>Lässt das Laufwerk des Stifts als Ordner wählen; „Nummer|Name“ oder „“ bei Abbruch.</summary>
+    [JSImport("pickPenFolder", "tupfer")]
+    public static partial Task<string> PickPenFolderAsync();
+
+    /// <summary>GME-Dateien im gewählten Ordner als JSON (Pfad, Größe, Kopf als Base64).</summary>
+    [JSImport("penList", "tupfer")]
+    public static partial Task<string> PenListAsync(int id);
+
+    [JSImport("penDelete", "tupfer")]
+    public static partial Task PenDeleteAsync(int id, string path);
+
+    /// <summary>Übergibt die Daten für <see cref="PenWriteAsync"/>.</summary>
+    [JSImport("penSetPending", "tupfer")]
+    public static partial void PenSetPending([JSMarshalAs<JSType.MemoryView>] Span<byte> data);
+
+    [JSImport("penWrite", "tupfer")]
+    public static partial Task PenWriteAsync(int id, string fileName);
+
     /// <summary>Sichert den Bearbeitungsstand (JSON) in IndexedDB.</summary>
     [JSImport("autosaveSave", "tupfer")]
     public static partial Task AutoSaveSaveAsync(string json);

@@ -26,8 +26,14 @@ public interface IFileDialogs
     /// <summary>Ein neues, leeres Projekt wurde angelegt.</summary>
     void ProjectCreated() { }
 
-    /// <summary>Zeigt einen längeren Text in einem eigenen Fenster (Desktop), z. B. die Produkte auf dem Stift.</summary>
+    /// <summary>Zeigt einen längeren Text in einem eigenen Fenster (Desktop).</summary>
     Task ShowTextAsync(string title, string text) => Task.CompletedTask;
+
+    /// <summary>Lässt einen Ordner wählen (Desktop), z. B. das Laufwerk des Stifts; null bei Abbruch oder im Browser.</summary>
+    Task<string?> PickFolderAsync(string title) => Task.FromResult<string?>(null);
+
+    /// <summary>Öffnet die Adresse im Webbrowser (im Browser in einem neuen Tab).</summary>
+    void OpenUrl(string url) { }
 
     /// <summary>Rückfrage mit Ja/Nein (z. B. ungespeicherte Änderungen verwerfen); true = Ja.</summary>
     Task<bool> ConfirmAsync(string message) => Task.FromResult(true);
@@ -915,25 +921,23 @@ public partial class MainWindowViewModel : ObservableObject
         Log($"OID-Tabelle geschrieben: {path}");
     });
 
-    /// <summary>Listet die GME-Dateien auf dem Stift mit ihren Produkt-IDs, damit doppelte auffallen (Desktop).</summary>
+    /// <summary>Offener Stift-Manager; null = keiner.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsManagingPen))]
+    PenManagerViewModel? _penManager;
+
+    public bool IsManagingPen => PenManager != null;
+
+    /// <summary>
+    /// Stift-Manager: GME-Dateien auf dem Stift (doppelte Produkt-IDs, freier Speicher, Löschen) und
+    /// die offiziellen Ravensburger-Produkte zum Installieren und Aktualisieren.
+    /// </summary>
     [RelayCommand]
-    Task ShowPenProducts() => Guard("Produkte auf dem Stift", async () =>
+    Task ShowPenManager() => Guard("Stift-Manager", async () =>
     {
-        var pens = PenContents.FindPens();
-        if (pens.Count == 0)
-        {
-            Notice("Kein Stift gefunden: Er muss angeschlossen sein und sich als Laufwerk „tiptoi“ melden.");
-            return;
-        }
-        var parts = new List<string>();
-        foreach (var root in pens)
-        {
-            var products = await Task.Run(() => PenContents.ReadProducts(root));
-            parts.Add(PenContents.Describe(root, products, Project.ProductId));
-            foreach (var g in PenContents.Duplicates(products))
-                Notice($"Doppelte Produkt-ID {g.Key} auf dem Stift: {string.Join(", ", g.Select(p => p.RelativePath))}");
-        }
-        await Dialogs!.ShowTextAsync("Produkte auf dem Stift", string.Join(Environment.NewLine + Environment.NewLine, parts));
+        var manager = new PenManagerViewModel(Dialogs, () => PenManager = null, Log, Project.ProductId);
+        PenManager = manager;
+        await manager.StartAsync();
     });
 
     /// <summary>Windows: Der Designer druckt selbst (siehe <see cref="DirectPrinting"/>).</summary>
