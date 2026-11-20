@@ -127,11 +127,11 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:CatalogItem">
-                    <Border Width="200" Margin="0,0,10,10" Padding="8" CornerRadius="8" BorderThickness="1"
+                    <Border Width="240" Margin="0,0,10,10" Padding="8" CornerRadius="8" BorderThickness="1"
                             BorderBrush="{DynamicResource CardBorder}" ToolTip.Tip="{Binding ToolTip}">
                       <StackPanel Spacing="4">
                         <Panel>
-                          <Border Height="184" CornerRadius="6" ClipToBounds="True" Background="{DynamicResource CardBorder}">
+                          <Border Height="240" CornerRadius="6" ClipToBounds="True" Background="{DynamicResource CardBorder}">
                             <Image Source="{Binding Thumbnail}" Stretch="Uniform" />
                           </Border>
                           <!-- Stand auf dem Stift als Plakette oben rechts -->

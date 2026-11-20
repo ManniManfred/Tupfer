@@ -1294,7 +1294,7 @@
     <!-- Im Browser als Ebene über der ganzen Ansicht (am Desktop eigenes Fenster, siehe StorageFileDialogs) -->
     <Border Grid.Row="0" Grid.RowSpan="4" IsVisible="{Binding IsManagingPen}" Background="{DynamicResource Overlay}">
       <Border Classes="card" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="16" Padding="20"
-              MaxWidth="900" MaxHeight="760">
+              MaxWidth="1080" MaxHeight="760">
         <DockPanel>
           <!-- Das Fenster am Desktop schließt über seinen Rahmen, die Ebene braucht einen eigenen Knopf -->
           <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">

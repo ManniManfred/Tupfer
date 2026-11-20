@@ -47,8 +47,9 @@ public class StorageFileDialogs(TopLevel topLevel) : IFileDialogs
         var window = new Window
         {
             Title = "Stift-Manager – Tupfer Designer",
-            Width = 900,
-            Height = 720,
+            // Vier Kacheln des Katalogs nebeneinander
+            Width = 1080,
+            Height = 760,
             MinWidth = 560,
             MinHeight = 400,
             Icon = owner.Icon,
