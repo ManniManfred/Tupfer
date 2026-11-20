@@ -272,7 +272,7 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
     gekennzeichnet. Dazu der freie Speicher, Warnungen bei doppelten Produkt-IDs (auch mit dem
     geöffneten Projekt) und *Löschen* mit Rückfrage. Der Stift wird als Laufwerk „tiptoi“ gefunden,
     sonst mit *Ordner wählen …*.
-  - *Ravensburger-Katalog:* die offiziellen Produkte mit Titel, Bild, Artikel- und Produkt-ID, Größe
+  - *Ravensburger-Katalog:* die offiziellen Produkte als Kacheln mit großem Bild, Titel, Produkt-ID, Größe
     und Stand. *Installieren* lädt die GME von Ravensburger und legt sie auf den Stift (erst in eine
     temporäre Datei, vorher wird der freie Speicher geprüft). Ist die Datei auf dem Stift älter oder
     anders groß als die aktuelle, heißt es *Update verfügbar* bzw. *Aktualisieren*.

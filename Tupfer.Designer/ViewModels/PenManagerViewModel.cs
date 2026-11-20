@@ -63,6 +63,20 @@ public partial class CatalogItem(CatalogEntry entry) : ObservableObject
         Entry.Version?.ToString("'Stand' dd.MM.yyyy"),
     }.Where(s => !string.IsNullOrEmpty(s)));
 
+    /// <summary>Kurzfassung für die Kachel: Produkt-ID und Größe, darunter der Stand.</summary>
+    public string TileDetails => string.Join(Environment.NewLine, new[]
+    {
+        string.Join(" · ", new[]
+        {
+            Entry.ProductId is { } id ? $"Produkt-ID {id}" : null,
+            Entry.Size is { } size ? PenManager.FormatSize(size) : null,
+        }.Where(s => s != null)),
+        Entry.Version?.ToString("'Stand' dd.MM.yyyy") ?? "",
+    });
+
+    /// <summary>Alles zum Produkt (Titel ungekürzt, Rubrik, Artikelnummern) für den Tooltip der Kachel.</summary>
+    public string ToolTip => Title + Environment.NewLine + Details;
+
     public string StateText => State switch
     {
         CatalogState.Installed => "auf dem Stift",
