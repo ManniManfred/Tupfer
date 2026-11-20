@@ -32,7 +32,7 @@ class ImmichController extends Controller {
 		['GET', '#^albums$#'],
 		['GET', '#^people$#'],
 		['GET', '#^people/' . self::ID . '/thumbnail$#'],
-		['POST', '#^search/metadata$#'],
+		['POST', '#^search/(metadata|smart)$#'],
 		['GET', '#^assets/' . self::ID . '$#'],
 		['GET', '#^assets/' . self::ID . '/(thumbnail|original)$#'],
 		['GET', '#^faces$#'],

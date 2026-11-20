@@ -241,6 +241,66 @@ public class ImmichTests
         Assert.False(body.RootElement.TryGetProperty("personIds", out _));
     }
 
+    const string SearchJson = $$$"""
+        {"albums":{"total":0,"count":0,"items":[],"facets":[]},
+         "assets":{"total":1,"count":1,"nextPage":null,"items":[
+           {"id":"{{{Asset}}}","type":"IMAGE","originalFileName":"strand.jpg","originalMimeType":"image/jpeg"}],"facets":[]}}
+        """;
+
+    [Fact]
+    public async Task SmartSucheNachInhalt()
+    {
+        var (client, server) = Connect();
+        server.Json("POST /api/search/smart", SearchJson);
+        var page = await client.SmartSearchAsync("  Strand ");
+        Assert.Equal(["strand.jpg"], page.Items.Select(a => a.OriginalFileName));
+        Assert.Null(page.NextPage);
+        using var body = JsonDocument.Parse(server.Requests.Single().Body!);
+        Assert.Equal("Strand", body.RootElement.GetProperty("query").GetString());
+        Assert.Equal("IMAGE", body.RootElement.GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task SuchfeldFiltertAlbenUndSuchtFotos()
+    {
+        var server = new FakeImmich();
+        server.Json("GET /api/albums", """
+            [{"id":"a1","albumName":"Urlaub Ostsee","albumThumbnailAssetId":null,"assetCount":3},
+             {"id":"a2","albumName":"Geburtstag","albumThumbnailAssetId":null,"assetCount":5}]
+            """);
+        server.Json("POST /api/search/smart", SearchJson);
+        var before = ImmichBrowserViewModel.Handler;
+        ImmichBrowserViewModel.Handler = server;
+        try
+        {
+            var vm = new ImmichBrowserViewModel(new Settings { ImmichUrl = "https://fotos.example.org", ImmichApiKey = Key },
+                (_, _) => Task.CompletedTask, () => { });
+            await vm.StartAsync();
+            Assert.Equal(["Geburtstag", "Urlaub Ostsee"], vm.Collections.Select(c => c.Title));
+
+            vm.SearchText = "ostSEE";
+            Assert.Equal(["Urlaub Ostsee"], vm.Collections.Select(c => c.Title));
+
+            // Ohne Begriff wird nicht gesucht
+            vm.SearchText = " ";
+            Assert.Equal(2, vm.Collections.Count);
+            await vm.SearchPhotosCommand.ExecuteAsync(null);
+            Assert.False(vm.ShowPhotos);
+            Assert.Contains("Suchbegriff", vm.Status);
+
+            vm.SearchText = "Strand";
+            await vm.SearchPhotosCommand.ExecuteAsync(null);
+            Assert.True(vm.ShowPhotos);
+            Assert.Equal("Suche: „Strand“", vm.Current!.Title);
+            Assert.Equal([Asset], vm.Photos.Select(p => p.Asset!.Id));
+            Assert.False(vm.HasMore);
+        }
+        finally
+        {
+            ImmichBrowserViewModel.Handler = before;
+        }
+    }
+
     [Fact]
     public async Task OriginalOderVorschauHerunterladen()
     {

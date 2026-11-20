@@ -171,7 +171,10 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   (z. B. `https://fotos.example.org`, mit oder ohne `/api`) und einem API-Key (in Immich unter
   *Kontoeinstellungen → API-Schlüssel*; nötige Rechte: `user.read` (für die Prüfung der Verbindung), `album.read`, `person.read`, `asset.read`,
   `asset.view`, `asset.download`, `face.read`). Danach zeigt er die Alben bzw. die Personen mit Namen,
-  jeweils mit Vorschaubildern; darin wählt man ein oder mehrere Fotos und fügt sie ein – als große
+  jeweils mit Vorschaubildern; das Suchfeld filtert sie nach dem Namen, und *Fotos suchen* (oder
+  Eingabetaste) sucht Fotos nach ihrem Inhalt mit der Smart-Suche von Immich (z. B. „Strand“,
+  „Geburtstag“; das Standardmodell von Immich versteht Englisch am besten, für Deutsch in Immich ein
+  mehrsprachiges Modell wählen). Darin wählt man ein oder mehrere Fotos und fügt sie ein – als große
   Vorschau (meist 1440 Pixel an der langen Seite, reicht zum Drucken) oder mit *Original statt großer
   Vorschau* in voller Auflösung. Originale, die sich nicht anzeigen lassen (HEIC, RAW), werden durch die
   Vorschau ersetzt; in Immich bearbeitete Fotos kommen in der bearbeiteten Fassung. Die Fotos werden
@@ -192,7 +195,7 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   dem Foto keine Gesichter oder ist der Server nicht erreichbar, sagt der Designer das und sucht
   stattdessen selbst auf dem Bild. Verwendete Endpunkte (geprüft gegen die API-Beschreibung von
   Immich 3.4, sie gehen auch mit älteren Versionen): `GET /api/users/me`, `GET /api/albums`,
-  `GET /api/people`, `POST /api/search/metadata` (mit `albumIds`/`personIds`),
+  `GET /api/people`, `POST /api/search/metadata` (mit `albumIds`/`personIds`), `POST /api/search/smart`,
   `GET /api/assets/{id}/thumbnail`, `GET /api/assets/{id}/original`, `GET /api/faces?id={id}` und
   `GET /api/people/{id}/thumbnail`, jeweils mit dem Header `x-api-key`.
 - **Mehrere Objekte anordnen:** Mit Strg- oder Umschalt-Klick (auf dem Handy: *Mehrere wählen*)

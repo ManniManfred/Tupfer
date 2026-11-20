@@ -152,6 +152,19 @@ public sealed class ImmichClient : IDisposable
             int.TryParse(response.Assets.NextPage, out var next) ? next : null);
     }
 
+    /// <summary>
+    /// Fotos zu einer Beschreibung in Worten („Kinder am Strand“), beste Treffer zuerst, seitenweise. Nutzt die
+    /// Smart-Suche von Immich (maschinelles Lernen); das Standardmodell versteht Englisch am besten.
+    /// </summary>
+    public async Task<ImmichAssetPage> SmartSearchAsync(string query, int page = 1, int size = 100)
+    {
+        var response = await SendJsonAsync<SearchResponse>(HttpMethod.Post, "search/smart",
+            new SmartSearchRequest(query.Trim(), "IMAGE", page, size), "der Suche nach Fotos");
+        return new ImmichAssetPage(response.Assets.Items.Where(a => a.Type is null or "IMAGE").ToList(),
+            int.TryParse(response.Assets.NextPage, out var next) ? next : null);
+    }
+
+    sealed record SmartSearchRequest(string Query, string Type, int Page, int Size);
     sealed record SearchRequest(string[]? AlbumIds, string[]? PersonIds, string Type, int Page, int Size);
     sealed record SearchResponse(SearchAssets Assets);
     sealed record SearchAssets(List<ImmichAsset> Items, string? NextPage);

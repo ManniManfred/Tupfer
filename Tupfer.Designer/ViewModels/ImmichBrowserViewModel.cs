@@ -17,6 +17,9 @@ public partial class ImmichItem(string title, string? thumbnailId, bool isPerson
 
     public string? AlbumId { get; init; }
     public string? PersonId { get; init; }
+
+    /// <summary>Suchbegriff, wenn die Fotos aus der Suche kommen.</summary>
+    public string? Query { get; init; }
     public ImmichAsset? Asset { get; init; }
     public string Subtitle { get; init; } = "";
 
@@ -120,7 +123,37 @@ public partial class ImmichBrowserViewModel : ObservableObject
     public bool AlbumMode { get => Mode == 0; set { if (value) Mode = 0; } }
     public bool PeopleMode { get => Mode == 1; set { if (value) Mode = 1; } }
 
+    /// <summary>Gezeigte Alben bzw. Personen (nach <see cref="SearchText"/> gefiltert).</summary>
     public ObservableCollection<ImmichItem> Collections { get; } = [];
+
+    /// <summary>Alle geladenen Alben bzw. Personen.</summary>
+    List<ImmichItem> _allCollections = [];
+
+    /// <summary>Filtert Alben bzw. Personen nach dem Namen; „Fotos suchen“ sucht damit Fotos in Immich.</summary>
+    [ObservableProperty] string _searchText = "";
+
+    partial void OnSearchTextChanged(string value) => ApplyFilter();
+
+    void ApplyFilter()
+    {
+        var text = SearchText.Trim();
+        Collections.Clear();
+        foreach (var item in _allCollections.Where(i => text.Length == 0 || i.Title.Contains(text, StringComparison.CurrentCultureIgnoreCase)))
+            Collections.Add(item);
+    }
+
+    /// <summary>Sucht Fotos zum Suchbegriff (Smart-Suche von Immich) und zeigt sie zum Ankreuzen.</summary>
+    [RelayCommand]
+    async Task SearchPhotos()
+    {
+        var text = SearchText.Trim();
+        if (text.Length == 0)
+        {
+            Status = "Bitte zuerst einen Suchbegriff eingeben, z. B. „Strand“ oder „Geburtstag“.";
+            return;
+        }
+        await Open(new ImmichItem($"Suche: „{text}“", null) { Query = text });
+    }
     public ObservableCollection<ImmichItem> Photos { get; } = [];
 
     /// <summary>Geöffnetes Album bzw. geöffnete Person; null = Übersicht.</summary>
@@ -157,6 +190,7 @@ public partial class ImmichBrowserViewModel : ObservableObject
     {
         int generation = ++_generation;
         Current = null;
+        _allCollections = [];
         Collections.Clear();
         Photos.Clear();
         await Run(async () =>
@@ -180,10 +214,10 @@ public partial class ImmichBrowserViewModel : ObservableObject
             }
             if (generation != _generation)
                 return;
-            foreach (var item in items)
-                Collections.Add(item);
+            _allCollections = items;
+            ApplyFilter();
         });
-        await LoadThumbnailsAsync(Collections.ToList(), generation);
+        await LoadThumbnailsAsync(_allCollections, generation);
     }
 
     /// <summary>Öffnet ein Album bzw. eine Person und zeigt ihre Fotos.</summary>
@@ -218,7 +252,9 @@ public partial class ImmichBrowserViewModel : ObservableObject
         await Run(async () =>
         {
             using var client = CreateClient();
-            var result = await client.SearchAssetsAsync(current.AlbumId, current.PersonId, page);
+            var result = current.Query is { } query
+                ? await client.SmartSearchAsync(query, page)
+                : await client.SearchAssetsAsync(current.AlbumId, current.PersonId, page);
             if (generation != _generation)
                 return;
             foreach (var asset in result.Items)
@@ -234,7 +270,9 @@ public partial class ImmichBrowserViewModel : ObservableObject
             }
             _nextPage = result.NextPage;
             HasMore = result.NextPage != null;
-            Status = Photos.Count == 0 ? "Hier gibt es keine Fotos." : "Fotos zum Einfügen antippen.";
+            Status = Photos.Count > 0 ? "Fotos zum Einfügen antippen."
+                : current.Query != null ? "Keine passenden Fotos gefunden. Immich versteht Englisch meist besser („beach“ statt „Strand“)."
+                : "Hier gibt es keine Fotos.";
         });
         await LoadThumbnailsAsync(added, generation);
     }

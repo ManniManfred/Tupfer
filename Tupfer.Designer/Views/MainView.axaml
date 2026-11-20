@@ -1319,6 +1319,15 @@
 
             <!-- Übersicht: Alben bzw. Personen -->
             <DockPanel IsVisible="{Binding ShowCollections}">
+              <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                <Button DockPanel.Dock="Right" Content="Fotos suchen" Margin="8,0,0,0" Command="{Binding SearchPhotosCommand}"
+                        ToolTip.Tip="Fotos in Immich nach Inhalt suchen (Smart-Suche, z. B. „Strand“, „Geburtstag“, „Hund“)" />
+                <TextBox Text="{Binding SearchText}" PlaceholderText="Suchen: Album, Person oder Fotos nach Inhalt …">
+                  <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding SearchPhotosCommand}" />
+                  </TextBox.KeyBindings>
+                </TextBox>
+              </DockPanel>
               <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
                 <RadioButton Content="Alben" GroupName="ImmichMode" IsChecked="{Binding AlbumMode}" />
                 <RadioButton Content="Personen" GroupName="ImmichMode" IsChecked="{Binding PeopleMode}" />
