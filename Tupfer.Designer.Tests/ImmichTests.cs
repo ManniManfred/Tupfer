@@ -97,6 +97,7 @@ public class ImmichTests
         var e = await Assert.ThrowsAsync<ImmichException>(client.GetAlbumsAsync);
         Assert.Contains("Missing required permission: album.read", e.Message);
         Assert.Contains("face.read", e.Message);
+        Assert.Contains("user.read", e.Message);
     }
 
     [Fact]

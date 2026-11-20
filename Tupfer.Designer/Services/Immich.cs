@@ -36,8 +36,8 @@ public class ImmichException(string message, Exception? inner = null) : Exceptio
 /// <summary>
 /// Zugriff auf einen Immich-Server (selbst gehosteter Fotodienst) über seine REST-API mit API-Key im Header
 /// <c>x-api-key</c>. Gebraucht werden Alben, Personen, die Suche nach Bildern, Vorschauen, Originale und
-/// Gesichter; der Key braucht dafür die Rechte album.read, person.read, asset.read, asset.view,
-/// asset.download und face.read.
+/// Gesichter; der Key braucht dafür die Rechte user.read (Prüfen der Verbindung), album.read, person.read,
+/// asset.read, asset.view, asset.download und face.read.
 /// </summary>
 public sealed class ImmichClient : IDisposable
 {
@@ -275,7 +275,7 @@ public sealed class ImmichClient : IDisposable
                                                                                     && (response.StatusCode == HttpStatusCode.PreconditionFailed || detail.Contains("logged in", StringComparison.OrdinalIgnoreCase)) =>
                     "Die Anmeldung bei Nextcloud ist abgelaufen. Bitte die Seite neu laden.",
                 HttpStatusCode.Unauthorized => "Immich hat den API-Key abgelehnt. Bitte den Key in den Immich-Einstellungen prüfen.",
-                HttpStatusCode.Forbidden => $"Der API-Key darf das nicht ({detail}). Er braucht in Immich die Rechte album.read, " +
+                HttpStatusCode.Forbidden => $"Der API-Key darf das nicht ({detail}). Er braucht in Immich die Rechte user.read, album.read, " +
                                             "person.read, asset.read, asset.view, asset.download und face.read.",
                 HttpStatusCode.NotFound => $"Immich kennt {what} nicht (404). Stimmt die Adresse {ServerUrl}?",
                 // Fehler der Weiterleitung in Nextcloud (Server nicht erreichbar oder nicht eingetragen)

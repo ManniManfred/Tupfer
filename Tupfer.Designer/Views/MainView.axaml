@@ -1301,7 +1301,7 @@
             <!-- Zugang: Adresse und API-Key (werden in den Einstellungen gespeichert, nicht im Projekt) -->
             <StackPanel Spacing="6" IsVisible="{Binding ShowSettings}">
               <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"
-                         Text="Adresse des Immich-Servers und ein API-Key (in Immich unter Kontoeinstellungen → API-Schlüssel; Rechte: album.read, person.read, asset.read, asset.view, asset.download, face.read). Beides wird in den Einstellungen dieses Programms gespeichert, nicht im Projekt." />
+                         Text="Adresse des Immich-Servers und ein API-Key (in Immich unter Kontoeinstellungen → API-Schlüssel; Rechte: user.read, album.read, person.read, asset.read, asset.view, asset.download, face.read). Beides wird in den Einstellungen dieses Programms gespeichert, nicht im Projekt." />
               <TextBlock Classes="label" Text="Adresse" />
               <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://fotos.example.org"
                        IsReadOnly="{x:Static vm:ImmichBrowserViewModel.IsServerFixed}" />

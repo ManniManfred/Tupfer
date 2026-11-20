@@ -169,7 +169,7 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
 - **Fotos aus Immich:** *Bearbeiten → Bild aus Immich …* (oder der Knopf *Immich*) holt Fotos vom
   eigenen [Immich](https://immich.app)-Server. Beim ersten Mal fragt der Designer nach der Adresse
   (z. B. `https://fotos.example.org`, mit oder ohne `/api`) und einem API-Key (in Immich unter
-  *Kontoeinstellungen → API-Schlüssel*; nötige Rechte: `album.read`, `person.read`, `asset.read`,
+  *Kontoeinstellungen → API-Schlüssel*; nötige Rechte: `user.read` (für die Prüfung der Verbindung), `album.read`, `person.read`, `asset.read`,
   `asset.view`, `asset.download`, `face.read`). Danach zeigt er die Alben bzw. die Personen mit Namen,
   jeweils mit Vorschaubildern; darin wählt man ein oder mehrere Fotos und fügt sie ein – als große
   Vorschau (meist 1440 Pixel an der langen Seite, reicht zum Drucken) oder mit *Original statt großer
