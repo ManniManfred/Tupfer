@@ -1,16 +1,67 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Tupfer.Designer.App"
-             RequestedThemeVariant="Light">
+             RequestedThemeVariant="Default">
   <Application.Resources>
-    <!-- Farben -->
-    <SolidColorBrush x:Key="AppBackground" Color="#F3F4F7" />
-    <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="CardBorder" Color="#E2E5EB" />
-    <SolidColorBrush x:Key="CanvasBackground" Color="#E6E9EF" />
-    <SolidColorBrush x:Key="TextPrimary" Color="#1F2A44" />
-    <SolidColorBrush x:Key="TextSecondary" Color="#6B7280" />
-    <SolidColorBrush x:Key="Brand" Color="#E8590C" />
+   <ResourceDictionary>
+    <!-- Farben der Oberfläche für Hell und Dunkel (Einstellung „Darstellung“). Immer per DynamicResource
+         verwenden, sonst wirkt ein Wechsel erst nach einem Neustart. Die Druckseite selbst bleibt immer hell. -->
+    <ResourceDictionary.ThemeDictionaries>
+      <ResourceDictionary x:Key="Light">
+        <SolidColorBrush x:Key="AppBackground" Color="#F3F4F7" />
+        <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="CardBorder" Color="#E2E5EB" />
+        <SolidColorBrush x:Key="CanvasBackground" Color="#E6E9EF" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#1F2A44" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#6B7280" />
+        <SolidColorBrush x:Key="Brand" Color="#E8590C" />
+        <!-- Meldungen: Erfolg (Aufnahme vorhanden), Fehler, Warnung -->
+        <SolidColorBrush x:Key="SuccessBackground" Color="#E8F5E9" />
+        <SolidColorBrush x:Key="SuccessForeground" Color="#2E7D32" />
+        <SolidColorBrush x:Key="DangerForeground" Color="#C62828" />
+        <SolidColorBrush x:Key="WarningBackground" Color="#FFF3E0" />
+        <SolidColorBrush x:Key="WarningForeground" Color="#E65100" />
+        <!-- Gewählter Eintrag der Ebenen-Liste: normal, unter dem Mauszeiger, beim Ziehen -->
+        <SolidColorBrush x:Key="LayerSelected" Color="#F8C9AE" />
+        <SolidColorBrush x:Key="LayerSelectedHover" Color="#F6B892" />
+        <SolidColorBrush x:Key="LayerSelectedDrag" Color="#F4A57A" />
+        <!-- Abdunkelung hinter Dialogen -->
+        <SolidColorBrush x:Key="Overlay" Color="#80000000" />
+        <!-- Wellenform im Aufnahme-Editor (WaveformView) -->
+        <SolidColorBrush x:Key="WaveformBackground" Color="#F5F5F5" />
+        <SolidColorBrush x:Key="WaveformSelected" Color="#2E7D32" />
+        <SolidColorBrush x:Key="WaveformOutside" Color="#BDBDBD" />
+        <SolidColorBrush x:Key="WaveformClipped" Color="#C62828" />
+        <SolidColorBrush x:Key="WaveformEdge" Color="#1565C0" />
+        <SolidColorBrush x:Key="WaveformPlayhead" Color="#E65100" />
+        <SolidColorBrush x:Key="WaveformAxis" Color="#E0E0E0" />
+      </ResourceDictionary>
+      <ResourceDictionary x:Key="Dark">
+        <SolidColorBrush x:Key="AppBackground" Color="#16181D" />
+        <SolidColorBrush x:Key="CardBackground" Color="#22252C" />
+        <SolidColorBrush x:Key="CardBorder" Color="#353943" />
+        <SolidColorBrush x:Key="CanvasBackground" Color="#1C1F25" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#E6E8EE" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#9CA3AF" />
+        <SolidColorBrush x:Key="Brand" Color="#FF7A33" />
+        <SolidColorBrush x:Key="SuccessBackground" Color="#1E3A24" />
+        <SolidColorBrush x:Key="SuccessForeground" Color="#81C784" />
+        <SolidColorBrush x:Key="DangerForeground" Color="#EF7A7A" />
+        <SolidColorBrush x:Key="WarningBackground" Color="#3D2A14" />
+        <SolidColorBrush x:Key="WarningForeground" Color="#FFB74D" />
+        <SolidColorBrush x:Key="LayerSelected" Color="#6B3317" />
+        <SolidColorBrush x:Key="LayerSelectedHover" Color="#7D3D1C" />
+        <SolidColorBrush x:Key="LayerSelectedDrag" Color="#8F4621" />
+        <SolidColorBrush x:Key="Overlay" Color="#B0000000" />
+        <SolidColorBrush x:Key="WaveformBackground" Color="#1A1D22" />
+        <SolidColorBrush x:Key="WaveformSelected" Color="#66BB6A" />
+        <SolidColorBrush x:Key="WaveformOutside" Color="#555B66" />
+        <SolidColorBrush x:Key="WaveformClipped" Color="#EF5350" />
+        <SolidColorBrush x:Key="WaveformEdge" Color="#64B5F6" />
+        <SolidColorBrush x:Key="WaveformPlayhead" Color="#FFA040" />
+        <SolidColorBrush x:Key="WaveformAxis" Color="#3A3F48" />
+      </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
 
     <!-- Symbole (Material Design Icons, 24×24) -->
     <StreamGeometry x:Key="IconNew">M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M11,11H13V14H16V16H13V19H11V16H8V14H11V11Z</StreamGeometry>
@@ -62,19 +113,21 @@
     <StreamGeometry x:Key="IconDistributeX">M8 2V5H10V19H8V22H6V19H4V5H6V2H8M16 2V7H14V17H16V22H18V17H20V7H18V2H16Z</StreamGeometry>
     <StreamGeometry x:Key="IconDistributeY">M2 16H5V14H19V16H22V18H19V20H5V18H2V16M2 8H7V10H17V8H22V6H17V4H7V6H2V8Z</StreamGeometry>
     <StreamGeometry x:Key="IconArea">M3,3H9V5H5V9H3V3M15,3H21V9H19V5H15V3M3,15H5V19H9V21H3V15M19,15H21V21H15V19H19V15Z</StreamGeometry>
+   </ResourceDictionary>
   </Application.Resources>
 
   <Application.Styles>
     <FluentTheme>
       <FluentTheme.Palettes>
         <ColorPaletteResources x:Key="Light" Accent="#E8590C" />
+        <ColorPaletteResources x:Key="Dark" Accent="#E8590C" />
       </FluentTheme.Palettes>
     </FluentTheme>
 
     <!-- Karten -->
     <Style Selector="Border.card">
-      <Setter Property="Background" Value="{StaticResource CardBackground}" />
-      <Setter Property="BorderBrush" Value="{StaticResource CardBorder}" />
+      <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="14,12" />
@@ -85,30 +138,30 @@
     <Style Selector="TextBlock.section">
       <Setter Property="FontSize" Value="15" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
       <Setter Property="Margin" Value="0,0,0,6" />
     </Style>
     <Style Selector="TextBlock.label">
       <Setter Property="Margin" Value="0,10,0,4" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
     </Style>
     <!-- Gruppe innerhalb eines Abschnitts (z. B. in der Ebenen-Liste) -->
     <Style Selector="TextBlock.sublabel">
       <Setter Property="Margin" Value="0,8,0,2" />
       <Setter Property="FontSize" Value="12" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
     </Style>
     <Style Selector=":is(TextBlock).hint">
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="LineHeight" Value="18" />
     </Style>
     <Style Selector="TextBlock.value">
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
     <Style Selector="TextBox.code">
       <Setter Property="FontFamily" Value="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace" />
@@ -160,7 +213,7 @@
       <Setter Property="Spacing" Value="6" />
     </Style>
     <Style Selector="Button.danger PathIcon">
-      <Setter Property="Foreground" Value="#C62828" />
+      <Setter Property="Foreground" Value="{DynamicResource DangerForeground}" />
     </Style>
     <Style Selector="WrapPanel.buttons">
       <Setter Property="Margin" Value="0,8,0,0" />
@@ -186,14 +239,14 @@
       <Setter Property="Cursor" Value="SizeNorthSouth" />
     </Style>
     <Style Selector="Button.layer.selected">
-      <Setter Property="Background" Value="#F8C9AE" />
+      <Setter Property="Background" Value="{DynamicResource LayerSelected}" />
     </Style>
     <!-- Auch unter dem Mauszeiger und beim Ziehen als gewählt erkennbar (die Vorlage überschreibt sonst den Hintergrund) -->
     <Style Selector="Button.layer.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#F6B892" />
+      <Setter Property="Background" Value="{DynamicResource LayerSelectedHover}" />
     </Style>
     <Style Selector="ItemsControl.dragging Button.layer.selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#F4A57A" />
+      <Setter Property="Background" Value="{DynamicResource LayerSelectedDrag}" />
     </Style>
 
     <!-- Reiter -->

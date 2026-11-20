@@ -265,6 +265,11 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
     Browser öffnet sich ein Speichern-Dialog, in dem man das Laufwerk des Stifts wählt – nur in
     Chrome und Edge am PC. Auf dem Handy: GME herunterladen und mit der App *Dateien* auf den Stift
     kopieren (Stift per OTG-Adapter anschließen).
+- **Darstellung hell oder dunkel:** Unter *Datei → Darstellung* „Wie System“ (Standard), „Hell“ oder
+  „Dunkel“. „Wie System“ folgt dem Betriebssystem, im Browser der Einstellung `prefers-color-scheme`.
+  Die Wahl wirkt sofort und wird mit den übrigen Einstellungen gespeichert (am Desktop in
+  `einstellungen.json` im Benutzerprofil, im Browser im Speicher der Seite). Nur die Oberfläche wird
+  dunkel – die Seiten bleiben weiß wie auf dem Papier, damit man sieht, was gedruckt wird.
 
 OID-Muster und GME-Dateien sind direkte Portierungen von tttool: Die Muster sind pixelgenau
 gleich, die GME-Dateien bei gleichen Audiodateien byteweise identisch mit `tttool assemble`.
@@ -382,6 +387,8 @@ Web-Version; einmal gespeichert, sind sie ein `*.tupfer`.
 - **Exporte** (GME, PDF, SVG, YAML) landen neben dem Projekt in Nextcloud. Bei einem noch nicht
   gespeicherten Projekt werden sie wie im Browser heruntergeladen. *Drucken* und *Auf den Stift*
   funktionieren wie im Browser.
+- **Darstellung:** Ist in Nextcloud fest ein helles oder dunkles Design gewählt, übernimmt der Designer
+  es bei „Wie System“; beim Design „Standard“ folgt er wie Nextcloud dem Browser.
 
 **Fotos aus Immich** in Nextcloud: Die Zugriffe auf Immich laufen über den Nextcloud-Server; Immich
 braucht deshalb keine CORS-Freigabe, und Nextcloud muss Immich nur selbst erreichen (auch im eigenen

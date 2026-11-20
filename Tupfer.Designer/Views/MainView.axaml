@@ -5,7 +5,7 @@
              xmlns:gme="using:Tupfer.Designer.Gme"
              x:Class="Tupfer.Designer.Views.MainView"
              x:DataType="vm:MainWindowViewModel"
-             Background="{StaticResource AppBackground}">
+             Background="{DynamicResource AppBackground}">
 
   <UserControl.KeyBindings>
     <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveProjectCommand}" />
@@ -90,8 +90,8 @@
   <Grid x:Name="RootGrid" RowDefinitions="Auto,*,0,0">
 
     <!-- ================= Kopfzeile ================= -->
-    <Border x:Name="HeaderBar" Grid.Row="0" Background="{StaticResource CardBackground}"
-            BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,0,1" Padding="12,6">
+    <Border x:Name="HeaderBar" Grid.Row="0" Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="12,6">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0"
                     ToolTip.Tip="{x:Static vm:MainWindowViewModel.AppName}">
@@ -99,16 +99,16 @@
           <StackPanel VerticalAlignment="Center">
             <!-- Version steht im Tooltip und im Fenstertitel -->
             <TextBlock x:Name="AppTitle" Text="Tupfer Designer" FontSize="16" FontWeight="Bold"
-                       Foreground="{StaticResource TextPrimary}" />
+                       Foreground="{DynamicResource TextPrimary}" />
             <!-- Desktop mit eigener Titelleiste: Dateiname statt im Fenstertitel -->
             <TextBlock x:Name="FileTitle" IsVisible="False" Text="{Binding FileName}" FontSize="11"
-                       Foreground="{StaticResource TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="220" />
+                       Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="220" />
           </StackPanel>
         </StackPanel>
 
         <!-- Im kompakten Layout statt des Titels nur die Version -->
         <TextBlock x:Name="CompactVersion" Grid.Column="2" IsVisible="False" Text="{x:Static vm:MainWindowViewModel.Version}"
-                   FontSize="11" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"
+                   FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"
                    HorizontalAlignment="Right" Margin="4,0,8,0" />
 
         <Menu x:Name="HeaderMenu" Grid.Column="1" VerticalAlignment="Center">
@@ -152,6 +152,14 @@
                       ToolTip.Tip="Formen, Pfade, Texte und Bilder einer SVG-Datei als Farbflächen, Texte und Bilder auf die Seite holen" />
             <MenuItem Header="Seite als SVG e_xportieren …" Command="{Binding ExportSvgCommand}"
                       ToolTip.Tip="Bilder, Texte und Farbflächen der Seite als SVG; die OID-Flächen liegen auf einer ausgeblendeten Ebene" />
+            <Separator />
+            <MenuItem Header="_Darstellung">
+              <MenuItem Header="Wie _System" ToggleType="Radio" GroupName="Theme" IsChecked="{Binding ThemeSystem, Mode=TwoWay}"
+                        ToolTip.Tip="Hell oder dunkel wie im Betriebssystem bzw. Browser eingestellt" />
+              <MenuItem Header="_Hell" ToggleType="Radio" GroupName="Theme" IsChecked="{Binding ThemeLight, Mode=TwoWay}" />
+              <MenuItem Header="_Dunkel" ToggleType="Radio" GroupName="Theme" IsChecked="{Binding ThemeDark, Mode=TwoWay}"
+                        ToolTip.Tip="Dunkle Oberfläche; die Seiten selbst bleiben weiß wie beim Druck" />
+            </MenuItem>
             <Separator IsVisible="{x:Static vm:MainWindowViewModel.HasDownloads}" />
             <MenuItem Header="Desktop-Version _herunterladen …" Command="{Binding ShowDownloadsCommand}"
                       IsVisible="{x:Static vm:MainWindowViewModel.HasDownloads}" />
@@ -302,7 +310,7 @@
           <Button Classes="tool" Command="{Binding SaveProjectCommand}" ToolTip.Tip="Speichern (Strg+S)">
             <PathIcon Data="{StaticResource IconSave}" />
           </Button>
-          <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
+          <Border Width="1" Background="{DynamicResource CardBorder}" Margin="6,6" />
           <Button Classes="tool" Command="{Binding PrintPagesCommand}" ToolTip.Tip="Seiten drucken (Strg+P)">
             <PathIcon Data="{StaticResource IconPrint}" />
           </Button>
@@ -378,13 +386,13 @@
                           <DataTemplate x:DataType="vm:AreaViewModel">
                             <Grid ColumnDefinitions="Auto,*">
                               <Border Classes="draghandle">
-                                <PathIcon Data="{StaticResource IconDragHandle}" Width="16" Height="16" Foreground="{StaticResource TextSecondary}" />
+                                <PathIcon Data="{StaticResource IconDragHandle}" Width="16" Height="16" Foreground="{DynamicResource TextSecondary}" />
                               </Border>
                               <Button Grid.Column="1" Classes="layer" Classes.selected="{Binding IsSelected}"
                                       Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectAreaCommand}"
                                       CommandParameter="{Binding}" ToolTip.Tip="OID-Fläche">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                  <PathIcon Data="{StaticResource IconArea}" Width="14" Height="14" Foreground="{StaticResource TextSecondary}" />
+                                  <PathIcon Data="{StaticResource IconArea}" Width="14" Height="14" Foreground="{DynamicResource TextSecondary}" />
                                   <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                               </Button>
@@ -400,7 +408,7 @@
                           <DataTemplate x:DataType="vm:ElementViewModel">
                             <Grid ColumnDefinitions="Auto,*">
                               <Border Classes="draghandle">
-                                <PathIcon Data="{StaticResource IconDragHandle}" Width="16" Height="16" Foreground="{StaticResource TextSecondary}" />
+                                <PathIcon Data="{StaticResource IconDragHandle}" Width="16" Height="16" Foreground="{DynamicResource TextSecondary}" />
                               </Border>
                               <Button Grid.Column="1" Classes="layer" Classes.selected="{Binding IsSelected}"
                                       Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectElementCommand}"
@@ -424,7 +432,7 @@
 
           <Border x:Name="CanvasPanel" Grid.Column="2" Classes="card" Padding="0" ClipToBounds="True">
             <DockPanel>
-              <Border DockPanel.Dock="Top" BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,0,1" Padding="10,6">
+              <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1" Padding="10,6">
                 <WrapPanel Classes="canvastools" Orientation="Horizontal">
                   <Button Classes="tool" Command="{Binding UndoCommand}" IsEnabled="{Binding Project.History.CanUndo}"
                           ToolTip.Tip="Rückgängig (Strg+Z)">
@@ -439,7 +447,7 @@
                           ToolTip.Tip="Gewählte Flächen, Bilder, Texte und Farbflächen löschen (Entf)">
                     <PathIcon Data="{StaticResource IconDelete}" />
                   </Button>
-                  <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
+                  <Border Width="1" Background="{DynamicResource CardBorder}" Margin="6,6" />
                   <Button Classes="tool" Command="{Binding InsertImageCommand}" ToolTip.Tip="Foto oder Bild einfügen">
                     <StackPanel><PathIcon Data="{StaticResource IconImage}" /><TextBlock Text="Bild" /></StackPanel>
                   </Button>
@@ -465,7 +473,7 @@
                                 ToolTip.Tip="Mehrere wählen: Antippen nimmt Objekte in die Auswahl auf oder entfernt sie (wie Strg-Klick)">
                     <StackPanel><PathIcon Data="{StaticResource IconSelectMultiple}" /><TextBlock Text="Mehrere wählen" /></StackPanel>
                   </ToggleButton>
-                  <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
+                  <Border Width="1" Background="{DynamicResource CardBorder}" Margin="6,6" />
                   <ToggleButton Classes="tool" IsChecked="{Binding RectangleTool}"
                                 ToolTip.Tip="Neue OID-Flächen als Rechteck aufziehen">
                     <PathIcon Data="{StaticResource IconShapeRect}" />
@@ -482,7 +490,7 @@
                                 ToolTip.Tip="Mit den Werkzeugen Farbflächen statt OID-Flächen zeichnen (Farbe wie zuletzt gewählt)">
                     <PathIcon Data="{StaticResource IconColorShape}" />
                   </ToggleButton>
-                  <Border Width="1" Background="{StaticResource CardBorder}" Margin="6,6" />
+                  <Border Width="1" Background="{DynamicResource CardBorder}" Margin="6,6" />
                   <Button Classes="tool" Command="{Binding ZoomOutCommand}" ToolTip.Tip="Verkleinern">
                     <PathIcon Data="{StaticResource IconRemove}" />
                   </Button>
@@ -501,7 +509,7 @@
                   </ToggleButton>
                 </WrapPanel>
               </Border>
-              <ScrollViewer x:Name="PageScroll" Background="{StaticResource CanvasBackground}"
+              <ScrollViewer x:Name="PageScroll" Background="{DynamicResource CanvasBackground}"
                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                 <Border Margin="24" HorizontalAlignment="Center" VerticalAlignment="Top">
                   <views:PageCanvas x:Name="PageView" Page="{Binding Project.SelectedPage}" Zoom="{Binding Zoom}"
@@ -614,7 +622,7 @@
                   <StackPanel IsVisible="{Binding HasColor}">
                     <TextBlock Classes="label" Text="Farbe" />
                     <Grid ColumnDefinitions="Auto,8,*">
-                      <Border Width="28" Height="28" CornerRadius="4" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"
+                      <Border Width="28" Height="28" CornerRadius="4" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                               Background="{Binding ColorBrush}" />
                       <TextBox Grid.Column="2" Text="{Binding Color}" />
                     </Grid>
@@ -625,7 +633,7 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:ColorPreset">
                           <Button Width="24" Height="24" Padding="0" Margin="0,0,4,4" CornerRadius="4"
-                                  BorderBrush="{StaticResource CardBorder}" BorderThickness="1"
+                                  BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                                   Background="{Binding Brush}" ToolTip.Tip="{Binding Value}"
                                   Command="{Binding $parent[ItemsControl].((vm:ElementViewModel)DataContext).SetColorCommand}"
                                   CommandParameter="{Binding Value}" />
@@ -639,7 +647,7 @@
                     <TextBlock Classes="label" Text="Rand: Breite (mm, 0 = ohne) und Farbe" />
                     <Grid ColumnDefinitions="70,8,Auto,8,*">
                       <TextBox Text="{Binding StrokeWidth}" />
-                      <Border Grid.Column="2" Width="28" Height="28" CornerRadius="4" BorderBrush="{StaticResource CardBorder}" BorderThickness="1"
+                      <Border Grid.Column="2" Width="28" Height="28" CornerRadius="4" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                               Background="{Binding StrokeBrush}" />
                       <TextBox Grid.Column="4" Text="{Binding StrokeColor}" />
                     </Grid>
@@ -650,7 +658,7 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:ColorPreset">
                           <Button Width="24" Height="24" Padding="0" Margin="0,0,4,4" CornerRadius="4"
-                                  BorderBrush="{StaticResource CardBorder}" BorderThickness="1"
+                                  BorderBrush="{DynamicResource CardBorder}" BorderThickness="1"
                                   Background="{Binding Brush}" ToolTip.Tip="{Binding Value}"
                                   Command="{Binding $parent[ItemsControl].((vm:ElementViewModel)DataContext).SetStrokeColorCommand}"
                                   CommandParameter="{Binding Value}" />
@@ -774,7 +782,7 @@
                                  PlaceholderText="Text, den der Stift spricht"
                                  IsVisible="{Binding !SpeakEntry.HasRecording, FallbackValue=True}" />
                         <!-- Mit eigener Aufnahme statt Sprachausgabe -->
-                        <Border IsVisible="{Binding SpeakEntry.HasRecording, FallbackValue=False}" Background="#E8F5E9" CornerRadius="4"
+                        <Border IsVisible="{Binding SpeakEntry.HasRecording, FallbackValue=False}" Background="{DynamicResource SuccessBackground}" CornerRadius="4"
                                 Padding="8,4" ToolTip.Tip="{Binding SpeakEntry.Recording, FallbackValue=''}">
                           <DockPanel VerticalAlignment="Center">
                             <Button DockPanel.Dock="Right" Classes="tool" Padding="4" Margin="4,0,-6,0"
@@ -784,8 +792,8 @@
                               <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
                             </Button>
                             <PathIcon DockPanel.Dock="Left" Data="{StaticResource IconMic}" Width="14" Height="14"
-                                      Foreground="#2E7D32" Margin="0,0,6,0" />
-                            <TextBlock Text="{Binding SpeakEntry.RecordingName, FallbackValue=''}" Foreground="#2E7D32"
+                                      Foreground="{DynamicResource SuccessForeground}" Margin="0,0,6,0" />
+                            <TextBlock Text="{Binding SpeakEntry.RecordingName, FallbackValue=''}" Foreground="{DynamicResource SuccessForeground}"
                                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                           </DockPanel>
                         </Border>
@@ -813,7 +821,7 @@
                                   CommandParameter="{Binding SpeakEntry}">
                             <Panel>
                               <PathIcon Data="{StaticResource IconMic}" IsVisible="{Binding !SpeakEntry.IsRecording, FallbackValue=True}" />
-                              <PathIcon Data="{StaticResource IconStop}" Foreground="#C62828" IsVisible="{Binding SpeakEntry.IsRecording, FallbackValue=False}" />
+                              <PathIcon Data="{StaticResource IconStop}" Foreground="{DynamicResource DangerForeground}" IsVisible="{Binding SpeakEntry.IsRecording, FallbackValue=False}" />
                             </Panel>
                           </Button>
                           <Button Classes="tool" ToolTip.Tip="Audiodatei als Aufnahme übernehmen"
@@ -944,7 +952,7 @@
                   <DataTemplate x:DataType="vm:ScriptViewModel">
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Grid.Column="1" Margin="6,0,0,0" Foreground="{StaticResource TextSecondary}" Text="{Binding Code}" />
+                      <TextBlock Grid.Column="1" Margin="6,0,0,0" Foreground="{DynamicResource TextSecondary}" Text="{Binding Code}" />
                     </Grid>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -993,7 +1001,7 @@
         <Border Classes="card">
           <DockPanel>
           <!-- Aufnahme schneiden und Lautstärke ändern; oben, damit es auch bei langer Liste zu sehen ist -->
-          <Border DockPanel.Dock="Top" IsVisible="{Binding IsEditingRecording}" Background="#E8F5E9" CornerRadius="6"
+          <Border DockPanel.Dock="Top" IsVisible="{Binding IsEditingRecording}" Background="{DynamicResource SuccessBackground}" CornerRadius="6"
                   Padding="12" Margin="0,0,0,10">
             <StackPanel Spacing="8" DataContext="{Binding RecordingEditor}" x:DataType="vm:RecordingEditorViewModel">
               <TextBlock Classes="section" Text="{Binding Title, FallbackValue=''}" Margin="0" />
@@ -1013,7 +1021,7 @@
                 <Button Grid.Column="3" Content="Automatisch" Command="{Binding NormalizeCommand}"
                         ToolTip.Tip="So laut wie die Sprachausgabe (wie „Lautstärke angleichen“)" />
               </Grid>
-              <TextBlock IsVisible="{Binding Clips, FallbackValue=False}" Foreground="#C62828" TextWrapping="Wrap"
+              <TextBlock IsVisible="{Binding Clips, FallbackValue=False}" Foreground="{DynamicResource DangerForeground}" TextWrapping="Wrap"
                          Text="Zu laut: Die rot markierten Stellen werden abgeschnitten und klingen verzerrt." />
               <WrapPanel Classes="buttons">
                 <Button Command="{Binding $parent[views:MainView].((vm:MainWindowViewModel)DataContext).PreviewRecordingEditCommand}">
@@ -1083,7 +1091,7 @@
                     <TextBox Classes="speakname commit" Text="{Binding EditName, UpdateSourceTrigger=LostFocus}" Margin="0,0,8,0"
                              ToolTip.Tip="Name, mit dem Skripte den Text abspielen (P(name)); Umbenennen passt die Skripte an" />
                     <TextBox Classes="speaktext" Text="{Binding Text}" IsVisible="{Binding !HasRecording}" />
-                    <Border Classes="speaktext" IsVisible="{Binding HasRecording}" Background="#E8F5E9" CornerRadius="4"
+                    <Border Classes="speaktext" IsVisible="{Binding HasRecording}" Background="{DynamicResource SuccessBackground}" CornerRadius="4"
                             Padding="8,0" ToolTip.Tip="{Binding Recording}">
                       <DockPanel VerticalAlignment="Center">
                         <Button DockPanel.Dock="Right" Classes="tool" Padding="4" Margin="4,0,-6,0"
@@ -1099,8 +1107,8 @@
                           <PathIcon Data="{StaticResource IconCut}" Width="14" Height="14" />
                         </Button>
                         <PathIcon DockPanel.Dock="Left" Data="{StaticResource IconMic}" Width="14" Height="14"
-                                  Foreground="#2E7D32" Margin="0,0,6,0" />
-                        <TextBlock Text="{Binding RecordingName}" Foreground="#2E7D32" TextTrimming="CharacterEllipsis"
+                                  Foreground="{DynamicResource SuccessForeground}" Margin="0,0,6,0" />
+                        <TextBlock Text="{Binding RecordingName}" Foreground="{DynamicResource SuccessForeground}" TextTrimming="CharacterEllipsis"
                                    VerticalAlignment="Center" />
                       </DockPanel>
                     </Border>
@@ -1136,7 +1144,7 @@
                               CommandParameter="{Binding}">
                         <Panel>
                           <PathIcon Data="{StaticResource IconMic}" IsVisible="{Binding !IsRecording}" />
-                          <PathIcon Data="{StaticResource IconStop}" Foreground="#C62828" IsVisible="{Binding IsRecording}" />
+                          <PathIcon Data="{StaticResource IconStop}" Foreground="{DynamicResource DangerForeground}" IsVisible="{Binding IsRecording}" />
                         </Panel>
                       </Button>
                       <Button Classes="tool" ToolTip.Tip="Audiodatei als Aufnahme übernehmen"
@@ -1171,9 +1179,9 @@
                 <TextBlock Classes="label" Text="Begrüßung (welcome)" />
                 <TextBox Text="{Binding Welcome}" />
                 <TextBlock Classes="hint" Margin="0,4,0,0" Text="Kommagetrennte Liste von Texten/Audiodateien, die beim Anmelden abgespielt werden." />
-                <Border IsVisible="{Binding HasWelcomeProblem}" Background="#FFF3E0" CornerRadius="4" Padding="8,6" Margin="0,4,0,0">
+                <Border IsVisible="{Binding HasWelcomeProblem}" Background="{DynamicResource WarningBackground}" CornerRadius="4" Padding="8,6" Margin="0,4,0,0">
                   <StackPanel Spacing="6">
-                    <TextBlock Text="{Binding WelcomeProblem}" Foreground="#E65100" TextWrapping="Wrap" FontSize="12" />
+                    <TextBlock Text="{Binding WelcomeProblem}" Foreground="{DynamicResource WarningForeground}" TextWrapping="Wrap" FontSize="12" />
                     <Button Command="{Binding WelcomeAsTextCommand}" HorizontalAlignment="Left"
                             ToolTip.Tip="Legt den Satz als neuen Text „begruessung“ an (Tab „Sprachausgabe“) und trägt hier dessen Namen ein">
                       <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Als Text anlegen" /></StackPanel>
@@ -1223,7 +1231,7 @@
     </TabControl>
 
     <!-- ================= Startbildschirm (Desktop ohne geöffnete Projektdatei) ================= -->
-    <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowStartScreen}" Background="{StaticResource AppBackground}">
+    <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowStartScreen}" Background="{DynamicResource AppBackground}">
       <Border Classes="card" MaxWidth="560" Margin="16,48,16,16" VerticalAlignment="Top">
         <StackPanel Spacing="12">
           <TextBlock Classes="section" Text="Willkommen" />
@@ -1254,7 +1262,7 @@
                         CommandParameter="{Binding}">
                   <StackPanel>
                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Folder}" FontSize="11" Foreground="{StaticResource TextSecondary}"
+                    <TextBlock Text="{Binding Folder}" FontSize="11" Foreground="{DynamicResource TextSecondary}"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                 </Button>
@@ -1283,7 +1291,7 @@
 
     <!-- ================= Fotos aus Immich ================= -->
     <!-- Ebene über der ganzen Ansicht statt eines Fensters, damit es auch im Browser geht -->
-    <Border Grid.Row="0" Grid.RowSpan="4" IsVisible="{Binding IsBrowsingImmich}" Background="#80000000">
+    <Border Grid.Row="0" Grid.RowSpan="4" IsVisible="{Binding IsBrowsingImmich}" Background="{DynamicResource Overlay}">
       <Border Classes="card" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="16" Padding="20"
               MaxWidth="760" MaxHeight="720" DataContext="{Binding ImmichBrowser}" x:DataType="vm:ImmichBrowserViewModel">
         <DockPanel>
@@ -1294,7 +1302,7 @@
           </DockPanel>
 
           <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
-            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}"
                        IsVisible="{Binding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <DockPanel>
               <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Right">
@@ -1316,16 +1324,16 @@
           <Panel>
             <!-- Zugang: Adresse und API-Key (werden in den Einstellungen gespeichert, nicht im Projekt) -->
             <StackPanel Spacing="6" IsVisible="{Binding ShowSettings}">
-              <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"
+              <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}"
                          Text="Adresse des Immich-Servers und ein API-Key (in Immich unter Kontoeinstellungen → API-Schlüssel; Rechte: user.read, album.read, person.read, asset.read, asset.view, asset.download, face.read). Beides wird in den Einstellungen dieses Programms gespeichert, nicht im Projekt." />
               <TextBlock Classes="label" Text="Adresse" />
               <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://fotos.example.org"
                        IsReadOnly="{x:Static vm:ImmichBrowserViewModel.IsServerFixed}" />
-              <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" IsVisible="{x:Static vm:ImmichBrowserViewModel.IsServerFixed}"
+              <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" IsVisible="{x:Static vm:ImmichBrowserViewModel.IsServerFixed}"
                          Text="In Nextcloud gilt der Immich-Server, den der Administrator eingetragen hat; die Zugriffe laufen über den Nextcloud-Server." />
               <TextBlock Classes="label" Text="API-Key" />
               <TextBox Text="{Binding ApiKey}" PasswordChar="•" />
-              <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" IsVisible="{x:Static vm:ImmichBrowserViewModel.ShowCorsHint}"
+              <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" IsVisible="{x:Static vm:ImmichBrowserViewModel.ShowCorsHint}"
                          Text="Hinweis für die Web-Version: Immich erlaubt Zugriffe von anderen Seiten (CORS) nur, wenn der Webserver vor Immich sie freigibt; läuft der Designer über https, muss auch Immich über https erreichbar sein. Ohne Freigabe geht es nur in der Desktop-Version (siehe README)." />
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
                 <Button Content="Verbinden" Classes="accent" IsDefault="True" Command="{Binding ConnectCommand}" IsEnabled="{Binding !IsBusy}" />
@@ -1360,11 +1368,11 @@
                               Command="{Binding $parent[ItemsControl].((vm:ImmichBrowserViewModel)DataContext).OpenCommand, FallbackValue={x:Null}}"
                               CommandParameter="{Binding}" ToolTip.Tip="{Binding Title}">
                         <StackPanel Orientation="Vertical" Spacing="2">
-                          <Border Width="120" Height="120" CornerRadius="6" ClipToBounds="True" Background="{StaticResource CardBorder}">
+                          <Border Width="120" Height="120" CornerRadius="6" ClipToBounds="True" Background="{DynamicResource CardBorder}">
                             <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
                           </Border>
                           <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
-                          <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource TextSecondary}" FontSize="11" />
+                          <TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource TextSecondary}" FontSize="11" />
                         </StackPanel>
                       </Button>
                     </DataTemplate>
@@ -1406,13 +1414,13 @@
 
     <!-- ================= Namen der erkannten Personen ================= -->
     <!-- Ebene über der ganzen Ansicht statt eines Fensters, damit es auch im Browser geht -->
-    <Border Grid.Row="0" Grid.RowSpan="4" IsVisible="{Binding IsNamingPersons}" Background="#80000000">
+    <Border Grid.Row="0" Grid.RowSpan="4" IsVisible="{Binding IsNamingPersons}" Background="{DynamicResource Overlay}">
       <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16" Padding="20"
               MaxWidth="520" MaxHeight="640">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
             <TextBlock Text="Wer ist das?" FontSize="16" FontWeight="SemiBold" />
-            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}"
                        Text="Namen eingeben (von links nach rechts). Skript, Fläche und Text heißen dann wie die Person; ohne Namen bleibt es bei „Person 1“ …" />
           </StackPanel>
           <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
@@ -1432,7 +1440,7 @@
                 <DataTemplate x:DataType="vm:PersonNameEntry">
                   <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,8">
                     <Border Width="64" Height="64" CornerRadius="6" ClipToBounds="True" Margin="0,0,12,0"
-                            Background="{StaticResource CardBorder}">
+                            Background="{DynamicResource CardBorder}">
                       <Image Source="{Binding Face}" IsVisible="{Binding HasFace}" Stretch="UniformToFill" />
                     </Border>
                     <TextBox Grid.Column="1" VerticalAlignment="Center" Text="{Binding Name}"

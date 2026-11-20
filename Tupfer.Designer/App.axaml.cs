@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Avalonia.Styling;
 using Tupfer.Designer.Services;
 using Tupfer.Designer.ViewModels;
 using Tupfer.Designer.Views;
@@ -19,8 +20,28 @@ public partial class App : Application
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
+    /// <summary>
+    /// Darstellung bei „Wie System“: Default folgt dem Betriebssystem bzw. prefers-color-scheme des Browsers;
+    /// in Nextcloud gibt die App ein dort fest gewähltes Hell/Dunkel vor (?darstellung=…).
+    /// </summary>
+    public static ThemeVariant SystemTheme { get; set; } = ThemeVariant.Default;
+
+    /// <summary>Stellt Hell/Dunkel um; wirkt sofort auf alle Fenster (Ressourcen per DynamicResource).</summary>
+    public static void ApplyTheme(AppTheme theme)
+    {
+        if (Current != null)
+            Current.RequestedThemeVariant = theme switch
+            {
+                AppTheme.Light => ThemeVariant.Light,
+                AppTheme.Dark => ThemeVariant.Dark,
+                _ => SystemTheme,
+            };
+    }
+
     public override void OnFrameworkInitializationCompleted()
     {
+        // Gespeicherte Darstellung; Standard folgt dem System
+        ApplyTheme(Settings.Load().Theme);
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Desktop: immer mit einer Projektdatei arbeiten, mit Liste der zuletzt geöffneten

@@ -5,7 +5,17 @@
 	if (!app || !frame) {
 		return
 	}
-	frame.src = app.dataset.editor + location.search
+	// Hell/Dunkel wie in Nextcloud eingestellt (gilt im Designer bei „Wie System“); beim Theme
+	// „Standard“ folgt Nextcloud dem Browser, dann folgt ihm auch der Designer von selbst
+	const params = new URLSearchParams(location.search)
+	const themes = (document.body.dataset.themes || '').split(',')
+	if (themes.some(t => t.startsWith('dark'))) {
+		params.set('darstellung', 'dunkel')
+	} else if (themes.some(t => t.startsWith('light'))) {
+		params.set('darstellung', 'hell')
+	}
+	const query = params.toString()
+	frame.src = app.dataset.editor + (query ? '?' + query : '')
 	// Nur einmal öffnen: Beim Neuladen soll der automatisch gesicherte Stand zurückkommen
 	if (location.search) {
 		history.replaceState(null, '', location.pathname)

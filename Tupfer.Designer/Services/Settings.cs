@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Tupfer.Designer.Services;
 
@@ -17,6 +18,10 @@ public class Settings
     /// <summary>Fotos aus Immich im Original statt als große Vorschau herunterladen.</summary>
     public bool ImmichOriginal { get; set; }
 
+    /// <summary>Darstellung der Oberfläche: wie das Betriebssystem (im Browser prefers-color-scheme), hell oder dunkel.</summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<AppTheme>))]
+    public AppTheme Theme { get; set; } = AppTheme.System;
+
     /// <summary>Liest und schreibt die Einstellungen (JSON); im Browser durch localStorage ersetzt.</summary>
     public static ISettingsStore Store { get; set; } = new FileSettingsStore();
 
@@ -34,6 +39,14 @@ public class Settings
     }
 
     public void Save() => Store.Write(JsonSerializer.Serialize(this));
+}
+
+/// <summary>Hell/Dunkel der Oberfläche; die Druckseite bleibt immer hell.</summary>
+public enum AppTheme
+{
+    System,
+    Light,
+    Dark,
 }
 
 public interface ISettingsStore

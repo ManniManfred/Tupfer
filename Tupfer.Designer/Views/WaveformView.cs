@@ -39,6 +39,8 @@ public class WaveformView : Control
     {
         Cursor = new Cursor(StandardCursorType.SizeWestEast);
         ClipToBounds = true;
+        // Farben kommen aus dem Theme (App.axaml): bei Hell/Dunkel-Wechsel neu zeichnen
+        ActualThemeVariantChanged += (_, _) => InvalidateVisual();
     }
 
     public float[]? Samples { get => GetValue(SamplesProperty); set => SetValue(SamplesProperty, value); }
@@ -76,45 +78,43 @@ public class WaveformView : Control
         return _columns = c;
     }
 
-    static readonly IBrush Background = new SolidColorBrush(Color.Parse("#F5F5F5"));
-    static readonly IBrush Selected = new SolidColorBrush(Color.Parse("#2E7D32"));
-    static readonly IBrush Outside = new SolidColorBrush(Color.Parse("#BDBDBD"));
-    static readonly IBrush Clipped = new SolidColorBrush(Color.Parse("#C62828"));
-    static readonly IPen Edge = new Pen(new SolidColorBrush(Color.Parse("#1565C0")), 2);
-    static readonly IBrush Handle = new SolidColorBrush(Color.Parse("#1565C0"));
-    static readonly IPen Playhead = new Pen(new SolidColorBrush(Color.Parse("#E65100")), 2);
-    static readonly IBrush PlayheadBrush = new SolidColorBrush(Color.Parse("#E65100"));
-    static readonly IPen Axis = new Pen(new SolidColorBrush(Color.Parse("#E0E0E0")), 1);
+    /// <summary>Farbe aus den Theme-Ressourcen (App.axaml, Hell bzw. Dunkel).</summary>
+    IBrush Brush(string key) =>
+        this.TryFindResource(key, ActualThemeVariant, out var value) && value is IBrush brush ? brush : Brushes.Gray;
 
     public override void Render(DrawingContext context)
     {
         var bounds = new Rect(Bounds.Size);
-        context.FillRectangle(Background, bounds);
+        IBrush background = Brush("WaveformBackground"), selected = Brush("WaveformSelected"),
+            outside = Brush("WaveformOutside"), clipped = Brush("WaveformClipped"), handle = Brush("WaveformEdge"),
+            playheadBrush = Brush("WaveformPlayhead");
+        IPen axis = new Pen(Brush("WaveformAxis"), 1), edge = new Pen(handle, 2), playhead = new Pen(playheadBrush, 2);
+        context.FillRectangle(background, bounds);
         int width = (int)bounds.Width;
         if (width <= 0 || Samples is not { Length: > 0 })
             return;
         double mid = bounds.Height / 2, half = mid - 4;
-        context.DrawLine(Axis, new Point(0, mid), new Point(bounds.Width, mid));
+        context.DrawLine(axis, new Point(0, mid), new Point(bounds.Width, mid));
         var columns = Columns(width);
         double start = Start * width, end = End * width;
         for (int x = 0; x < width; x++)
         {
             double value = columns[x] * Gain;
             bool inside = x + 0.5 >= start && x + 0.5 <= end;
-            var brush = !inside ? Outside : value > 1.001 ? Clipped : Selected;
+            var brush = !inside ? outside : value > 1.001 ? clipped : selected;
             double h = Math.Max(0.5, Math.Min(value, 1) * half);
             context.FillRectangle(brush, new Rect(x, mid - h, 1, 2 * h));
         }
         foreach (var x in new[] { start, end })
         {
-            context.DrawLine(Edge, new Point(x, 0), new Point(x, bounds.Height));
-            context.FillRectangle(Handle, new Rect(x - 5, 0, 10, 10));
-            context.FillRectangle(Handle, new Rect(x - 5, bounds.Height - 10, 10, 10));
+            context.DrawLine(edge, new Point(x, 0), new Point(x, bounds.Height));
+            context.FillRectangle(handle, new Rect(x - 5, 0, 10, 10));
+            context.FillRectangle(handle, new Rect(x - 5, bounds.Height - 10, 10, 10));
         }
         if (Position >= 0)
         {
             double x = Position * width;
-            context.DrawLine(Playhead, new Point(x, 0), new Point(x, bounds.Height));
+            context.DrawLine(playhead, new Point(x, 0), new Point(x, bounds.Height));
             var arrow = new StreamGeometry();
             using (var g = arrow.Open())
             {
@@ -123,7 +123,7 @@ public class WaveformView : Control
                 g.LineTo(new Point(x, 8));
                 g.EndFigure(true);
             }
-            context.DrawGeometry(PlayheadBrush, null, arrow);
+            context.DrawGeometry(playheadBrush, null, arrow);
         }
     }
 

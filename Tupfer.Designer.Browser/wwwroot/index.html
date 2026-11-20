@@ -16,6 +16,22 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="modulepreload" href="./main.js" />
   <link rel="stylesheet" href="./app.css" />
+  <script>
+    // Lade-Bildschirm gleich in der gewählten Darstellung (Einstellung des Designers, sonst ?darstellung=…
+    // aus Nextcloud, sonst prefers-color-scheme per CSS)
+    (() => {
+      let theme;
+      try {
+        theme = JSON.parse(localStorage.getItem('tupfer-einstellungen') || '{}').Theme;
+      } catch { }
+      if (theme !== 'Light' && theme !== 'Dark') {
+        const query = new URLSearchParams(location.search).get('darstellung');
+        theme = query === 'dunkel' ? 'Dark' : query === 'hell' ? 'Light' : undefined;
+      }
+      if (theme)
+        document.documentElement.dataset.theme = theme === 'Dark' ? 'dark' : 'light';
+    })();
+  </script>
 </head>
 <body>
   <div id="out">

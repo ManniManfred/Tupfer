@@ -67,6 +67,13 @@ static class Program
         MainWindowViewModel.Examples = Examples.Create(pageUri);
         var query = System.Web.HttpUtility.ParseQueryString(pageUri.Query);
         App.StartExample = MainWindowViewModel.Examples.FirstOrDefault(e => e.Id == query["beispiel"]);
+        // Nextcloud mit fest gewähltem hellem oder dunklem Theme
+        App.SystemTheme = query["darstellung"] switch
+        {
+            "dunkel" => Avalonia.Styling.ThemeVariant.Dark,
+            "hell" => Avalonia.Styling.ThemeVariant.Light,
+            _ => Avalonia.Styling.ThemeVariant.Default,
+        };
         // In der Nextcloud-App: Dateien in Nextcloud öffnen und speichern, ?datei=… gleich öffnen,
         // ?neu=… (Menü „Neu“ der Dateien-App) gleich anlegen
         if (NextcloudInterop.Available())

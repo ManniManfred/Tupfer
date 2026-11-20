@@ -221,6 +221,32 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Protokoll unten anzeigen (Menü Erstellen); Fehler und Hinweise blenden es ein.</summary>
     [ObservableProperty] bool _showLog;
 
+    /// <summary>Darstellung (Wie System / Hell / Dunkel); wird in den Einstellungen gespeichert und wirkt sofort.</summary>
+    public AppTheme Theme
+    {
+        get => _theme;
+        set
+        {
+            if (_theme == value)
+                return;
+            _theme = value;
+            App.ApplyTheme(value);
+            var settings = Settings.Load();
+            settings.Theme = value;
+            settings.Save();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ThemeSystem));
+            OnPropertyChanged(nameof(ThemeLight));
+            OnPropertyChanged(nameof(ThemeDark));
+        }
+    }
+    AppTheme _theme = Settings.Load().Theme;
+
+    // Für die Auswahl im Menü (Optionsfelder)
+    public bool ThemeSystem { get => Theme == AppTheme.System; set { if (value) Theme = AppTheme.System; } }
+    public bool ThemeLight { get => Theme == AppTheme.Light; set { if (value) Theme = AppTheme.Light; } }
+    public bool ThemeDark { get => Theme == AppTheme.Dark; set { if (value) Theme = AppTheme.Dark; } }
+
     [RelayCommand] void HideLog() => ShowLog = false;
 
     /// <summary>Meldung, die gelesen werden soll (Fehler, Hinweis, Ergebnis): blendet das Protokoll ein.</summary>
