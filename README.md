@@ -152,6 +152,11 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   einem Sondercode (Produkt/Anmelden, Wiederholen, Stopp) zugeordnet. Soll eine Fläche nur etwas
   sagen, wählt man als Ziel *Sprachausgabe* und dann einen Text oder legt mit **+** gleich einen
   neuen an und tippt ihn dort ein (mit Knopf zum Anhören); das Skript `P(name)` legt der Designer selbst an.
+- **Symbole für Start, Wiederholen und Stopp:** *Bearbeiten → Symbol einfügen* legt ein rundes Symbol
+  (grün mit Abspielpfeil, blau mit Kreispfeil, rot mit Quadrat, je 15 mm) samt passender OID-Fläche an:
+  *Start* meldet das Produkt am Stift an, *Wiederholen* spielt das Letzte noch einmal, *Stopp* beendet
+  die Wiedergabe. Die Symbole landen nebeneinander am unteren Rand und sind mit ihrer Fläche zusammen
+  gewählt, sodass man sie gemeinsam verschiebt. Die Grafiken liegen als SVG in `dateien/` des Projekts.
 - **Bild speichern:** Bild wählen und *Bild speichern …* klicken – die Datei des Bildes landet
   unverändert (ohne Zuschnitt und Drehung, in voller Auflösung) auf der Festplatte, z. B. ein Foto aus
   Immich oder ein Bild aus einem geöffneten `*.tupfer`. Im Browser wird sie heruntergeladen, in

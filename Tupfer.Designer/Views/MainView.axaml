@@ -235,6 +235,14 @@
             <MenuItem Header="_Farbfläche einfügen" Command="{Binding InsertShapeCommand}">
               <MenuItem.Icon><PathIcon Data="{StaticResource IconColorShape}" Width="14" Height="14" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="_Symbol einfügen">
+              <MenuItem Header="_Start (Anmelden)" Command="{Binding InsertSymbolCommand}" CommandParameter="Product"
+                        ToolTip.Tip="Grünes Start-Symbol mit dem Code des Produkts: Antippen meldet das Buch am Stift an" />
+              <MenuItem Header="_Wiederholen" Command="{Binding InsertSymbolCommand}" CommandParameter="Replay"
+                        ToolTip.Tip="Blaues Symbol: Antippen wiederholt das zuletzt Gesagte" />
+              <MenuItem Header="S_topp" Command="{Binding InsertSymbolCommand}" CommandParameter="Stop"
+                        ToolTip.Tip="Rotes Symbol: Antippen beendet die Wiedergabe" />
+            </MenuItem>
             <Separator />
             <MenuItem Header="_Unbenutzte Skripte und Texte entfernen …" Command="{Binding RemoveUnusedCommand}"
                       ToolTip.Tip="Skripte und Texte, die keine OID-Fläche und kein anderes Skript mehr braucht (z. B. nach mehrmaligem „Personen erkennen“)" />

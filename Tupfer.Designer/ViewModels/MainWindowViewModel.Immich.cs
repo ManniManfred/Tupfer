@@ -37,7 +37,7 @@ public partial class MainWindowViewModel
     {
         var settings = Settings.Load();
         using var client = new ImmichClient(settings.ImmichUrl, settings.ImmichApiKey, ImmichBrowserViewModel.Handler);
-        var dir = ImmichDir;
+        var dir = NewFilesDir;
         var center = new Point(page.WidthMm / 2, page.HeightMm / 2);
         var inserted = new List<ElementViewModel>();
         for (int i = 0; i < assets.Count; i++)
@@ -67,11 +67,12 @@ public partial class MainWindowViewModel
     }
 
     /// <summary>
-    /// Verzeichnis für Fotos aus Immich: dateien/ im Projektverzeichnis (bzw. im entpackten *.tupfer), am
-    /// Desktop ohne gespeichertes Projekt ein temporäres (beim Speichern wird ohnehin alles ins *.tupfer kopiert).
+    /// Verzeichnis für Dateien, die der Designer selbst anlegt (Fotos aus Immich, Symbole): dateien/ im
+    /// Projektverzeichnis (bzw. im entpackten *.tupfer), am Desktop ohne gespeichertes Projekt ein temporäres
+    /// (beim Speichern wird ohnehin alles ins *.tupfer kopiert).
     /// </summary>
-    string ImmichDir => FilePath == null && _archiveDir == null && IsDesktop
-        ? Path.Combine(Path.GetTempPath(), "tupfer-immich")
+    string NewFilesDir => FilePath == null && _archiveDir == null && IsDesktop
+        ? Path.Combine(Path.GetTempPath(), "tupfer-dateien")
         : Path.Combine(BaseDir, "dateien");
 
     /// <summary>
