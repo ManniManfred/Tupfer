@@ -79,6 +79,22 @@ public partial class PageViewModel
     public void SelectAll(bool elements) =>
         SetSelection(Areas.Cast<object>().Concat(elements ? Elements : []).ToList());
 
+    /// <summary>
+    /// Flächen und (wenn <paramref name="elements"/>) Bilder, Texte und Farbflächen, die ganz im
+    /// Rechteck liegen (mm). „Ganz“ statt „berührt“, weil sonst ein seitenfüllendes Hintergrundbild
+    /// fast immer mitgewählt würde.
+    /// </summary>
+    public List<object> ItemsInside(Rect rectMm, bool elements) =>
+        (elements ? Elements.Cast<object>() : []).Concat(Areas)
+            .Where(i => rectMm.Contains(BoundsOf(i))).ToList();
+
+    /// <summary>Wählt die Objekte im aufgezogenen Rahmen (Gummiband); mit <paramref name="add"/> zusätzlich zur bisherigen Auswahl.</summary>
+    public void SelectInside(Rect rectMm, bool elements, bool add)
+    {
+        var inside = ItemsInside(rectMm, elements);
+        SetSelection(add ? _selection.Concat(inside).ToList() : inside);
+    }
+
     /// <summary>Entfernt alle gewählten Objekte von der Seite.</summary>
     public void DeleteSelection()
     {

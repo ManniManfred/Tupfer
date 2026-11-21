@@ -25,6 +25,9 @@ namespace Tupfer.Designer.Views;
 /// außerhalb der Seite werden blass gezeigt (gedruckt wird nur die Seite).
 /// Strg- bzw. Umschalt-Klick (oder Klick bei <see cref="MultiSelect"/>) nimmt Objekte in die Auswahl auf
 /// oder entfernt sie; mehrere gewählte Objekte werden gemeinsam verschoben.
+/// Ziehen auf freier Fläche (ohne Zeichenwerkzeug) zieht einen Auswahlrahmen auf („Gummiband“), Umschalt-Ziehen
+/// auch über Objekten (Bilder bedecken oft die ganze Seite). Gewählt wird, was ganz im Rahmen liegt;
+/// mit Umschalt bzw. Strg (oder bei <see cref="MultiSelect"/>) kommt es zur Auswahl hinzu.
 /// </summary>
 public class PageCanvas : Control
 {
@@ -72,7 +75,7 @@ public class PageCanvas : Control
     const double Grid = 0.5;
     const double MinSizeMm = 3;
 
-    enum DragMode { None, Create, CreateShape, Move, Resize, MoveElement, ScaleElement, RotateElement, MoveVertex, BendEdge, MoveSelection }
+    enum DragMode { None, Create, CreateShape, Move, Resize, MoveElement, ScaleElement, RotateElement, MoveVertex, BendEdge, MoveSelection, RubberBand }
 
     /// <summary>Unter dieser Stichhöhe (mm) wird eine gebogene Kante wieder gerade.</summary>
     const double StraightSnapMm = 0.3;
@@ -102,6 +105,16 @@ public class PageCanvas : Control
     object? _clicked;
     bool _toggleClicked;
     bool _moved;
+
+    /// <summary>Gummiband: aktuelle Ecke (mm), ob die Auswahl ergänzt wird und ob schon gezogen wurde.</summary>
+    Point _bandEndMm;
+    bool _bandAdd;
+    bool _bandDragged;
+
+    /// <summary>Gummiband-Rahmen: weiß unterlegt und dunkel gestrichelt, damit er auf hellem wie dunklem Grund sichtbar ist.</summary>
+    static readonly IPen BandUnderPen = new Pen(Brushes.White, 1.5);
+    static readonly IPen BandPen = new Pen(new SolidColorBrush(Color.FromRgb(40, 40, 40)), 1.5, new DashStyle(new double[] { 4, 3 }, 0));
+    static readonly IBrush BandFill = new SolidColorBrush(Color.FromArgb(40, 30, 120, 255));
 
     static readonly IPen GroupPen = new Pen(new SolidColorBrush(Color.FromRgb(220, 110, 0)), 1, new DashStyle(new double[] { 4, 3 }, 0));
 
@@ -376,6 +389,35 @@ public class PageCanvas : Control
 
         if (page.IsMultiSelection && !TestMode)
             DrawMultiSelection(ctx, page);
+
+        if (_mode == DragMode.RubberBand && _bandDragged)
+        {
+            var b = BandRectMm();
+            var r = new Rect(b.X * Scale, b.Y * Scale, b.Width * Scale, b.Height * Scale);
+            ctx.DrawRectangle(BandFill, BandUnderPen, r);
+            ctx.DrawRectangle(BandPen, r);
+        }
+    }
+
+    Rect BandRectMm() => new Rect(_startMm, _bandEndMm).Normalize();
+
+    /// <summary>Gummiband ist möglich: nicht beim Zuschneiden und nicht mit Zeichenwerkzeug (Testmodus wird vorher abgefangen).</summary>
+    bool RubberBandAllowed(PageViewModel page) =>
+        AreaTool == null && !(page.SelectedElement is { } el && Cropping(el));
+
+    /// <summary>Unter der Maus liegt ein Anfasser (Polygonecke/-kante, Skalier-/Drehgriff, Flächengröße).</summary>
+    bool OnHandle(PageViewModel page, Point px) =>
+        (EditedPolygon(page) is { } poly && HitPolygonHandle(poly, px) != null)
+        || (!ElementsLocked && page.SelectedElement is { } el && HitHandle(el, px) != null)
+        || (page.SelectedArea is { } area && AreaHandleRect(ToPx(area)).Inflate(_slop + 1).Contains(px));
+
+    void StartRubberBand(bool add, object? clicked)
+    {
+        _mode = DragMode.RubberBand;
+        _bandAdd = add;
+        _bandEndMm = _startMm;
+        _bandDragged = false;
+        _clicked = clicked;
     }
 
     /// <summary>Mehrere gewählte Objekte: Rahmen der Bilder und Texte und gestrichelt das Rechteck um alle.</summary>
@@ -645,8 +687,14 @@ public class PageCanvas : Control
         var mods = e.KeyModifiers;
         bool toggle = MultiSelect || mods.HasFlag(KeyModifiers.Control) || mods.HasFlag(KeyModifiers.Shift) || mods.HasFlag(KeyModifiers.Meta);
         var hitItem = HitItem(page, _startMm);
+        bool shiftPressed = mods.HasFlag(KeyModifiers.Shift);
 
-        if (hitItem != null && page.IsMultiSelection && page.Selection.Contains(hitItem))
+        if (shiftPressed && RubberBandAllowed(page) && !OnHandle(page, pos))
+        {
+            // Umschalt-Ziehen: immer Auswahlrahmen (ergänzend), auch über Objekten; ein Klick ohne Ziehen schaltet das Objekt um
+            StartRubberBand(add: true, hitItem);
+        }
+        else if (hitItem != null && page.IsMultiSelection && page.Selection.Contains(hitItem))
         {
             // Mehrere gewählte Objekte gemeinsam verschieben; ein Klick ohne Ziehen wählt (bzw. entfernt) nur dieses
             _mode = DragMode.MoveSelection;
@@ -693,10 +741,14 @@ public class PageCanvas : Control
         }
         else if (MultiSelect)
         {
-            // Im Auswahlmodus legt Ziehen auf freier Stelle keine Fläche an
-            EndDrag();
-            e.Handled = true;
-            return;
+            // Im Auswahlmodus legt Ziehen auf freier Stelle keine Fläche an, sondern zieht einen Auswahlrahmen auf
+            if (!RubberBandAllowed(page))
+            {
+                EndDrag();
+                e.Handled = true;
+                return;
+            }
+            StartRubberBand(add: true, null);
         }
         else if (page.Areas.LastOrDefault(a => a.Contains(_startMm.X, _startMm.Y)) is { } hit)
         {
@@ -709,6 +761,11 @@ public class PageCanvas : Control
             page.SelectedElement = hitElement;
             _mode = DragMode.MoveElement;
             _startElement = hitElement.ToEntry(null);
+        }
+        else if (AreaTool == null && RubberBandAllowed(page))
+        {
+            // Kein Flächenwerkzeug: Ziehen auf freier Stelle zieht einen Auswahlrahmen auf, ein Klick hebt die Auswahl auf
+            StartRubberBand(add: toggle, null);
         }
         else if (AreaTool is not { } tool)
         {
@@ -967,6 +1024,13 @@ public class PageCanvas : Control
                 double angle = Math.Atan2(pos.Y - c.Y, pos.X - c.X) * 180 / Math.PI + 90;
                 el.Rotation = shift ? Math.Round(angle / 15) * 15 : Math.Round(angle);
                 break;
+            case DragMode.RubberBand:
+                _bandEndMm = pos;
+                if (!_bandDragged && (Math.Abs(px.X - ToPx(_startMm).X) > 3 || Math.Abs(px.Y - ToPx(_startMm).Y) > 3))
+                    _bandDragged = true;
+                if (_bandDragged)
+                    InvalidateVisual();
+                break;
             case DragMode.None:
                 _slop = e.Pointer.Type == PointerType.Touch ? 12 : 2;
                 Cursor = HoverCursor(page, px);
@@ -1073,6 +1137,17 @@ public class PageCanvas : Control
             else
                 p.Select([_clicked]);
         }
+        if (_mode == DragMode.RubberBand && Page is { } bandPage)
+        {
+            if (_bandDragged)
+                bandPage.SelectInside(BandRectMm(), elements: !ElementsLocked, add: _bandAdd);
+            else if (_clicked != null)
+                bandPage.ToggleSelection(_clicked);
+            else if (!_bandAdd)
+                bandPage.Select([]);
+            _bandDragged = false;
+            InvalidateVisual();
+        }
         _startPositions.Clear();
         _clicked = null;
         _startRect = null;
@@ -1085,7 +1160,10 @@ public class PageCanvas : Control
     {
         base.OnPointerCaptureLost(e);
         if (e.Pointer == _pointer)
+        {
             EndDrag();
+            InvalidateVisual();
+        }
     }
 
     /// <summary>Beendet das Ziehen und schließt den Rückgängig-Schritt (genau einmal je Drücken).</summary>

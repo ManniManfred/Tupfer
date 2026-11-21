@@ -533,6 +533,52 @@ public class PageEditTests
     }
 
     [Fact]
+    public void GummibandWaehltWasGanzImRahmenLiegt()
+    {
+        var (_, page) = NewProject();
+        // Seitenfüllendes Hintergrundbild: liegt nie ganz im Rahmen und wird daher nicht mitgewählt
+        var background = new ElementViewModel(page.Project, ElementKind.Image) { Width = 210, Height = 297 };
+        page.Elements.Add(background);
+        var text = AddText(page);
+        text.X = 20;
+        text.Y = 20;
+        var inside = AddArea(page, 30, 40, 20, 20);
+        var partly = AddArea(page, 90, 40, 20, 20);
+
+        page.SelectInside(new Rect(10, 10, 90, 60), elements: true, add: false);
+        Assert.Equal([text, inside], page.Selection);
+        Assert.True(page.IsMultiSelection);
+
+        // Gesperrte Bilder und Texte (nur OID-Flächen) bleiben außen vor
+        page.SelectInside(new Rect(10, 10, 90, 60), elements: false, add: false);
+        Assert.Same(inside, page.SelectedArea);
+
+        // Ergänzen: bisherige Auswahl bleibt, nichts doppelt
+        page.SelectInside(new Rect(85, 35, 30, 30), elements: true, add: true);
+        Assert.Equal([inside, partly], page.Selection);
+        page.SelectInside(new Rect(85, 35, 30, 30), elements: true, add: true);
+        Assert.Equal(2, page.Selection.Count);
+
+        // Leerer Rahmen ohne Ergänzen hebt die Auswahl auf
+        page.SelectInside(new Rect(150, 200, 10, 10), elements: true, add: false);
+        Assert.False(page.HasSelection);
+    }
+
+    [Fact]
+    public void GummibandBeachtetGedrehteElemente()
+    {
+        var (_, page) = NewProject();
+        var text = AddText(page);
+        text.X = 50;
+        text.Y = 50;
+        // Ungedreht passt der Text (40 × 10 mm) in den Rahmen, um 90° gedreht nicht mehr
+        var frame = new Rect(45, 45, 50, 20);
+        Assert.Equal([text], page.ItemsInside(frame, elements: true));
+        text.Rotation = 90;
+        Assert.Empty(page.ItemsInside(frame, elements: true));
+    }
+
+    [Fact]
     public void AusrichtenAneinanderUndAnDerSeite()
     {
         var (project, page) = NewProject();
