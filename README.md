@@ -157,6 +157,15 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   *Start* meldet das Produkt am Stift an, *Wiederholen* spielt das Letzte noch einmal, *Stopp* beendet
   die Wiedergabe. Die Symbole landen nebeneinander am unteren Rand und sind mit ihrer Fläche zusammen
   gewählt, sodass man sie gemeinsam verschiebt. Die Grafiken liegen als SVG in `dateien/` des Projekts.
+- **Suchspiel:** *Bearbeiten → Suchspiel hinzufügen …* macht aus Flächen, deren Skript nur etwas abspielt
+  (z. B. nach *Personen erkennen*), ein Spiel: Nach Antippen der Lupe fragt der Stift „Wo ist …?“. Richtig
+  gibt Lob und die nächste Frage, falsch sagt den Namen der angetippten Fläche und fragt noch einmal; das
+  Fragezeichen wiederholt die Frage. Gefragt wird zweimal, jedes Mal in anderer zufälliger Reihenfolge.
+  Außerhalb des Spiels spielen die Flächen wie vorher. Im Dialog wählt man die Flächen und den Namen in der
+  Frage; erneutes Aufrufen erneuert das Spiel (abgewählte Flächen werden wieder normal). Lupe und
+  Fragezeichen kommen als Symbole unten rechts auf die aktuelle Seite, falls es sie noch nicht gibt; die
+  Texte (`suchspiel_los`, `richtig1` …, `wo_<skript>`) lassen sich im Tab *Sprachausgabe* ändern oder
+  selbst aufnehmen. Benutzt die Register `$ziel`, `$frage` und `$runde`.
 - **Bild speichern:** Bild wählen und *Bild speichern …* klicken – die Datei des Bildes landet
   unverändert (ohne Zuschnitt und Drehung, in voller Auflösung) auf der Festplatte, z. B. ein Foto aus
   Immich oder ein Bild aus einem geöffneten `*.tupfer`. Im Browser wird sie heruntergeladen, in

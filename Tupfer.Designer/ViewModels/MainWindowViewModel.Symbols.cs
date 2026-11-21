@@ -21,6 +21,24 @@ public partial class MainWindowViewModel
         if (page == null)
             return null;
         var symbol = Symbols.For(target);
+        const double size = Symbols.SizeMm, margin = 10, gap = 5;
+        int index = Symbols.All.ToList().IndexOf(symbol);
+        var center = new Point(margin + size / 2 + index * (size + gap), page.HeightMm - margin - size / 2);
+        var result = InsertSymbolAt(page, symbol, center);
+        if (result is { } inserted)
+        {
+            page.Select([inserted.Image, inserted.Area]);
+            Log(target == AreaTarget.Product
+                ? $"Symbol „{symbol.Label}“ eingefügt: meldet das Produkt {Project.ProductId} am Stift an."
+                : $"Symbol „{symbol.Label}“ eingefügt.");
+        }
+        return result;
+    }
+
+    /// <summary>Grafik und runde OID-Fläche eines Symbols um <paramref name="center"/> (ein Schritt für Rückgängig).</summary>
+    (ElementViewModel Image, AreaViewModel Area)? InsertSymbolAt(PageViewModel page, Symbols.Symbol symbol, Point center)
+    {
+        const double size = Symbols.SizeMm;
         string path;
         try
         {
@@ -31,9 +49,6 @@ public partial class MainWindowViewModel
             Notice($"Das Symbol „{symbol.Label}“ ließ sich nicht anlegen: {e.Message}");
             return null;
         }
-        const double size = Symbols.SizeMm, margin = 10, gap = 5;
-        int index = Symbols.All.ToList().IndexOf(symbol);
-        var center = new Point(margin + size / 2 + index * (size + gap), page.HeightMm - margin - size / 2);
         // Bild und Fläche zusammen: ein Schritt für Rückgängig
         ElementViewModel? image = null;
         AreaViewModel? area = null;
@@ -48,7 +63,7 @@ public partial class MainWindowViewModel
             image.Y = Math.Round(center.Y - size / 2, 2);
             area = new AreaViewModel(Project)
             {
-                Label = symbol.Label, Shape = AreaShape.Ellipse, Target = target,
+                Label = symbol.Label, Shape = AreaShape.Ellipse, Target = symbol.Target, Script = symbol.Script,
                 X = image.X, Y = image.Y, Width = size, Height = size,
             };
             page.Areas.Add(area);
@@ -59,10 +74,6 @@ public partial class MainWindowViewModel
             return null;
         }
         AreasOnly = false;
-        page.Select([image, area]);
-        Log(target == AreaTarget.Product
-            ? $"Symbol „{symbol.Label}“ eingefügt: meldet das Produkt {Project.ProductId} am Stift an."
-            : $"Symbol „{symbol.Label}“ eingefügt.");
         return (image, area);
     }
 }

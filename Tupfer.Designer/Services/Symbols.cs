@@ -11,7 +11,8 @@ public static class Symbols
     /// <summary>Durchmesser eines eingefügten Symbols (mm); groß genug zum sicheren Antippen.</summary>
     public const double SizeMm = 15;
 
-    public record Symbol(AreaTarget Target, string Label, string FileName, string Svg);
+    /// <summary>Ein Symbol; <paramref name="Script"/> ist das Skript der Fläche bei <see cref="AreaTarget.Script"/>.</summary>
+    public record Symbol(AreaTarget Target, string Label, string FileName, string Svg, string? Script = null);
 
     static string Circle(string color, string inner) => $"""
         <svg xmlns="http://www.w3.org/2000/svg" width="{SizeMm}mm" height="{SizeMm}mm" viewBox="0 0 100 100">
@@ -33,6 +34,20 @@ public static class Symbols
         Circle("#d64541", """<rect x="32" y="32" width="36" height="36" rx="4" fill="#ffffff"/>"""));
 
     public static readonly IReadOnlyList<Symbol> All = [Start, Replay, Stop];
+
+    /// <summary>Lupe des Suchspiels: startet es.</summary>
+    public static readonly Symbol Search = new(AreaTarget.Script, "Suchspiel", "symbol-suchspiel.svg",
+        Circle("#e8892b", """
+          <circle cx="44" cy="44" r="17" fill="none" stroke="#ffffff" stroke-width="8"/>
+          <path d="M57 57 L73 73" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round"/>
+        """), "suchspiel");
+
+    /// <summary>Fragezeichen des Suchspiels: wiederholt die Frage.</summary>
+    public static readonly Symbol Ask = new(AreaTarget.Script, "Nochmal fragen", "symbol-nochmal-fragen.svg",
+        Circle("#8e5bd0", """
+          <path d="M37 38 A13 13 0 1 1 56 49 C51 52 50 55 50 61" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round"/>
+          <circle cx="50" cy="76" r="6" fill="#ffffff"/>
+        """), "nochmal");
 
     public static Symbol For(AreaTarget target) => All.First(s => s.Target == target);
 

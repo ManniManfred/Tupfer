@@ -254,6 +254,8 @@
               <MenuItem Header="S_topp" Command="{Binding InsertSymbolCommand}" CommandParameter="Stop"
                         ToolTip.Tip="Rotes Symbol: Antippen beendet die Wiedergabe" />
             </MenuItem>
+            <MenuItem Header="Such_spiel hinzufügen …" Command="{Binding AddSearchGameCommand}"
+                      ToolTip.Tip="Der Stift fragt „Wo ist …?“ und man tippt die richtige Fläche an (z. B. Personen auf einem Foto)" />
             <Separator />
             <MenuItem Header="_Unbenutzte Skripte und Texte entfernen …" Command="{Binding RemoveUnusedCommand}"
                       ToolTip.Tip="Skripte und Texte, die keine OID-Fläche und kein anderes Skript mehr braucht (z. B. nach mehrmaligem „Personen erkennen“)" />
@@ -1477,6 +1479,40 @@
                     </Border>
                     <TextBox Grid.Column="1" VerticalAlignment="Center" Text="{Binding Name}"
                              PlaceholderText="{Binding Placeholder}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Border>
+
+    <!-- ================= Flächen fürs Suchspiel ================= -->
+    <Border Grid.Row="0" Grid.RowSpan="4" IsVisible="{Binding IsChoosingSearchGame}" Background="{DynamicResource Overlay}">
+      <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16" Padding="20"
+              MaxWidth="520" MaxHeight="640">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="Suchspiel" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}"
+                       Text="Welche Flächen sollen gesucht werden? Der Stift fragt „Wo ist …?“ mit dem Namen daneben, zweimal in zufälliger Reihenfolge. Außerhalb des Spiels bleiben die Flächen, wie sie sind." />
+          </StackPanel>
+          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+            <Button Content="Übernehmen" Classes="accent" IsDefault="True" MinWidth="90" HorizontalContentAlignment="Center"
+                    Command="{Binding ApplySearchGameCommand}" />
+            <Button Content="Abbrechen" IsCancel="True" MinWidth="90" HorizontalContentAlignment="Center"
+                    Command="{Binding CancelSearchGameCommand}" />
+          </StackPanel>
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding SearchGameEntries}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SearchGameEntry">
+                  <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,6">
+                    <CheckBox IsChecked="{Binding Include}" VerticalAlignment="Center" Margin="0,0,8,0"
+                              ToolTip.Tip="{Binding Script.Name, StringFormat='Skript {0}'}" />
+                    <TextBox Grid.Column="1" VerticalAlignment="Center" Text="{Binding Name}"
+                             IsEnabled="{Binding Include}" Watermark="Name in der Frage" />
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
