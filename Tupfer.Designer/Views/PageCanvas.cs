@@ -50,6 +50,10 @@ public class PageCanvas : Control
     public static readonly StyledProperty<bool> TestModeProperty =
         AvaloniaProperty.Register<PageCanvas, bool>(nameof(TestMode));
 
+    /// <summary>Im Testmodus die OID-Flächen zeigen; sonst sieht man die Seite wie gedruckt, nur angetippte Flächen blinken kurz auf.</summary>
+    public static readonly StyledProperty<bool> TestShowAreasProperty =
+        AvaloniaProperty.Register<PageCanvas, bool>(nameof(TestShowAreas));
+
     /// <summary>Klicken nimmt Objekte in die Auswahl auf bzw. entfernt sie (wie Strg-Klick, für Touch).</summary>
     public static readonly StyledProperty<bool> MultiSelectProperty =
         AvaloniaProperty.Register<PageCanvas, bool>(nameof(MultiSelect));
@@ -156,7 +160,8 @@ public class PageCanvas : Control
     static PageCanvas()
     {
         AffectsMeasure<PageCanvas>(PageProperty, ZoomProperty);
-        AffectsRender<PageCanvas>(PageProperty, ZoomProperty, AreasOnlyProperty, CropModeProperty, AreaToolProperty, TestModeProperty);
+        AffectsRender<PageCanvas>(PageProperty, ZoomProperty, AreasOnlyProperty, CropModeProperty, AreaToolProperty, TestModeProperty,
+            TestShowAreasProperty);
         FocusableProperty.OverrideDefaultValue<PageCanvas>(true);
         DragDrop.AllowDropProperty.OverrideDefaultValue<PageCanvas>(true);
     }
@@ -173,6 +178,12 @@ public class PageCanvas : Control
     {
         get => GetValue(TestModeProperty);
         set => SetValue(TestModeProperty, value);
+    }
+
+    public bool TestShowAreas
+    {
+        get => GetValue(TestShowAreasProperty);
+        set => SetValue(TestShowAreasProperty, value);
     }
 
     public bool MultiSelect
@@ -354,7 +365,8 @@ public class PageCanvas : Control
         }
 
         foreach (var area in page.Areas)
-            DrawArea(ctx, area, !TestMode && page.Selection.Contains(area), area == page.SelectedArea && !TestMode);
+            if (!TestMode || TestShowAreas || area == _tapped)
+                DrawArea(ctx, area, !TestMode && page.Selection.Contains(area), area == page.SelectedArea && !TestMode);
 
         if (_drawing != null)
             DrawPolygonInProgress(ctx, _drawing);

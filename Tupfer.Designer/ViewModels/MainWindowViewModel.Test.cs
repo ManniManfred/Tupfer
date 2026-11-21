@@ -19,6 +19,9 @@ public partial class MainWindowViewModel
     /// <summary>Auf der Seite antippen führt das Skript aus, statt zu bearbeiten.</summary>
     [ObservableProperty] bool _testMode;
 
+    /// <summary>Im Testmodus die OID-Flächen auf der Seite zeigen (sonst sieht die Seite aus wie gedruckt).</summary>
+    [ObservableProperty] bool _testShowAreas;
+
     /// <summary>Ablauf der letzten Antipp-Vorgänge (neueste oben).</summary>
     [ObservableProperty] string _testTrace = "";
 

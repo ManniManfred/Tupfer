@@ -239,6 +239,8 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   Skript aus wie der Stift: Register zählen mit, Sprünge werden verfolgt, Texte, Aufnahmen und
   Audiodateien werden nacheinander abgespielt. Rechts stehen die Registerwerte und der Ablauf
   (welche Zeile, welche Befehle). *Neu starten* entspricht dem Antippen des Produkt-Codes.
+  Die OID-Flächen sind dabei ausgeblendet, damit die Seite aussieht wie gedruckt (angetippte Flächen leuchten
+  kurz auf); *OID-Flächen zeigen* blendet sie wieder ein.
   Spiele (`G`), Timer und Soundprofile werden nicht simuliert.
 - **Automatisch gesichert:** Der Bearbeitungsstand wird laufend (jede Sekunde, wenn sich etwas
   geändert hat) gesichert und beim nächsten Start wiederhergestellt – auch ein noch nicht gespeichertes

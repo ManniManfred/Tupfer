@@ -525,7 +525,8 @@
                                     AreasOnly="{Binding AreasOnly}" CropMode="{Binding CropMode}"
                                     AreaTool="{Binding AreaTool}" MultiSelect="{Binding MultiSelect}"
                                     DrawColorShapes="{Binding DrawColorShapes}"
-                                    TestMode="{Binding TestMode}" TestTapCommand="{Binding TestTapCommand}" />
+                                    TestMode="{Binding TestMode}" TestShowAreas="{Binding TestShowAreas}"
+                                    TestTapCommand="{Binding TestTapCommand}" />
                 </Border>
               </ScrollViewer>
             </DockPanel>
@@ -549,6 +550,8 @@
                     <StackPanel><PathIcon Data="{StaticResource IconStop}" /><TextBlock Text="Stopp" /></StackPanel>
                   </Button>
                 </WrapPanel>
+                <CheckBox IsChecked="{Binding TestShowAreas}" Content="OID-Flächen zeigen"
+                          ToolTip.Tip="Ohne Haken sieht die Seite aus wie gedruckt; angetippte Flächen leuchten kurz auf." />
                 <TextBlock Classes="label" Text="Register" />
                 <SelectableTextBlock Classes="hint" FontFamily="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace"
                                      Text="{Binding TestRegisters}" />
