@@ -576,6 +576,9 @@ public partial class MainWindowViewModel : ObservableObject
         PrepareProject();
         var name = (ProjectBaseName ?? "projekt") + ".gme";
         string? built = null;
+        // Linux: angesteckten, aber noch nicht eingehängten Stift einhängen, damit er gefunden wird
+        foreach (var message in (await PenMounter.MountAsync()).Messages)
+            Notice(message);
         var target = await Dialogs!.SaveToPenAsync(name, async () => built = await CreateGme());
         // Im Browser liegt die Datei nur im Speicher-Dateisystem und wird nicht mehr gebraucht
         if (!IsDesktop && built != null)

@@ -218,7 +218,11 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
   `GET /api/assets/{id}/thumbnail`, `GET /api/assets/{id}/original`, `GET /api/faces?id={id}` und
   `GET /api/people/{id}/thumbnail`, jeweils mit dem Header `x-api-key`.
 - **Mehrere Objekte anordnen:** Mit Strg- oder Umschalt-Klick (auf dem Handy: *Mehrere wählen*)
-  bzw. Strg+A mehrere Flächen, Bilder und Texte wählen. Sie lassen sich gemeinsam verschieben (Ziehen,
+  bzw. Strg+A mehrere Flächen, Bilder und Texte wählen – oder mit der Maus einen **Auswahlrahmen**
+  aufziehen: Ziehen auf freier Fläche (ohne Zeichenwerkzeug), mit gedrückter Umschalttaste auch über
+  einem Bild, das die ganze Seite bedeckt. Gewählt wird, was ganz im Rahmen liegt; mit Umschalt bzw.
+  Strg kommt es zur bisherigen Auswahl hinzu. Im Modus *Nur OID-Flächen* werden nur Flächen gewählt;
+  im Testmodus, beim Zuschneiden und mit Zeichenwerkzeug gibt es keinen Rahmen. Sie lassen sich gemeinsam verschieben (Ziehen,
   Pfeiltasten) und löschen, links/rechts/oben/unten bündig oder mittig **ausrichten** und ab drei
   Objekten mit gleichen Abständen **verteilen** (rechte Spalte oder *Bearbeiten → Ausrichten*).
   Ein einzelnes Objekt wird an der Seite ausgerichtet, z. B. waagerecht zentriert.
@@ -263,7 +267,8 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
     wieder zu OID-Flächen. Verläufe werden zur ersten Farbe, Löcher in Pfaden werden mitgefüllt.
   - GME-Datei bauen (Taste F5) – eingebaut, optional über das externe tttool
   - **Auf den Stift speichern (Umschalt+F5):** baut die GME und speichert sie direkt auf den Stift.
-    Auf dem Desktop wird das Laufwerk „tiptoi“ automatisch gefunden (sonst Speichern-Dialog). Im
+    Auf dem Desktop wird das Laufwerk „tiptoi“ automatisch gefunden (sonst Speichern-Dialog). Unter
+    Linux hängt Tupfer einen angesteckten, aber noch nicht eingehängten Stift selbst ein (siehe Stift-Manager). Im
     Browser öffnet sich ein Speichern-Dialog, in dem man das Laufwerk des Stifts wählt – nur in
     Chrome und Edge am PC. Auf dem Handy: GME herunterladen und mit der App *Dateien* auf den Stift
     kopieren (Stift per OTG-Adapter anschließen).
@@ -273,7 +278,10 @@ dem eingebauten Encoder; die Piper-Stimmen werden als WAV eingebettet.
     Größe und Datum; eigene Projekte und Ravensburger-Produkte (Kommentar „CHOMPTECH …“) sind
     gekennzeichnet. Dazu der freie Speicher, Warnungen bei doppelten Produkt-IDs (auch mit dem
     geöffneten Projekt) und *Löschen* mit Rückfrage. Der Stift wird als Laufwerk „tiptoi“ gefunden,
-    sonst mit *Ordner wählen …*.
+    sonst mit *Ordner wählen …*. Unter Linux hängt Tupfer einen angesteckten, aber noch nicht
+    eingehängten Stift selbst ein: Er wird per `lsblk` an der Bezeichnung „tiptoi“ erkannt und mit
+    `udisksctl mount` eingehängt, ohne root (wie der Dateimanager). Fehlt `udisksctl` (Paket
+    `udisks2`) oder schlägt es fehl, erscheint eine Meldung; sudo wird nie verwendet.
   - *Ravensburger-Katalog:* die offiziellen Produkte als Kacheln mit großem Bild, Titel, Produkt-ID, Größe
     und Stand. *Installieren* lädt die GME von Ravensburger und legt sie auf den Stift (erst in eine
     temporäre Datei, vorher wird der freie Speicher geprüft). Ist die Datei auf dem Stift älter oder

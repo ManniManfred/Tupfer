@@ -43,6 +43,7 @@ class FakeRavensburger : HttpMessageHandler
 }
 
 /// <summary>Stift-Manager: Ravensburger-Katalog (mit gefälschtem Server), Abgleich, Installieren, Löschen.</summary>
+[Collection("Stift")]
 public class PenManagerTests : IDisposable
 {
     const string Official = "CHOMPTECH DATA FORMAT CopyRight 2009 Ver2.10.0901";
@@ -86,6 +87,8 @@ public class PenManagerTests : IDisposable
         _server.Files[PuzzleGme] = Gme(501, Official, new DateTime(2023, 1, 2), 100);
         _server.Files[FarmGme] = Gme(600, Official, new DateTime(2025, 3, 19), 2000);
         RavensburgerCatalog.CachePath = Path.Combine(_work, "katalog.json");
+        // Kein echtes lsblk/udisksctl in Tests
+        PenMounter.IsSupported = false;
     }
 
     public void Dispose()

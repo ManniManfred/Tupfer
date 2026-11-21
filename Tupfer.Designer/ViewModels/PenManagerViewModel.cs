@@ -217,7 +217,9 @@ public partial class PenManagerViewModel : ObservableObject
             if (cache == null || (DateTime.Now - cache.LoadedAt).TotalDays > CatalogMaxAgeDays)
                 await LoadCatalog();
         }
-        if (SelectedDrive == null && !Status.Contains("Ravensburger"))
+        if (_mountProblem != null)
+            Status = _mountProblem;
+        else if (SelectedDrive == null && !Status.Contains("Ravensburger"))
             Status = ShowBrowserPenHint
                 ? (CanPickFolder ? "Den Stift verbinden und mit „Ordner wählen …“ sein Laufwerk auswählen." : "")
                 : "Kein Stift gefunden: Er muss angeschlossen sein und sich als Laufwerk „tiptoi“ melden. Oder „Ordner wählen …“.";
@@ -227,6 +229,10 @@ public partial class PenManagerViewModel : ObservableObject
     [RelayCommand]
     async Task Refresh()
     {
+        // Linux: angesteckten, aber noch nicht eingehängten Stift einhängen
+        var mount = await PenMounter.MountAsync();
+        foreach (var message in mount.Messages)
+            _log(message);
         var current = SelectedDrive;
         _findingDrives = true;
         try
@@ -244,7 +250,14 @@ public partial class PenManagerViewModel : ObservableObject
             _findingDrives = false;
         }
         await RefreshPen();
+        // Nach dem Einlesen, das die Statuszeile leert
+        _mountProblem = mount.Messages.Count > mount.MountPoints.Count ? string.Join(Environment.NewLine, mount.Messages) : null;
+        if (mount.Messages.Count > 0)
+            Status = string.Join(Environment.NewLine, mount.Messages);
     }
+
+    /// <summary>Meldung, wenn das Einhängen gescheitert ist; sie bleibt stehen statt „Kein Stift gefunden“.</summary>
+    string? _mountProblem;
 
     /// <summary>Einen Ordner als Stift wählen (Stift ohne Bezeichnung „tiptoi“ oder Kopie auf der Festplatte).</summary>
     [RelayCommand]

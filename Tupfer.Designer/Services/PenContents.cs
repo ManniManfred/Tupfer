@@ -13,7 +13,11 @@ public record PenProduct(string RelativePath, uint? ProductId, string Comment, D
 /// <summary>Stift finden (Laufwerk „tiptoi“) und die Produkte der GME-Dateien darauf auslesen (Desktop).</summary>
 public static class PenContents
 {
-    /// <summary>Wurzelverzeichnisse aller angeschlossenen Stifte (Windows: Bezeichnung, Linux/macOS: Einhängepunkt).</summary>
+    /// <summary>
+    /// Wurzelverzeichnisse aller angeschlossenen Stifte (Windows: Bezeichnung, Linux/macOS: Einhängepunkt), dazu
+    /// die von <see cref="PenMounter"/> eingehängten. Unter Linux vorher <see cref="PenMounter.MountAsync"/> rufen,
+    /// damit auch ein noch nicht eingehängter Stift gefunden wird.
+    /// </summary>
     public static List<string> FindPens() => DriveInfo.GetDrives()
         .Where(d =>
         {
@@ -28,7 +32,15 @@ public static class PenContents
             }
         })
         .Select(d => d.RootDirectory.FullName)
+        .Concat(MountedPens())
+        .Distinct(StringComparer.Ordinal)
         .ToList();
+
+    static IEnumerable<string> MountedPens()
+    {
+        lock (PenMounter.MountedByUs)
+            return PenMounter.MountedByUs.Where(Directory.Exists).Select(p => p.TrimEnd('/') + "/").ToList();
+    }
 
     /// <summary>Alle GME-Dateien unter <paramref name="root"/> (auch in Unterordnern), nach Produkt-ID sortiert.</summary>
     public static List<PenProduct> ReadProducts(string root)
