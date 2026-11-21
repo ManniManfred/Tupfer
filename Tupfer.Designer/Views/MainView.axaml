@@ -1512,7 +1512,7 @@
                     <CheckBox IsChecked="{Binding Include}" VerticalAlignment="Center" Margin="0,0,8,0"
                               ToolTip.Tip="{Binding Script.Name, StringFormat='Skript {0}'}" />
                     <TextBox Grid.Column="1" VerticalAlignment="Center" Text="{Binding Name}"
-                             IsEnabled="{Binding Include}" Watermark="Name in der Frage" />
+                             IsEnabled="{Binding Include}" PlaceholderText="Name in der Frage" />
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
