@@ -1,6 +1,7 @@
 import { dotnet } from './_framework/dotnet.js';
 import * as tupfer from './tupfer.js';
 import * as nextcloud from './nextcloud.js';
+import * as buero from './buero.js';
 
 // Avalonia übernimmt die Sicherheitsabstände des Geräts (env(safe-area-inset-*)) als Rand, vertauscht dabei
 // aber unten und rechts. Firefox auf Android meldet unten einen Abstand – die App blieb rechts schmaler.
@@ -25,6 +26,7 @@ const runtime = await dotnet
 
 runtime.setModuleImports('tupfer', tupfer);
 runtime.setModuleImports('nextcloud', nextcloud);
+runtime.setModuleImports('buero', buero);
 
 const config = runtime.getConfig();
 const pageUrl = globalThis.location.href;

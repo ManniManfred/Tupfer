@@ -451,6 +451,23 @@ Die natürliche Sprachausgabe lädt ihre Stimmen wie im Browser von cdnjs, jsDel
 Die App erlaubt dafür diese Adressen in ihren Sicherheitsregeln (Content-Security-Policy). Ist der
 Server vom Internet abgeschnitten, gibt es keine Sprachausgabe.
 
+## Tupfer Designer in Büro
+
+[Büro](https://github.com/ManniManfred/Buero) (Dokumentenverwaltung) bringt die Web-Version mit und
+öffnet `.tupfer`-Dokumente mit *Bearbeiten* im Designer. Das Docker-Image von Büro holt sie beim Bauen aus
+dem neuesten Release (`Tupfer-Designer-Nextcloud.tar.gz`, Ordner `editor/`) und liefert sie unter `/tupfer/`
+aus. Ohne Docker genügt es, die Web-Version in den Ordner aus `BUERO_TUPFER_DIR` zu legen.
+
+- Büro öffnet den Designer mit `/tupfer/?buero=<Dokument>`; die Anmeldung steht im Fragment
+  (`#token=…`), wird also nicht an den Server geschickt, und verschwindet gleich aus der Adresse.
+  Gelesen und gespeichert wird über die API von Büro (`wwwroot/buero.js`, `BueroFileDialogs.cs`).
+- **Speichern** legt eine neue Version des Dokuments an. Gibt es inzwischen eine neuere, fragt der
+  Designer, bevor er seinen Stand darüberlegt (die andere Version bleibt in Büro erhalten).
+- **Speichern unter** und Projekte, die noch zu keinem Dokument gehören, werden neue Dokumente, in
+  denselben Sammlungen wie das bisherige.
+- Öffnen vom eigenen Rechner, Exporte, Drucken und „Auf den Stift“ laufen wie im Browser.
+- Beim Schließen fragt Büro nach, wenn es ungespeicherte Änderungen gibt.
+
 ## Typischer Ablauf
 
 1. Projekt anlegen, Produkt-ID wählen (z. B. 900–999).

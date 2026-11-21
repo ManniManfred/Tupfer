@@ -94,6 +94,17 @@ static class Program
                 App.StartExample = new ExampleProject("nextcloud-neu", Path.GetFileName(startNew) + " (neu in Nextcloud)",
                     () => NextcloudFileDialogs.CreateProjectAsync(startNew));
         }
+        // Aus Büro (Dokumentenverwaltung) geöffnet: ?buero=<Dokument> gleich öffnen, Speichern als neue Version
+        else if (BueroInterop.Available())
+        {
+            BueroFileDialogs.Init();
+            App.CreateDialogs = topLevel => new BueroFileDialogs(new BrowserFileDialogs(topLevel));
+            BueroInterop.OnModifiedQuery(() => App.BrowserViewModel?.IsModified ?? false);
+            var document = BueroInterop.StartDocument();
+            if (document > 0)
+                App.StartExample = new ExampleProject("buero", "Dokument aus Büro",
+                    () => BueroFileDialogs.OpenDocumentAsync(document));
+        }
         // Download-Seite mit den Setups für Windows, Linux und macOS
         MainWindowViewModel.OpenDownloads = () => BrowserInterop.OpenUrl(new Uri(pageUri, "download.html").ToString());
 

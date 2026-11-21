@@ -18,6 +18,9 @@ public partial class App : Application
     /// <summary>Beispielprojekt, das im Browser gleich beim Start geöffnet wird.</summary>
     public static ExampleProject? StartExample { get; set; }
 
+    /// <summary>Das ViewModel der Ansicht im Browser (z. B. für Rückfragen der umgebenden Seite), sonst null.</summary>
+    public static MainWindowViewModel? BrowserViewModel { get; private set; }
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     /// <summary>
@@ -65,6 +68,7 @@ public partial class App : Application
         {
             // Browser: eine einzige Ansicht statt eines Fensters
             var vm = new MainWindowViewModel();
+            BrowserViewModel = vm;
             var view = new MainView { DataContext = vm };
             bool started = false;
             view.AttachedToVisualTree += (_, _) =>
