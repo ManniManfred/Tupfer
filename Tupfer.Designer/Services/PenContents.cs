@@ -33,13 +33,13 @@ public static class PenContents
         })
         .Select(d => d.RootDirectory.FullName)
         .Concat(MountedPens())
-        .Distinct(StringComparer.Ordinal)
+        .DistinctBy(p => p.TrimEnd('/', '\\'), StringComparer.Ordinal) // gleicher Ordner, mit und ohne „/“ am Ende
         .ToList();
 
     static IEnumerable<string> MountedPens()
     {
         lock (PenMounter.MountedByUs)
-            return PenMounter.MountedByUs.Where(Directory.Exists).Select(p => p.TrimEnd('/') + "/").ToList();
+            return PenMounter.MountedByUs.Where(Directory.Exists).ToList();
     }
 
     /// <summary>Alle GME-Dateien unter <paramref name="root"/> (auch in Unterordnern), nach Produkt-ID sortiert.</summary>

@@ -87,7 +87,7 @@ public class PenMounterTests : IDisposable
         Assert.Contains($"Stift eingehängt: {_mount}", result.Messages);
         Assert.Contains("udisksctl mount -b /dev/sdb --no-user-interaction", _runner.Calls);
         Assert.DoesNotContain(_runner.Calls, c => c.Contains("sudo"));
-        Assert.Contains(_mount.TrimEnd('/') + "/", PenContents.FindPens());
+        Assert.Single(PenContents.FindPens(), p => p.TrimEnd('/') == _mount.TrimEnd('/'));
     }
 
     [Fact]
