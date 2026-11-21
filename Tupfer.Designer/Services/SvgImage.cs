@@ -38,10 +38,7 @@ public sealed class SvgImage : IImage
         svg.Settings.EnableJavaScript = false;
         svg.Settings.EnableExternalJavaScript = false;
         if (InterFallback.Value is { } inter)
-        {
-            svg.Settings.TypefaceProviders.Clear();
-            svg.Settings.TypefaceProviders.Add(inter);
-        }
+            svg.Settings.TypefaceProviders = [inter];
         SKPicture? picture;
         try
         {

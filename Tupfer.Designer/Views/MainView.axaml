@@ -1476,7 +1476,7 @@
                       <Image Source="{Binding Face}" IsVisible="{Binding HasFace}" Stretch="UniformToFill" />
                     </Border>
                     <TextBox Grid.Column="1" VerticalAlignment="Center" Text="{Binding Name}"
-                             Watermark="{Binding Placeholder}" />
+                             PlaceholderText="{Binding Placeholder}" />
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
